@@ -46,6 +46,8 @@ class CourseController extends Controller
 
     public function show(Course $course): Response
     {
+        $this->authorize('view', $course);
+
         $course->load('modules.lessons');
 
         return Inertia::render('Staff/Courses/Show', [
