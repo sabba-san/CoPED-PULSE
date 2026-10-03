@@ -3,23 +3,17 @@ import { useEffect } from 'react';
 import StaffLayout from '@/Layouts/StaffLayout';
 
 export default function Edit({ course }) {
-    const form = useForm({
-        title: '',
-        description: '',
-        status: 'draft',
+    const { data, setData, put, processing, errors, reset } = useForm({
+        title: course.title || '',
+        description: course.description || '',
+        status: course.status || 'draft',
     });
-
-    useEffect(() => {
-        form.title = course.title;
-        form.description = course.description;
-        form.status = course.status;
-    }, [course]);
 
     const submit = (e) => {
         e.preventDefault();
-        form.put(route('staff.courses.update', course), {
+        put(route('staff.courses.update', course), {
             onSuccess: () => {
-                form.reset();
+                reset();
             },
         });
     };
@@ -48,13 +42,13 @@ export default function Edit({ course }) {
                             id="title"
                             name="title"
                             type="text"
-                            value={form.title}
-                            onChange={form.setData}
+                            value={data.title}
+                            onChange={(e) => setData(e.target.name, e.target.value)}
                             required
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
-                        {form.errors.title && (
-                            <span className="text-red-500 text-sm">{form.errors.title}</span>
+                        {errors.title && (
+                            <span className="text-red-500 text-sm">{errors.title}</span>
                         )}
                     </div>
 
@@ -66,12 +60,12 @@ export default function Edit({ course }) {
                             id="description"
                             name="description"
                             rows={4}
-                            value={form.description}
-                            onChange={form.setData}
+                            value={data.description}
+                            onChange={(e) => setData(e.target.name, e.target.value)}
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
-                        {form.errors.description && (
-                            <span className="text-red-500 text-sm">{form.errors.description}</span>
+                        {errors.description && (
+                            <span className="text-red-500 text-sm">{errors.description}</span>
                         )}
                     </div>
 
@@ -82,8 +76,8 @@ export default function Edit({ course }) {
                         <select
                             id="status"
                             name="status"
-                            value={form.status}
-                            onChange={form.setData}
+                            value={data.status}
+                            onChange={(e) => setData(e.target.name, e.target.value)}
                             required
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         >
@@ -91,8 +85,8 @@ export default function Edit({ course }) {
                             <option value="published">Published</option>
                             <option value="archived">Archived</option>
                         </select>
-                        {form.errors.status && (
-                            <span className="text-red-500 text-sm">{form.errors.status}</span>
+                        {errors.status && (
+                            <span className="text-red-500 text-sm">{errors.status}</span>
                         )}
                     </div>
 
@@ -105,10 +99,10 @@ export default function Edit({ course }) {
                         </Link>
                         <button
                             type="submit"
-                            disabled={form.processing}
+                            disabled={processing}
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
                         >
-                            {form.processing ? 'Updating...' : 'Update Course'}
+                            {processing ? 'Updating...' : 'Update Course'}
                         </button>
                     </div>
                 </form>
