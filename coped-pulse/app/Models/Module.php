@@ -13,6 +13,7 @@ class Module extends Model
         'course_id',
         'title',
         'description',
+        'media_url',
         'order',
     ];
 

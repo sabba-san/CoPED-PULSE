@@ -18,14 +18,14 @@ class CourseController extends Controller
             ->latest()
             ->paginate(10);
 
-        return Inertia::render('Staff/Courses/Index', [
+        return Inertia::render('design_v1/Staff/Courses/Index', [
             'courses' => $courses,
         ]);
     }
 
     public function create(): Response
     {
-        return Inertia::render('Staff/Courses/Create');
+        return Inertia::render('design_v1/Staff/Courses/Create');
     }
 
     public function store(Request $request): RedirectResponse
@@ -48,9 +48,11 @@ class CourseController extends Controller
     {
         $this->authorize('view', $course);
 
-        $course->load('modules.lessons');
+        $course->load(['modules' => function($q) {
+            $q->orderBy('order');
+        }, 'modules.lessons']);
 
-        return Inertia::render('Staff/Courses/Show', [
+        return Inertia::render('design_v1/Staff/Courses/Show', [
             'course' => $course,
         ]);
     }
@@ -59,7 +61,11 @@ class CourseController extends Controller
     {
         $this->authorize('update', $course);
 
-        return Inertia::render('Staff/Courses/Edit', [
+        $course->load(['modules' => function($q) {
+            $q->orderBy('order');
+        }]);
+
+        return Inertia::render('design_v1/Staff/Courses/Edit', [
             'course' => $course,
         ]);
     }

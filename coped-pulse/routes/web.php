@@ -22,7 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::get('/dashboard', function () {
-        return inertia('Staff/Dashboard');
+        return inertia('design_v1/Staff/Dashboard');
     })->middleware('role:staff')->name('dashboard');
 
     Route::get('/portal', function () {
@@ -31,12 +31,15 @@ Route::middleware('auth')->group(function () {
             ->latest()
             ->paginate(10);
 
-        return inertia('Learner/Portal', [
+        return inertia('design_v1/Learner/Portal', [
             'enrollments' => $enrollments,
         ]);
     })->middleware('role:learner')->name('portal');
 
     Route::middleware('role:learner')->prefix('learner')->name('learner.')->group(function () {
+        Route::get('catalog', [\App\Http\Controllers\Learner\CatalogController::class, 'index'])->name('catalog');
+        Route::post('catalog/{course}/enroll', [\App\Http\Controllers\Learner\CatalogController::class, 'enroll'])->name('catalog.enroll');
+
         Route::get('courses/{course}/learn', function (Course $course) {
             $enrollment = Enrollment::where('user_id', auth()->id())
                 ->where('course_id', $course->id)
@@ -44,7 +47,7 @@ Route::middleware('auth')->group(function () {
 
             $course->load(['modules.lessons']);
 
-            return inertia('Learner/Course/Learn', [
+            return inertia('design_v1/Learner/Course/Learn', [
                 'course' => $course,
                 'enrollment' => $enrollment,
             ]);
@@ -53,5 +56,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:staff')->prefix('staff')->name('staff.')->group(function () {
         Route::resource('courses', \App\Http\Controllers\Staff\CourseController::class);
+        Route::resource('courses.modules', \App\Http\Controllers\Staff\ModuleController::class)
+            ->only(['store', 'update', 'destroy']);
     });
 });
