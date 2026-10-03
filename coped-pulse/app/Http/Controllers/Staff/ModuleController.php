@@ -11,6 +11,8 @@ class ModuleController extends Controller
 {
     public function store(Request $request, Course $course)
     {
+        $this->authorize('update', $course);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -27,6 +29,8 @@ class ModuleController extends Controller
 
     public function update(Request $request, Course $course, Module $module)
     {
+        $this->authorize('update', $course);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -40,6 +44,8 @@ class ModuleController extends Controller
 
     public function destroy(Course $course, Module $module)
     {
+        $this->authorize('update', $course);
+
         $module->delete();
 
         // Reorder remaining modules
