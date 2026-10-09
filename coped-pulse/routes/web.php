@@ -7,8 +7,13 @@ use App\Models\Enrollment;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('login');
-});
+    if (auth()->check()) {
+        return auth()->user()->isStaff()
+            ? redirect()->route('dashboard')
+            : redirect()->route('portal');
+    }
+    return inertia('design_v1/Welcome');
+})->name('home');
 
 Route::middleware('redirect.auth')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
@@ -41,22 +46,28 @@ Route::middleware('auth')->group(function () {
         Route::post('catalog/{course}/enroll', [\App\Http\Controllers\Learner\CatalogController::class, 'enroll'])->name('catalog.enroll');
 
         Route::get('courses/{course}/learn', function (Course $course) {
+            abort_if($course->status !== 'published', 404);
+
             $enrollment = Enrollment::where('user_id', auth()->id())
                 ->where('course_id', $course->id)
                 ->firstOrFail();
 
-            $course->load(['modules.lessons']);
+            $course->load(['modules.lessons', 'assessments']);
 
             return inertia('design_v1/Learner/Course/Learn', [
                 'course' => $course,
                 'enrollment' => $enrollment,
             ]);
         })->name('course.learn');
+
+        Route::post('courses/{course}/assess', [\App\Http\Controllers\Learner\AssessmentController::class, 'assess'])->name('course.assess');
     });
 
     Route::middleware('role:staff')->prefix('staff')->name('staff.')->group(function () {
         Route::resource('courses', \App\Http\Controllers\Staff\CourseController::class);
         Route::resource('courses.modules', \App\Http\Controllers\Staff\ModuleController::class)
             ->only(['store', 'update', 'destroy']);
+        Route::resource('courses.assessments', \App\Http\Controllers\Staff\AssessmentController::class)
+            ->only(['store', 'destroy']);
     });
 });
