@@ -53,13 +53,40 @@ export default function Portal({ enrollments }) {
                             </div>
                             
                             <div className="p-8 flex flex-col flex-grow">
-                                <div className="flex items-center space-x-3 mb-6">
+                                <div className="flex items-center space-x-3 mb-4">
                                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold text-xs shadow-md">
                                         {enrollment.course?.instructor?.name?.charAt(0)}
                                     </div>
                                     <span className="text-sm font-semibold text-gray-700">
                                         {enrollment.course?.instructor?.name || 'Instructor'}
                                     </span>
+                                </div>
+
+                                {/* Progress line */}
+                                <div className="mb-6">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-xs font-bold text-gray-600">Progress</span>
+                                        <span className={`text-xs font-bold ${enrollment.completed_at ? 'text-green-700' : 'text-indigo-700'}`}>
+                                            {Math.min(100, Math.max(0, Math.round(Number(enrollment.progress ?? 0))))}%
+                                        </span>
+                                    </div>
+                                    <div
+                                        className="w-full h-2 bg-gray-100 rounded-full overflow-hidden"
+                                        role="progressbar"
+                                        aria-valuenow={Math.round(Number(enrollment.progress ?? 0))}
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-label={`Progress for ${enrollment.course?.title}`}
+                                    >
+                                        <div
+                                            className={`h-full rounded-full transition-all ${
+                                                enrollment.completed_at
+                                                    ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                                                    : 'bg-gradient-to-r from-indigo-600 to-purple-600'
+                                            }`}
+                                            style={{ width: `${Math.min(100, Math.max(0, Math.round(Number(enrollment.progress ?? 0))))}%` }}
+                                        />
+                                    </div>
                                 </div>
                                 
                                 <div className="flex-grow"></div>

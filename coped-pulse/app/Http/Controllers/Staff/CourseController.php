@@ -50,7 +50,7 @@ class CourseController extends Controller
 
         $course->load(['modules' => function($q) {
             $q->orderBy('order');
-        }, 'modules.lessons']);
+        }, 'modules.lessons', 'assessments']);
 
         return Inertia::render('design_v1/Staff/Courses/Show', [
             'course' => $course,
@@ -63,7 +63,7 @@ class CourseController extends Controller
 
         $course->load(['modules' => function($q) {
             $q->orderBy('order');
-        }]);
+        }, 'assessments']);
 
         return Inertia::render('design_v1/Staff/Courses/Edit', [
             'course' => $course,

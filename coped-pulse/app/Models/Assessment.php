@@ -5,31 +5,26 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Module extends Model
+class Assessment extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'course_id',
-        'title',
-        'description',
-        'media_url',
-        'content_type',
-        'order',
+        'question',
+        'option_a',
+        'option_b',
+        'option_c',
+        'option_d',
+        'correct_option',
     ];
 
     protected $casts = [
-        'order' => 'integer',
-        'content_type' => 'string',
+        'correct_option' => 'string',
     ];
 
     public function course()
     {
         return $this->belongsTo(Course::class);
-    }
-
-    public function lessons()
-    {
-        return $this->hasMany(Lesson::class)->orderBy('order');
     }
 }

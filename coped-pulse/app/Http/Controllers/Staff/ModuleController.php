@@ -17,10 +17,12 @@ class ModuleController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'media_url' => 'nullable|url|max:2048',
+            'content_type' => 'nullable|in:link,embed',
         ]);
 
         $maxOrder = $course->modules()->max('order') ?? 0;
         $validated['order'] = $maxOrder + 1;
+        $validated['content_type'] ??= 'link';
 
         $course->modules()->create($validated);
 
@@ -31,10 +33,13 @@ class ModuleController extends Controller
     {
         $this->authorize('update', $course);
 
+        abort_if($module->course_id !== $course->id, 404);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'media_url' => 'nullable|url|max:2048',
+            'content_type' => 'nullable|in:link,embed',
         ]);
 
         $module->update($validated);
@@ -45,6 +50,8 @@ class ModuleController extends Controller
     public function destroy(Course $course, Module $module)
     {
         $this->authorize('update', $course);
+
+        abort_if($module->course_id !== $course->id, 404);
 
         $module->delete();
 

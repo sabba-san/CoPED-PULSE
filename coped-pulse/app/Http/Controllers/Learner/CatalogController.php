@@ -23,6 +23,8 @@ class CatalogController extends Controller
 
     public function enroll(Course $course, Request $request)
     {
+        abort_if($course->status !== 'published', 404);
+
         $alreadyEnrolled = $request->user()->enrollments()->where('course_id', $course->id)->exists();
 
         if (!$alreadyEnrolled) {
