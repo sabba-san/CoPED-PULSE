@@ -1,4 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
+import logo from '@/images/logo.png';
 
 export default function StaffLayout({ children }) {
     const { url } = usePage();
@@ -15,9 +16,12 @@ export default function StaffLayout({ children }) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
                         <div className="flex items-center space-x-8">
-                            <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 tracking-tight cursor-default hover:scale-105 transition-transform duration-300">
-                                CoPED PULSE <span className="text-sm font-bold text-teal-600 ml-1">Instructor</span>
-                            </span>
+                            <Link href={route('dashboard')} className="flex items-center space-x-2" aria-label="CoPED PULSE Instructor Home">
+                                <img src={logo} alt="CoPED PULSE Logo" className="h-8 w-auto" />
+                                <span className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 tracking-tight hidden sm:block">
+                                    CoPED PULSE <span className="text-sm font-bold text-teal-600 ml-1">Instructor</span>
+                                </span>
+                            </Link>
                             
                             <div className="hidden md:flex space-x-1">
                                 {navLinks.map((link) => (
