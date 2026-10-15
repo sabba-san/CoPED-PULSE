@@ -2,28 +2,18 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 
-/**
- * Only allow http(s) URLs to be rendered as links.
- * Prevents javascript:/data: URLs (stored XSS) from becoming clickable.
- */
-const safeMediaUrl = (url) => {
-    if (!url || typeof url !== 'string') return null;
-    try {
-        const parsed = new URL(url.trim());
-        return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : null;
-    } catch {
-        return null;
-    }
-};
-
-const OPTION_KEYS = ['a', 'b', 'c', 'd'];
-
-export default function Learn({ course, enrollment }) {
+export default function Learn({ course, enrollment, completedModuleIds = [], completedLessonIds = [] }) {
     const modules = course.modules || [];
-    const assessments = course.assessments || [];
+    const allAssessments = course.assessments || [];
+    const assessments = allAssessments.filter((q) => !q.module_id);
     const { flash } = usePage().props;
     const isCompleted = !!enrollment?.completed_at;
     const progressPct = Math.min(100, Math.max(0, Math.round(Number(enrollment?.progress ?? 0))));
+
+    const doneSet = new Set(completedModuleIds || []);
+    const doneLessons = new Set(completedLessonIds || []);
+    const resume = modules.find((m) => !doneSet.has(m.id)) ?? modules[0] ?? null;
+    const [openId, setOpenId] = useState(resume?.id ?? modules[0]?.id ?? null);
 
     const [showQuiz, setShowQuiz] = useState(false);
 
@@ -42,10 +32,8 @@ export default function Learn({ course, enrollment }) {
         e.preventDefault();
         form.post(route('learner.course.assess', course.id), {
             preserveScroll: true,
-            onSuccess: () => {
-                // Keep modal open on fail so learner can retry;
-                // close it on pass (banner takes over after reload).
-                if (flash?.assessment_passed) setShowQuiz(false);
+            onSuccess: (page) => {
+                if (page?.props?.flash?.assessment_passed) setShowQuiz(false);
             },
         });
     };
@@ -118,6 +106,14 @@ export default function Learn({ course, enrollment }) {
                             <div className="text-sm text-gray-500 font-medium bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
                                 {modules.length} {modules.length === 1 ? 'Module' : 'Modules'}
                             </div>
+                            {resume && !isCompleted && (
+                                <Link
+                                    href={route('learner.course.module.learn', [course.id, resume.id])}
+                                    className="inline-flex items-center px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all"
+                                >
+                                    {doneSet.size > 0 ? 'Continue learning' : 'Start learning'} →
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -132,7 +128,7 @@ export default function Learn({ course, enrollment }) {
                     </div>
                 )}
 
-                {/* Flash messages (quiz score / enrollment feedback) */}
+                {/* Flash messages */}
                 {!isCompleted && flash?.success && (
                     <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-2xl px-6 py-4 text-sm font-medium">
                         {flash.success}
@@ -144,72 +140,132 @@ export default function Learn({ course, enrollment }) {
                     </div>
                 )}
 
-                {/* Modules List */}
+                {/* Topic list — click a card to open its workspace */}
                 {modules.length > 0 ? (
                     <div className="space-y-4">
                         {modules.map((module, index) => {
-                            const mediaUrl = safeMediaUrl(module.media_url);
+                            const finished = doneSet.has(module.id);
+                            const moduleQuizzes = allAssessments.filter((q) => q.module_id === module.id);
+                            const lessons = module.lessons || [];
+                            const isOpen = openId === module.id;
 
                             return (
-                                <article
+                                <div
                                     key={module.id}
-                                    className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all duration-300 p-6 flex gap-5"
+                                    className={`bg-white rounded-2xl border shadow-sm transition-all duration-300 overflow-hidden ${
+                                        isOpen ? 'border-indigo-200 shadow-md' : 'border-gray-100 hover:border-indigo-200'
+                                    }`}
                                 >
-                                    <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-bold text-lg flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
-                                        {index + 1}
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setOpenId(isOpen ? null : module.id)}
+                                        aria-expanded={isOpen}
+                                        className="w-full p-6 flex gap-5 text-left items-start"
+                                    >
+                                        <div className={`shrink-0 w-10 h-10 rounded-xl font-bold text-lg flex items-center justify-center shadow-md transition-transform duration-300 ${
+                                            finished
+                                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white'
+                                                : 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white'
+                                        }`}>
+                                            {finished ? '✓' : index + 1}
+                                        </div>
 
-                                    <div className="flex-1 min-w-0">
-                                        <h2 className="text-xl font-bold text-gray-900 break-words">
-                                            {module.title}
-                                        </h2>
-
-                                        {module.description && (
-                                            <p className="mt-2 text-gray-500 leading-relaxed whitespace-pre-line break-words">
-                                                {module.description}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                                                Chapter {index + 1}
                                             </p>
-                                        )}
+                                            <h2 className="text-xl font-bold text-gray-900 break-words">
+                                                {module.title}
+                                            </h2>
 
-                                        {mediaUrl && module.content_type === 'embed' ? (
-                                            <div className="mt-5">
-                                                <iframe
-                                                    src={mediaUrl}
-                                                    title={`Embedded content: ${module.title}`}
-                                                    className="w-full aspect-video rounded-lg border border-gray-200 shadow-sm bg-white"
-                                                    allow="fullscreen"
-                                                    allowFullScreen
-                                                    loading="lazy"
-                                                />
-                                                <a
-                                                    href={mediaUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="mt-2 inline-flex items-center text-sm font-semibold text-indigo-600 hover:text-indigo-700"
-                                                >
-                                                    Open in new tab
-                                                    <svg className="w-4 h-4 ml-1 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                                </a>
+                                            {module.description && (
+                                                <p className="mt-2 text-gray-500 leading-relaxed line-clamp-2 break-words">
+                                                    {module.description}
+                                                </p>
+                                            )}
+
+                                            <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+                                                <span className={`px-2 py-1 rounded-full ${finished ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {finished ? 'COMPLETED' : 'NOT STARTED'}
+                                                </span>
+                                                {lessons.length > 0 && (
+                                                    <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                                        {lessons.filter((l) => doneLessons.has(l.id)).length}/{lessons.length} subtopics
+                                                    </span>
+                                                )}
+                                                {moduleQuizzes.length > 0 && (
+                                                    <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                                        {moduleQuizzes.length} quiz {moduleQuizzes.length === 1 ? 'question' : 'questions'}
+                                                    </span>
+                                                )}
+                                                {module.media_url && (
+                                                    <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                                        {module.content_type === 'file' ? 'Attachment' : 'Media link'}
+                                                    </span>
+                                                )}
                                             </div>
-                                        ) : mediaUrl ? (
-                                            <a
-                                                href={mediaUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200"
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                View Media in New Tab
-                                                <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                            </a>
-                                        ) : null}
-                                    </div>
-                                </article>
+                                        </div>
+
+                                        <span className="flex flex-col items-center gap-1 shrink-0 pt-1" aria-hidden="true">
+                                            <svg className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                        </span>
+                                    </button>
+
+                                    {isOpen && (
+                                        <div className="px-6 pb-6">
+                                            {lessons.length > 0 ? (
+                                                <ul className="ml-5 pl-4 border-l-2 border-indigo-100 space-y-0.5">
+                                                    {lessons.map((lesson, li) => {
+                                                        const done = doneLessons.has(lesson.id);
+                                                        return (
+                                                            <li key={lesson.id}>
+                                                                <Link
+                                                                    href={route('learner.course.module.learn', [course.id, module.id])}
+                                                                    className="flex items-center gap-3 py-2 px-2 -ml-2 rounded-xl hover:bg-indigo-50/60 transition-colors group/lesson"
+                                                                >
+                                                                    <span className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
+                                                                        done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 text-transparent'
+                                                                    }`}>
+                                                                        ✓
+                                                                    </span>
+                                                                    <span className="flex-1 min-w-0">
+                                                                        <span className={`block text-sm font-semibold truncate ${done ? 'text-gray-400 line-through' : 'text-gray-700 group-hover/lesson:text-indigo-700'}`}>
+                                                                            {li + 1}. {lesson.title}
+                                                                        </span>
+                                                                        {(lesson.content_type || lesson.duration != null) && (
+                                                                            <span className="block text-[11px] text-gray-400">
+                                                                                {[lesson.content_type, lesson.duration != null ? `${lesson.duration} min` : null].filter(Boolean).join(' • ')}
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                    <svg className="w-4 h-4 shrink-0 text-gray-300 group-hover/lesson:text-indigo-500 group-hover/lesson:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                                                </Link>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            ) : (
+                                                <p className="ml-5 pl-4 border-l-2 border-indigo-100 text-sm text-gray-400 py-1">
+                                                    No subtopics yet — open the chapter to view its content.
+                                                </p>
+                                            )}
+                                            <div className="mt-4 flex justify-end">
+                                                <Link
+                                                    href={route('learner.course.module.learn', [course.id, module.id])}
+                                                    className="inline-flex items-center px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all"
+                                                >
+                                                    {finished ? 'Review chapter' : 'Start chapter'} →
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             );
                         })}
                     </div>
                 ) : (
                     <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-100 border-dashed">
-                        <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                         <p className="text-lg text-gray-500 font-medium">No modules available yet.</p>
                         <p className="text-sm text-gray-400 mt-2">Check back later once the instructor adds content.</p>
                     </div>
@@ -220,7 +276,7 @@ export default function Learn({ course, enrollment }) {
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center">
                         <h3 className="text-xl font-bold text-gray-900">Final Assessment</h3>
                         <p className="mt-1 text-sm text-gray-500">
-                            {assessments.length} {assessments.length === 1 ? 'question' : 'questions'} • You need 100% to complete this course.
+                            {assessments.length} {assessments.length === 1 ? 'question' : 'questions'}. You need 100% to complete this course.
                         </p>
                         <button
                             type="button"
@@ -270,7 +326,7 @@ export default function Learn({ course, enrollment }) {
                                             {q.question}
                                         </p>
                                         <div className="mt-3 space-y-2">
-                                            {OPTION_KEYS.map((key) => (
+                                            {['a', 'b', 'c', 'd'].map((key) => (
                                                 <label
                                                     key={key}
                                                     className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer transition-colors ${

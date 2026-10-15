@@ -16,7 +16,7 @@ class EnrollmentSeeder extends Seeder
         if (! $learner) {
             $learner = User::factory()->create([
                 'name' => 'Test Learner',
-                'email' => 'learner@coped.org',
+                'email' => 'learn@gmail.com',
                 'role' => User::ROLE_LEARNER,
                 'password' => bcrypt('password'),
             ]);

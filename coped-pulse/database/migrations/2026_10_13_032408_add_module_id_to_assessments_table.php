@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('modules', function (Blueprint $table) {
-            $table->string('media_url')->nullable()->after('description');
+        Schema::table('assessments', function (Blueprint $table) {
+            $table->foreignId('module_id')->nullable()->constrained()->onDelete('cascade');
         });
     }
 
@@ -21,8 +21,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('modules', function (Blueprint $table) {
-            $table->dropColumn('media_url');
+        Schema::table('assessments', function (Blueprint $table) {
+            $table->dropForeign(['module_id']);
+            $table->dropColumn('module_id');
         });
     }
 };

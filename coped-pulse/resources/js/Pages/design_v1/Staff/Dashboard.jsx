@@ -1,78 +1,107 @@
 import { Head, Link } from '@inertiajs/react';
 import StaffLayout from '@/Layouts/design_v1/StaffLayout';
+import StatCard, { ProgressBar } from './Partials/StatCard';
 
-export default function Dashboard() {
+export default function Dashboard({ stats = {}, breakdown = [], recentActivity = [] }) {
+    const s = {
+        total_courses: stats.total_courses ?? 0,
+        total_modules: stats.total_modules ?? 0,
+        active_learners: stats.active_learners ?? 0,
+        total_enrollments: stats.total_enrollments ?? 0,
+        completed: stats.completed ?? 0,
+        in_progress: stats.in_progress ?? 0,
+        avg_completion: stats.avg_completion ?? 0,
+    };
+
     return (
         <StaffLayout>
             <Head title="Instructor Dashboard" />
 
-            <div className="mb-10">
-                <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-800 to-teal-700 tracking-tight">
-                    Welcome Back, Instructor
-                </h1>
-                <p className="mt-2 text-lg text-gray-600">
-                    Manage your courses, track learner progress, and build your curriculum.
-                </p>
+            <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-800 to-teal-700 tracking-tight">
+                        Welcome Back, Instructor
+                    </h1>
+                    <p className="mt-2 text-lg text-gray-600">
+                        Manage your courses, track learner progress, and build your curriculum.
+                    </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                    <Link
+                        href={route('staff.courses.create')}
+                        className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl hover:from-emerald-500 hover:to-teal-500 shadow-md transition-all"
+                    >
+                        + New Course
+                    </Link>
+                    <Link
+                        href={route('staff.courses.index')}
+                        className="px-5 py-2.5 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all"
+                    >
+                        Manage
+                    </Link>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <Link
-                    href={route('staff.courses.create')}
-                    className="group bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                >
-                    <div className="p-8 flex flex-col h-full">
-                        <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Create New Course</h3>
-                        <p className="text-gray-500 mb-6 flex-grow">Start building a brand new training course for your learners.</p>
-                        <div className="text-emerald-600 font-semibold text-sm flex items-center">
-                            Get started 
-                            <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                        </div>
-                    </div>
-                </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard value={s.total_courses} label="My Courses" sub={`${s.total_modules} modules`} />
+                <StatCard value={s.active_learners} label="Active Learners" sub={`${s.total_enrollments} enrollments`} tone="bg-indigo-50 text-indigo-600" />
+                <StatCard value={s.completed} label="Completed" sub={`${s.in_progress} in progress`} tone="bg-green-50 text-green-600" />
+                <StatCard value={`${s.avg_completion}%`} label="Avg Completion" sub="across my courses" tone="bg-amber-50 text-amber-600" />
+            </div>
 
-                <Link
-                    href={route('staff.courses.index')}
-                    className="group bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                >
-                    <div className="p-8 flex flex-col h-full">
-                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Manage Courses</h3>
-                        <p className="text-gray-500 mb-6 flex-grow">View, edit, publish, or archive your existing courses.</p>
-                        <div className="text-indigo-600 font-semibold text-sm flex items-center">
-                            View courses
-                            <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                        </div>
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-extrabold text-gray-900">Top Courses</h3>
+                        <Link href={route('staff.courses.index')} className="text-xs font-bold text-emerald-600 hover:text-emerald-700">
+                            View all →
+                        </Link>
                     </div>
-                </Link>
+                    {breakdown.length > 0 ? (
+                        <ul className="space-y-5">
+                            {breakdown.map((c) => (
+                                <li key={c.id}>
+                                    <div className="flex items-center justify-between gap-3 mb-1">
+                                        <Link href={route('staff.courses.edit', c.id)} className="text-sm font-bold text-gray-900 hover:text-emerald-700 truncate">
+                                            {c.title}
+                                        </Link>
+                                        <span className="shrink-0 text-[11px] font-bold text-gray-500">
+                                            {c.enrollments_count} learners • {c.completed_count} done
+                                        </span>
+                                    </div>
+                                    <ProgressBar pct={c.avg_progress} />
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-gray-400">No courses yet. Create your first course to see analytics.</p>
+                    )}
+                </div>
 
-                <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl overflow-hidden shadow-lg text-white">
-                    <div className="p-8 flex flex-col h-full relative">
-                        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl"></div>
-                        <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-6 border border-white/10">
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-xl font-bold mb-2">Quick Stats</h3>
-                        <p className="text-teal-100 mb-6 flex-grow">Monitor your teaching metrics and course engagement.</p>
-                        <div className="text-white font-bold text-3xl">
-                            --
-                        </div>
-                        <div className="text-teal-100 text-sm mt-1">Total Active Learners</div>
-                    </div>
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                    <h3 className="font-extrabold text-gray-900 mb-4">Recent Activity</h3>
+                    {recentActivity.length > 0 ? (
+                        <ul className="divide-y divide-gray-100">
+                            {recentActivity.map((a) => (
+                                <li key={a.id} className="py-3 flex items-center justify-between gap-3 text-sm">
+                                    <span className="min-w-0">
+                                        <span className="font-bold text-gray-900">{a.user?.name || 'Learner'}</span>
+                                        <span className="text-gray-500"> enrolled in </span>
+                                        <span className="font-semibold text-gray-700 truncate">{a.course?.title}</span>
+                                    </span>
+                                    <span className={`shrink-0 px-2 py-1 rounded-full text-[11px] font-bold ${
+                                        a.completed_at
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-blue-100 text-blue-800'
+                                    }`}>
+                                        {a.completed_at ? 'COMPLETED' : `${Math.round(Number(a.progress ?? 0))}%`}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-gray-400">No enrollments yet. Share your catalog link with learners.</p>
+                    )}
                 </div>
             </div>
         </StaffLayout>

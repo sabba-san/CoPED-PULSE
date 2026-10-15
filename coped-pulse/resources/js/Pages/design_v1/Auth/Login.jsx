@@ -66,10 +66,10 @@ export default function Login() {
                                 Demo accounts
                             </p>
                             <p className="mt-2 text-sm">
-                                Instructor: <span className="font-mono font-bold">instructor@coped.org</span>
+                                Instructor: <span className="font-mono font-bold">instruct@gmail.com</span>
                             </p>
                             <p className="mt-1 text-sm">
-                                Learner: <span className="font-mono font-bold">learner@coped.org</span>
+                                Learner: <span className="font-mono font-bold">learn@gmail.com</span>
                             </p>
                             <p className="mt-1 text-sm text-gray-600">
                                 Password: <span className="font-mono font-bold">password</span>

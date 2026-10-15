@@ -6,23 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('modules', function (Blueprint $table) {
-            $table->enum('content_type', ['link', 'embed'])->default('link')->after('media_url');
+            // Seconds. Null = unknown (older rows, non-video attachments).
+            $table->unsignedInteger('duration')->nullable()->after('order');
+            $table->text('transcript')->nullable()->after('duration');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('modules', function (Blueprint $table) {
-            $table->dropColumn('content_type');
+            $table->dropColumn(['duration', 'transcript']);
         });
     }
 };

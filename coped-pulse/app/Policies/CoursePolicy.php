@@ -14,7 +14,18 @@ class CoursePolicy
 
     public function view(User $user, Course $course): bool
     {
-        return $user->isStaff() && $course->instructor_id === $user->id;
+        if (! $user->isStaff()) {
+            return false;
+        }
+
+        // Platform staff see everything.
+        if ($user->isPlatformStaff()) {
+            return true;
+        }
+
+        // Partner instructors: own courses inside their own organization.
+        return $course->instructor_id === $user->id
+            && $course->organization_id === $user->organization_id;
     }
 
     public function create(User $user): bool
@@ -24,21 +35,39 @@ class CoursePolicy
 
     public function update(User $user, Course $course): bool
     {
-        return $user->isStaff() && $course->instructor_id === $user->id;
+        if (! $user->isStaff()) {
+            return false;
+        }
+
+        if ($user->isPlatformStaff()) {
+            return true;
+        }
+
+        return $course->instructor_id === $user->id
+            && $course->organization_id === $user->organization_id;
     }
 
     public function delete(User $user, Course $course): bool
     {
-        return $user->isStaff() && $course->instructor_id === $user->id;
+        if (! $user->isStaff()) {
+            return false;
+        }
+
+        if ($user->isPlatformStaff()) {
+            return true;
+        }
+
+        return $course->instructor_id === $user->id
+            && $course->organization_id === $user->organization_id;
     }
 
     public function restore(User $user, Course $course): bool
     {
-        return $user->isStaff() && $course->instructor_id === $user->id;
+        return $this->update($user, $course);
     }
 
     public function forceDelete(User $user, Course $course): bool
     {
-        return $user->isStaff() && $course->instructor_id === $user->id;
+        return $this->delete($user, $course);
     }
 }

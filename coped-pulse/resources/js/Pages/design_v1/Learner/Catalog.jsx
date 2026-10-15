@@ -11,6 +11,13 @@ export default function Catalog({ courses }) {
             <Head title="Course Catalog" />
             
             <div className="mb-10 text-center md:text-left">
+                <Link
+                    href={route('portal')}
+                    className="inline-flex items-center text-sm font-semibold text-indigo-600 hover:text-indigo-700 mb-4 transition-colors"
+                >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                    Back to Main page
+                </Link>
                 <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-800 to-purple-700 tracking-tight mb-4">
                     Explore Courses
                 </h1>

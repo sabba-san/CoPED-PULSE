@@ -29,10 +29,10 @@ class AssessmentController extends Controller
             'answers.*' => ['required', 'string', 'in:a,b,c,d,A,B,C,D'],
         ]);
 
-        $assessments = $course->assessments()->get();
+        $assessments = $course->assessments()->whereNull('module_id')->get();
 
         if ($assessments->isEmpty()) {
-            return back()->with('error', 'No assessment available for this course yet.');
+            return back()->with('error', 'No final assessment available for this course yet.');
         }
 
         $submitted = collect($validated['answers'])

@@ -2,46 +2,40 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        // Create staff user
-        $staff = User::factory()->create([
-            'name' => 'Staff Instructor',
-            'email' => 'instructor@coped.org',
-            'role' => User::ROLE_STAFF,
-            'password' => bcrypt('password'),
-        ]);
+        // Create Staff Account
+        User::firstOrCreate(
+            ['email' => 'instruct@gmail.com'],
+            [
+                'name' => 'Irdina Athielia',
+                'password' => Hash::make('password'),
+                'role' => 'staff',
+            ]
+        );
 
-        // Create learner user
-        $learner = User::factory()->create([
-            'name' => 'Test Learner',
-            'email' => 'learner@coped.org',
-            'role' => User::ROLE_LEARNER,
-            'password' => bcrypt('password'),
-        ]);
+        // Create Learner Account
+        User::firstOrCreate(
+            ['email' => 'learn@gmail.com'],
+            [
+                'name' => 'Learner A',
+                'password' => Hash::make('password'),
+                'role' => 'learner',
+            ]
+        );
 
-        // Create additional test user
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'role' => User::ROLE_LEARNER,
-            'password' => bcrypt('password'),
-        ]);
-
+        // Call your course seeder next
         $this->call([
             CourseSeeder::class,
-            EnrollmentSeeder::class,
         ]);
     }
 }

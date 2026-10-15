@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Course;
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -41,6 +42,13 @@ class CourseFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'instructor_id' => $instructor->id,
+        ]);
+    }
+
+    public function forOrganization(Organization $org): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'organization_id' => $org->id,
         ]);
     }
 

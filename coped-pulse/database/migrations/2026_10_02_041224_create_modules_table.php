@@ -13,6 +13,8 @@ return new class extends Migration
             $table->foreignId('course_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
+            $table->string('content_type')->default('link'); // 'link' or 'file'
+            $table->string('media_url')->nullable(); // Stores either external links or uploaded file paths
             $table->unsignedInteger('order')->default(0);
             $table->timestamps();
         });

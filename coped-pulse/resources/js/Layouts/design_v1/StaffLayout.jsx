@@ -2,11 +2,14 @@ import { Link, usePage } from '@inertiajs/react';
 import logo from '@/images/logo.png';
 
 export default function StaffLayout({ children }) {
-    const { url } = usePage();
+    const { url, auth } = usePage();
 
     const navLinks = [
         { name: 'Dashboard', href: route('dashboard'), active: url === '/dashboard' },
         { name: 'Courses', href: route('staff.courses.index'), active: url.startsWith('/staff/courses') },
+        ...(auth?.user?.organization_id
+            ? [{ name: 'Organization', href: route('staff.organization.show'), active: url.startsWith('/staff/organization') }]
+            : []),
     ];
 
     return (

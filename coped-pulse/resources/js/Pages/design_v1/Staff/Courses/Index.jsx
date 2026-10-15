@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import StaffLayout from '@/Layouts/design_v1/StaffLayout';
+import Can from '@/Components/Can';
 
 export default function Index({ courses }) {
     const destroy = (course) => {
@@ -12,6 +13,13 @@ export default function Index({ courses }) {
         <StaffLayout>
             <Head title="Courses" />
 
+            <Link
+                href={route('dashboard')}
+                className="inline-flex items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700 mb-4 transition-colors"
+            >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                Back to Main page
+            </Link>
             <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-800 to-teal-700 tracking-tight">
@@ -21,13 +29,15 @@ export default function Index({ courses }) {
                         Manage your training curriculum
                     </p>
                 </div>
-                <Link
-                    href={route('staff.courses.create')}
-                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-bold rounded-full text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
-                >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                    New Course
-                </Link>
+                <Can roles={['staff']}>
+                    <Link
+                        href={route('staff.courses.create')}
+                        className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-bold rounded-full text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                    >
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                        New Course
+                    </Link>
+                </Can>
             </div>
 
             <div className="bg-white shadow-sm rounded-3xl border border-gray-100 overflow-hidden">
@@ -38,12 +48,14 @@ export default function Index({ courses }) {
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">No courses yet</h3>
                         <p className="text-gray-500 max-w-sm mx-auto mb-8">Get started by creating your first course and sharing your knowledge.</p>
-                        <Link
-                            href={route('staff.courses.create')}
-                            className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-full text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-md transition-all duration-200"
-                        >
-                            Create your first course
-                        </Link>
+                        <Can roles={['staff']}>
+                            <Link
+                                href={route('staff.courses.create')}
+                                className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-full text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-md transition-all duration-200"
+                            >
+                                Create your first course
+                            </Link>
+                        </Can>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">

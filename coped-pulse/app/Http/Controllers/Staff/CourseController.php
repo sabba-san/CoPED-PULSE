@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,9 +37,12 @@ class CourseController extends Controller
             'status' => ['required', 'in:draft,published,archived'],
         ]);
 
-        $validated['instructor_id'] = auth()->id();
-
-        Course::create($validated);
+        $course = new Course($validated);
+        $course->instructor()->associate($request->user());
+        if (Schema::hasColumn('courses', 'organization_id') && Schema::hasTable('organizations')) {
+            $course->organization()->associate($request->user()->organization);
+        }
+        $course->save();
 
         return redirect()->route('staff.courses.index')
             ->with('success', 'Course created successfully.');
