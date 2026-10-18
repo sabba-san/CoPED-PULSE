@@ -12,6 +12,7 @@ class Assessment extends Model
     use HasFactory;
 
     protected $fillable = [
+        'course_id',
         'module_id',
         'question',
         'option_a',

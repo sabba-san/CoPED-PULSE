@@ -76,7 +76,7 @@ class ModuleController extends Controller
         $module = $course->modules()->create([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'content_type' => $validated['content_type'],
+            'content_type' => $validated['content_type'] ?? 'link',
             'media_url' => $validated['media_url'] ?? null,
             'order' => ($course->modules()->max('order') ?? 0) + 1,
             ...$this->videoAttributes($validated),

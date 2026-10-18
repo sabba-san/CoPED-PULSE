@@ -39,10 +39,6 @@ class CoursePolicy
             return false;
         }
 
-        if ($user->isPlatformStaff()) {
-            return true;
-        }
-
         return $course->instructor_id === $user->id
             && $course->organization_id === $user->organization_id;
     }
@@ -51,10 +47,6 @@ class CoursePolicy
     {
         if (! $user->isStaff()) {
             return false;
-        }
-
-        if ($user->isPlatformStaff()) {
-            return true;
         }
 
         return $course->instructor_id === $user->id

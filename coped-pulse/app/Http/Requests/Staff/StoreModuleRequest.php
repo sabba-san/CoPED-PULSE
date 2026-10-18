@@ -16,8 +16,8 @@ class StoreModuleRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'content_type' => ['required', 'in:link,file'],
-            'media_url' => ['nullable', 'string', 'max:2048'],
+            'content_type' => ['nullable', 'in:link,file,embed'],
+            'media_url' => ['nullable', 'url', 'max:2048'],
             'file' => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx', 'max:15360'],
             'duration_minutes' => ['nullable', 'integer', 'min:0', 'max:1440'],
             'transcript' => ['nullable', 'string', 'max:50000'],
