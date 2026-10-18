@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'assessment_score' => fn () => $request->session()->get('assessment_score'),
                 'assessment_passed' => fn () => $request->session()->get('assessment_passed'),
+                'quiz_score' => fn () => $request->session()->get('assessment_score') ?? $request->session()->get('quiz_score'),
             ],
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),

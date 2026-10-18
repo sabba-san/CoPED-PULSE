@@ -27,7 +27,7 @@ export default function ModuleForm({ course }) {
         if (!file) return;
         if (file.size > MAX_MODULE_FILE_SIZE) {
             setFileAlert(
-                `File is too large. "${file.name}" is ${formatBytes(file.size)} — limit is ${MAX_MODULE_FILE_LABEL}. Please choose a smaller file.`
+                `File is too large. "${file.name}" is ${formatBytes(file.size)} - limit is ${MAX_MODULE_FILE_LABEL}. Please choose a smaller file.`
             );
             setData('file', null);
             const input = document.getElementById('module-file-input');
@@ -51,11 +51,11 @@ export default function ModuleForm({ course }) {
     };
 
     return (
-        <div className="pt-6 border-t border-gray-100">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Add New Module</h3>
+        <div className="pt-6 border-t-2 border-[#E5E7EB]">
+            <h3 className="text-lg font-bold text-[#111827] mb-4">Add New Module</h3>
             <form onSubmit={submit} className="space-y-5">
                 <div>
-                    <label htmlFor="module_title" className="block text-sm font-bold text-gray-700 mb-2">Module Title</label>
+                    <label htmlFor="module_title" className="block text-sm font-bold text-[#111827] mb-2">Module Title</label>
                     <input
                         id="module_title"
                         type="text"
@@ -63,27 +63,27 @@ export default function ModuleForm({ course }) {
                         onChange={(e) => setData('title', e.target.value)}
                         required
                         placeholder="e.g., Introduction to Safeguarding"
-                        className="block w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 sm:text-sm"
+                        className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
                     />
-                    {errors.title && <p className="mt-2 text-red-500 text-sm font-medium">{errors.title}</p>}
+                    {errors.title && <p className="mt-2 text-red-600 text-sm font-medium">{errors.title}</p>}
                 </div>
 
                 <div>
-                    <label htmlFor="module_desc" className="block text-sm font-bold text-gray-700 mb-2">Description (Optional)</label>
+                    <label htmlFor="module_desc" className="block text-sm font-bold text-[#111827] mb-2">Description (Optional)</label>
                     <textarea
                         id="module_desc"
                         rows={3}
                         value={data.description}
                         onChange={(e) => setData('description', e.target.value)}
                         placeholder="What will learners accomplish in this module?"
-                        className="block w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 sm:text-sm resize-none"
+                        className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors resize-none"
                     />
-                    {errors.description && <p className="mt-2 text-red-500 text-sm font-medium">{errors.description}</p>}
+                    {errors.description && <p className="mt-2 text-red-600 text-sm font-medium">{errors.description}</p>}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <label htmlFor="module_content_type" className="block text-sm font-bold text-gray-700 mb-2">Content Type</label>
+                        <label htmlFor="module_content_type" className="block text-sm font-bold text-[#111827] mb-2">Content Type</label>
                         <select
                             id="module_content_type"
                             value={data.content_type}
@@ -91,33 +91,33 @@ export default function ModuleForm({ course }) {
                                 setData('content_type', e.target.value);
                                 if (e.target.value !== 'file') setFileAlert(null);
                             }}
-                            className="block w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 sm:text-sm"
+                            className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
                         >
-                            <option value="link">External Link — open in new tab</option>
+                            <option value="link">External Link - open in new tab</option>
                             <option value="file">Upload Document / Slide (PDF, DOCX, PPTX)</option>
                         </select>
-                        {errors.content_type && <p className="mt-2 text-red-500 text-sm font-medium">{errors.content_type}</p>}
+                        {errors.content_type && <p className="mt-2 text-red-600 text-sm font-medium">{errors.content_type}</p>}
                     </div>
 
                     {data.content_type === 'link' && (
                         <div>
-                            <label htmlFor="module_media" className="block text-sm font-bold text-gray-700 mb-2">Media URL</label>
+                            <label htmlFor="module_media" className="block text-sm font-bold text-[#111827] mb-2">Media URL</label>
                             <input
                                 id="module_media"
                                 type="text"
                                 value={data.media_url}
                                 onChange={(e) => setData('media_url', e.target.value)}
                                 placeholder="https://..."
-                                className="block w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 sm:text-sm"
+                                className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
                             />
-                            {errors.media_url && <p className="mt-2 text-red-500 text-sm font-medium">{errors.media_url}</p>}
+                            {errors.media_url && <p className="mt-2 text-red-600 text-sm font-medium">{errors.media_url}</p>}
                         </div>
                     )}
                 </div>
 
                 {data.content_type === 'file' && (
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Upload Document / Slide (PDF, DOCX, PPTX)</label>
+                        <label className="block text-sm font-bold text-[#111827] mb-2">Upload Document / Slide (PDF, DOCX, PPTX)</label>
                         <div
                             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                             onDragLeave={() => setIsDragging(false)}
@@ -127,8 +127,8 @@ export default function ModuleForm({ course }) {
                                 if (e.dataTransfer.files?.[0]) handleModuleFile(e.dataTransfer.files[0]);
                             }}
                             onClick={() => document.getElementById('module-file-input').click()}
-                            className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-200 ${
-                                isDragging ? 'border-emerald-600 bg-emerald-50' : 'border-gray-300 hover:border-emerald-500 bg-gray-50/50'
+                            className={`border-2 border-dashed rounded-md p-6 text-center cursor-pointer transition-colors ${
+                                isDragging ? 'border-[#10B981] bg-emerald-50' : 'border-[#E5E7EB] hover:border-[#10B981] bg-[#F9FAFB]'
                             }`}
                         >
                             <input
@@ -139,15 +139,15 @@ export default function ModuleForm({ course }) {
                                 onChange={(e) => { if (e.target.files?.[0]) handleModuleFile(e.target.files[0]); }}
                             />
                             {data.file ? (
-                                <div className="text-sm text-emerald-600 font-bold">Selected file: {data.file.name}</div>
+                                <div className="text-sm text-emerald-700 font-bold">Selected file: {data.file.name}</div>
                             ) : (
                                 <div className="space-y-1 text-sm text-gray-600">
-                                    <p><span className="font-bold text-emerald-600">Click to upload</span> or drag and drop</p>
+                                    <p><span className="font-bold text-[#10B981]">Click to upload</span> or drag and drop</p>
                                     <p className="text-xs text-gray-500">PDF, DOC, DOCX, PPT, PPTX up to 15MB</p>
                                 </div>
                             )}
                         </div>
-                        {errors.file && <p className="mt-2 text-red-500 text-sm font-medium">{errors.file}</p>}
+                        {errors.file && <p className="mt-2 text-red-600 text-sm font-medium">{errors.file}</p>}
                         {fileAlert && <p className="mt-2 text-sm font-bold text-red-600">{fileAlert}</p>}
                     </div>
                 )}
@@ -156,7 +156,7 @@ export default function ModuleForm({ course }) {
                     <button
                         type="submit"
                         disabled={processing || !!fileAlert}
-                        className="px-6 py-2.5 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-gray-800 shadow-md disabled:opacity-50"
+                        className="px-6 py-3 text-sm font-bold text-white bg-[#111827] rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50"
                     >
                         {processing ? 'Adding...' : 'Add Module'}
                     </button>

@@ -1,22 +1,150 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
+import {
+    BookOpenIcon,
+    CircleCheckIcon,
+    CheckIcon,
+    ArrowRightIcon,
+    GraduationCapIcon,
+    CalendarIcon,
+    TrophyIcon,
+    LinkIcon,
+    ClipboardCheckIcon,
+    XMarkIcon,
+} from '@/Components/flat/icons';
 
-export default function Learn({ course, enrollment, completedModuleIds = [], completedLessonIds = [] }) {
+function safeMediaUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    if (trimmed.startsWith('/storage/')) return trimmed;
+    try {
+        const parsed = new URL(trimmed);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return null;
+        }
+        return parsed.href;
+    } catch {
+        return null;
+    }
+}
+
+function formatEmbedUrl(url) {
+    const safe = safeMediaUrl(url);
+    if (!safe) return null;
+    const ytMatch = safe.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([\w-]{6,})/);
+    if (ytMatch?.[1]) {
+        return `https://www.youtube.com/embed/${ytMatch[1]}`;
+    }
+    const vmMatch = safe.match(/vimeo\.com\/(\d+)/);
+    if (vmMatch?.[1]) {
+        return `https://player.vimeo.com/video/${vmMatch[1]}`;
+    }
+    return safe;
+}
+
+export default function Learn({
+    course,
+    enrollment,
+    completedModuleIds = [],
+    completedLessonIds = [],
+    todayCount = 0,
+    dailyGoal = 3,
+    notes = {},
+    feedback = {},
+}) {
     const modules = course.modules || [];
     const allAssessments = course.assessments || [];
     const assessments = allAssessments.filter((q) => !q.module_id);
     const { flash } = usePage().props;
-    const isCompleted = !!enrollment?.completed_at;
+
+    const isCompleted = Boolean(enrollment?.completed_at);
     const progressPct = Math.min(100, Math.max(0, Math.round(Number(enrollment?.progress ?? 0))));
 
-    const doneSet = new Set(completedModuleIds || []);
-    const doneLessons = new Set(completedLessonIds || []);
-    const resume = modules.find((m) => !doneSet.has(m.id)) ?? modules[0] ?? null;
-    const [openId, setOpenId] = useState(resume?.id ?? modules[0]?.id ?? null);
+    // Active Tab State: 'course' | 'dates' | 'assessment' | 'notes'
+    const [activeTab, setActiveTab] = useState('course');
+    const [showQuizModal, setShowQuizModal] = useState(false);
 
-    const [showQuiz, setShowQuiz] = useState(false);
+    // Initial Resume Module calculation
+    const doneSet = useMemo(() => new Set(completedModuleIds || []), [completedModuleIds]);
+    const resumeModule = useMemo(() => {
+        return modules.find((m) => !doneSet.has(m.id)) ?? modules[0] ?? null;
+    }, [modules, doneSet]);
 
+    // Active selected module in the stage
+    const [activeModuleId, setActiveModuleId] = useState(resumeModule?.id ?? modules[0]?.id ?? null);
+
+    // Local module checkmark completion state (persisted in localStorage)
+    const [checkedModules, setCheckedModules] = useState({});
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(`coped_course_${course.id}_checks`);
+            if (saved) {
+                setCheckedModules(JSON.parse(saved));
+            } else {
+                const init = {};
+                (completedModuleIds || []).forEach((id) => {
+                    init[id] = true;
+                });
+                setCheckedModules(init);
+            }
+        } catch {
+            const init = {};
+            (completedModuleIds || []).forEach((id) => {
+                init[id] = true;
+            });
+            setCheckedModules(init);
+        }
+    }, [course.id, completedModuleIds]);
+
+    const toggleModuleCheck = (moduleId, e) => {
+        e.stopPropagation();
+        const updated = {
+            ...checkedModules,
+            [moduleId]: !checkedModules[moduleId],
+        };
+        setCheckedModules(updated);
+        try {
+            localStorage.setItem(`coped_course_${course.id}_checks`, JSON.stringify(updated));
+        } catch {}
+    };
+
+    // Quick notes scratchpad (saved per course in localStorage)
+    const [courseNotes, setCourseNotes] = useState('');
+    const [notesSavedNotice, setNotesSavedNotice] = useState(false);
+
+    useEffect(() => {
+        try {
+            const savedNotes = localStorage.getItem(`coped_notes_${course.id}`);
+            if (savedNotes !== null) {
+                setCourseNotes(savedNotes);
+            } else if (notes && typeof notes === 'object') {
+                const combined = Object.values(notes)
+                    .map((n) => n?.content)
+                    .filter(Boolean)
+                    .join('\n\n');
+                setCourseNotes(combined);
+            }
+        } catch {}
+    }, [course.id, notes]);
+
+    const handleNotesChange = (e) => {
+        const val = e.target.value;
+        setCourseNotes(val);
+        try {
+            localStorage.setItem(`coped_notes_${course.id}`, val);
+            setNotesSavedNotice(true);
+            setTimeout(() => setNotesSavedNotice(false), 2000);
+        } catch {}
+    };
+
+    // Active module entity & surrounding navigation
+    const activeIndex = Math.max(0, modules.findIndex((m) => m.id === activeModuleId));
+    const activeModule = modules[activeIndex] || modules[0] || null;
+    const prevModule = activeIndex > 0 ? modules[activeIndex - 1] : null;
+    const nextModule = activeIndex < modules.length - 1 ? modules[activeIndex + 1] : null;
+
+    // Final Assessment Form
     const form = useForm({
         answers: {},
     });
@@ -33,341 +161,744 @@ export default function Learn({ course, enrollment, completedModuleIds = [], com
         form.post(route('learner.course.assess', course.id), {
             preserveScroll: true,
             onSuccess: (page) => {
-                if (page?.props?.flash?.assessment_passed) setShowQuiz(false);
+                if (page?.props?.flash?.assessment_passed) {
+                    setShowQuizModal(false);
+                }
             },
         });
     };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Pending';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
+    };
+
+    const activeSafeUrl = safeMediaUrl(activeModule?.media_url);
+    const activeEmbedUrl = formatEmbedUrl(activeModule?.media_url);
 
     return (
         <LearnerLayout>
             <Head title={`Learn: ${course.title}`} />
 
-            <div className="max-w-5xl mx-auto space-y-8">
-                {/* Course Header */}
-                <div className="bg-white/80 backdrop-blur-md shadow-sm border border-gray-100 rounded-3xl p-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full mix-blend-multiply filter blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2"></div>
+            <div className="space-y-6">
+                {/* Course Top Header */}
+                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
+                    {/* Institutional Breadcrumb */}
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        <Link href={route('portal')} className="text-[#111827] hover:underline">
+                            UUM CoPED
+                        </Link>
+                        <span>/</span>
+                        <span className="text-gray-400 truncate max-w-md">{course.title}</span>
+                    </div>
 
-                    <Link
-                        href={route('portal')}
-                        className="inline-flex items-center text-sm font-semibold text-indigo-600 hover:text-indigo-700 mb-6 transition-colors relative z-10"
-                    >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                        Back to Portal
-                    </Link>
-
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
-                        <div className="flex-1">
-                            <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-3">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <h1 className="font-display text-2xl md:text-3xl font-extrabold text-[#111827]">
                                 {course.title}
                             </h1>
-                            {course.description && (
-                                <p className="text-lg text-gray-600 leading-relaxed max-w-3xl">
-                                    {course.description}
-                                </p>
-                            )}
-                            {/* Progress line */}
-                            <div className="mt-6 max-w-3xl">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-bold text-gray-700">Progress</span>
-                                    <span className={`text-sm font-bold ${isCompleted ? 'text-green-700' : 'text-indigo-700'}`}>
-                                        {progressPct}%
-                                    </span>
-                                </div>
-                                <div
-                                    className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden"
-                                    role="progressbar"
-                                    aria-valuenow={progressPct}
-                                    aria-valuemin={0}
-                                    aria-valuemax={100}
-                                    aria-label="Course progress"
-                                >
-                                    <div
-                                        className={`h-full rounded-full transition-all duration-500 ${
-                                            isCompleted
-                                                ? 'bg-gradient-to-r from-green-500 to-emerald-500'
-                                                : 'bg-gradient-to-r from-indigo-600 to-purple-600'
-                                        }`}
-                                        style={{ width: `${progressPct}%` }}
-                                    />
-                                </div>
-                                {assessments.length === 0 && (
-                                    <p className="mt-2 text-xs text-gray-400">No quiz yet — progress updates after the final assessment is added.</p>
-                                )}
-                            </div>
+                            <p className="text-sm text-gray-600 mt-1">
+                                Instructed by {course.instructor?.name || 'Faculty Instructor'}
+                            </p>
                         </div>
-                        <div className="flex flex-col items-start md:items-end space-y-3 shrink-0">
-                            <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold shadow-sm ${
-                                isCompleted
-                                    ? 'bg-green-100/90 text-green-800 border border-green-200'
-                                    : 'bg-blue-100/90 text-blue-800 border border-blue-200'
-                            }`}>
+
+                        <div className="flex items-center gap-3">
+                            <span
+                                className={`px-3 py-1 text-xs font-extrabold rounded border-2 ${
+                                    isCompleted
+                                        ? 'bg-emerald-50 text-[#10B981] border-[#10B981]'
+                                        : 'bg-blue-50 text-[#3B82F6] border-[#3B82F6]'
+                                }`}
+                            >
                                 {isCompleted ? 'COMPLETED' : 'IN PROGRESS'}
                             </span>
-                            <div className="text-sm text-gray-500 font-medium bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
-                                {modules.length} {modules.length === 1 ? 'Module' : 'Modules'}
-                            </div>
-                            {resume && !isCompleted && (
-                                <Link
-                                    href={route('learner.course.module.learn', [course.id, resume.id])}
-                                    className="inline-flex items-center px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all"
+                            {assessments.length > 0 && !isCompleted && (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('assessment')}
+                                    className="bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-4 py-2 rounded transition-transform active:scale-[0.98]"
                                 >
-                                    {doneSet.size > 0 ? 'Continue learning' : 'Start learning'} →
-                                </Link>
+                                    Take Final Assessment
+                                </button>
                             )}
                         </div>
                     </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-1.5 pt-2 border-t-2 border-[#E5E7EB]">
+                        <div className="flex items-center justify-between text-xs font-bold text-[#111827]">
+                            <span>Overall Course Progress</span>
+                            <span>{progressPct}%</span>
+                        </div>
+                        <div
+                            className="w-full bg-[#F3F4F6] border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden"
+                            role="progressbar"
+                            aria-valuenow={progressPct}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                        >
+                            <div
+                                className="h-full bg-[#10B981] rounded-full transition-all duration-300"
+                                style={{ width: `${progressPct}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Celebration Banner */}
+                    {isCompleted && (
+                        <div className="bg-[#10B981] text-white p-4 rounded-md font-bold text-sm flex items-center gap-3">
+                            <CircleCheckIcon className="w-5 h-5 text-white shrink-0" />
+                            <span>
+                                Course Completed! You have passed the Final Assessment with 100%. Your verified record is issued.
+                            </span>
+                        </div>
+                    )}
                 </div>
 
-                {/* Completed banner */}
-                {isCompleted && (
-                    <div className="bg-green-50 border border-green-200 text-green-800 rounded-2xl p-6 text-center shadow-sm">
-                        <p className="text-2xl font-black">🎉 Course Completed!</p>
-                        <p className="mt-1 text-sm font-medium">
-                            You passed the final assessment with 100%. Your progress is saved.
-                        </p>
-                    </div>
-                )}
+                {/* edX Horizontal Sub-Navigation Tabs */}
+                <div className="border-b-2 border-[#E5E7EB] bg-white px-6 flex gap-6 overflow-x-auto">
+                    {[
+                        { id: 'course', label: 'Course' },
+                        { id: 'dates', label: 'Dates' },
+                        { id: 'assessment', label: 'Progress & Assessment' },
+                        { id: 'notes', label: 'Course Tools & Notes' },
+                    ].map((tab) => {
+                        const active = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                role="tab"
+                                aria-selected={active}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`text-sm whitespace-nowrap transition-colors py-3 ${
+                                    active
+                                        ? 'border-b-4 border-[#111827] font-bold text-[#111827]'
+                                        : 'text-gray-500 hover:text-[#111827] font-semibold border-b-4 border-transparent'
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
 
-                {/* Flash messages */}
-                {!isCompleted && flash?.success && (
-                    <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-2xl px-6 py-4 text-sm font-medium">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-6 py-4 text-sm font-medium">
-                        {flash.error}
-                    </div>
-                )}
+                {/* Tab 1: Course (Default Onboarding Banner + 3-Zone Theater Player) */}
+                {activeTab === 'course' && (
+                    <div className="space-y-6">
+                        {/* Begin your course today Callout Card */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h2 className="font-display font-bold text-xl text-[#111827]">
+                                    Begin your course today
+                                </h2>
+                                <p className="text-sm text-gray-600 mt-0.5">
+                                    Work through each chapter module at your own pace and prepare for the final assessment.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (resumeModule?.id) setActiveModuleId(resumeModule.id);
+                                }}
+                                className="bg-[#111827] hover:bg-gray-800 text-white font-bold text-sm px-6 py-3 rounded shrink-0 transition-transform active:scale-[0.98]"
+                            >
+                                {checkedModules[activeModuleId] ? 'Next Module' : 'Start Course'}
+                            </button>
+                        </div>
 
-                {/* Topic list — click a card to open its workspace */}
-                {modules.length > 0 ? (
-                    <div className="space-y-4">
-                        {modules.map((module, index) => {
-                            const finished = doneSet.has(module.id);
-                            const moduleQuizzes = allAssessments.filter((q) => q.module_id === module.id);
-                            const lessons = module.lessons || [];
-                            const isOpen = openId === module.id;
+                        {/* Warm flat amber notice box */}
+                        <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] p-4 rounded-md text-sm text-[#111827] font-medium flex items-start gap-3">
+                            <span className="text-[#F59E0B] text-lg font-black leading-none">ⓘ</span>
+                            <p>
+                                Welcome to this self-paced course! You can learn at your own pace, complete modules, and pass the final assessment when you are ready.
+                            </p>
+                        </div>
 
-                            return (
-                                <div
-                                    key={module.id}
-                                    className={`bg-white rounded-2xl border shadow-sm transition-all duration-300 overflow-hidden ${
-                                        isOpen ? 'border-indigo-200 shadow-md' : 'border-gray-100 hover:border-indigo-200'
-                                    }`}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() => setOpenId(isOpen ? null : module.id)}
-                                        aria-expanded={isOpen}
-                                        className="w-full p-6 flex gap-5 text-left items-start"
-                                    >
-                                        <div className={`shrink-0 w-10 h-10 rounded-xl font-bold text-lg flex items-center justify-center shadow-md transition-transform duration-300 ${
-                                            finished
-                                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white'
-                                                : 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white'
-                                        }`}>
-                                            {finished ? '✓' : index + 1}
-                                        </div>
-
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                                                Chapter {index + 1}
-                                            </p>
-                                            <h2 className="text-xl font-bold text-gray-900 break-words">
-                                                {module.title}
-                                            </h2>
-
-                                            {module.description && (
-                                                <p className="mt-2 text-gray-500 leading-relaxed line-clamp-2 break-words">
-                                                    {module.description}
-                                                </p>
-                                            )}
-
-                                            <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                                                <span className={`px-2 py-1 rounded-full ${finished ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-600'}`}>
-                                                    {finished ? 'COMPLETED' : 'NOT STARTED'}
-                                                </span>
-                                                {lessons.length > 0 && (
-                                                    <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                                                        {lessons.filter((l) => doneLessons.has(l.id)).length}/{lessons.length} subtopics
-                                                    </span>
-                                                )}
-                                                {moduleQuizzes.length > 0 && (
-                                                    <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                                                        {moduleQuizzes.length} quiz {moduleQuizzes.length === 1 ? 'question' : 'questions'}
-                                                    </span>
-                                                )}
-                                                {module.media_url && (
-                                                    <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                                                        {module.content_type === 'file' ? 'Attachment' : 'Media link'}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <span className="flex flex-col items-center gap-1 shrink-0 pt-1" aria-hidden="true">
-                                            <svg className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        {/* Theater Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            {/* Left Curriculum Outline (lg:col-span-4) */}
+                            <div className="lg:col-span-4 space-y-4">
+                                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-4">
+                                    <div className="flex items-center justify-between pb-3 mb-3 border-b-2 border-[#E5E7EB]">
+                                        <h3 className="font-display font-extrabold text-sm text-[#111827] uppercase tracking-wider">
+                                            Curriculum ({modules.length} Modules)
+                                        </h3>
+                                        <span className="text-xs text-gray-500 font-semibold">
+                                            Click to open
                                         </span>
-                                    </button>
+                                    </div>
 
-                                    {isOpen && (
-                                        <div className="px-6 pb-6">
-                                            {lessons.length > 0 ? (
-                                                <ul className="ml-5 pl-4 border-l-2 border-indigo-100 space-y-0.5">
-                                                    {lessons.map((lesson, li) => {
-                                                        const done = doneLessons.has(lesson.id);
-                                                        return (
-                                                            <li key={lesson.id}>
-                                                                <Link
-                                                                    href={route('learner.course.module.learn', [course.id, module.id])}
-                                                                    className="flex items-center gap-3 py-2 px-2 -ml-2 rounded-xl hover:bg-indigo-50/60 transition-colors group/lesson"
+                                    {modules.length === 0 ? (
+                                        <p className="text-xs text-gray-500 py-4 text-center">
+                                            No modules added to this course yet.
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {modules.map((m, idx) => {
+                                                const isActive = m.id === activeModuleId;
+                                                const isChecked = Boolean(checkedModules[m.id]);
+                                                const isEmbed = m.content_type === 'embed';
+
+                                                return (
+                                                    <div
+                                                        key={m.id}
+                                                        onClick={() => setActiveModuleId(m.id)}
+                                                        className={`p-3 rounded-md border-2 transition-colors cursor-pointer flex items-start gap-3 ${
+                                                            isActive
+                                                                ? 'border-[#111827] bg-[#F3F4F6]'
+                                                                : 'border-[#E5E7EB] bg-white hover:border-gray-400'
+                                                        }`}
+                                                    >
+                                                        {/* Module Checkbox Toggle */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => toggleModuleCheck(m.id, e)}
+                                                            title={isChecked ? 'Mark incomplete' : 'Mark complete'}
+                                                            className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                                                isChecked
+                                                                    ? 'bg-[#10B981] border-[#10B981] text-white'
+                                                                    : 'bg-white border-gray-400 hover:border-[#111827]'
+                                                            }`}
+                                                        >
+                                                            {isChecked && <CheckIcon className="w-3.5 h-3.5 text-white" />}
+                                                        </button>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between gap-1">
+                                                                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                                                    Chapter {idx + 1}
+                                                                </span>
+                                                                <span
+                                                                    className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider border ${
+                                                                        isEmbed
+                                                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                                            : 'bg-gray-100 text-gray-700 border-gray-300'
+                                                                    }`}
                                                                 >
-                                                                    <span className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
-                                                                        done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 text-transparent'
-                                                                    }`}>
-                                                                        ✓
-                                                                    </span>
-                                                                    <span className="flex-1 min-w-0">
-                                                                        <span className={`block text-sm font-semibold truncate ${done ? 'text-gray-400 line-through' : 'text-gray-700 group-hover/lesson:text-indigo-700'}`}>
-                                                                            {li + 1}. {lesson.title}
-                                                                        </span>
-                                                                        {(lesson.content_type || lesson.duration != null) && (
-                                                                            <span className="block text-[11px] text-gray-400">
-                                                                                {[lesson.content_type, lesson.duration != null ? `${lesson.duration} min` : null].filter(Boolean).join(' • ')}
-                                                                            </span>
-                                                                        )}
-                                                                    </span>
-                                                                    <svg className="w-4 h-4 shrink-0 text-gray-300 group-hover/lesson:text-indigo-500 group-hover/lesson:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                                                </Link>
-                                                            </li>
-                                                        );
-                                                    })}
-                                                </ul>
-                                            ) : (
-                                                <p className="ml-5 pl-4 border-l-2 border-indigo-100 text-sm text-gray-400 py-1">
-                                                    No subtopics yet — open the chapter to view its content.
-                                                </p>
-                                            )}
-                                            <div className="mt-4 flex justify-end">
-                                                <Link
-                                                    href={route('learner.course.module.learn', [course.id, module.id])}
-                                                    className="inline-flex items-center px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all"
-                                                >
-                                                    {finished ? 'Review chapter' : 'Start chapter'} →
-                                                </Link>
-                                            </div>
+                                                                    {isEmbed ? 'EMBED' : 'LINK'}
+                                                                </span>
+                                                            </div>
+                                                            <p
+                                                                className={`text-xs font-bold truncate mt-0.5 ${
+                                                                    isActive ? 'text-[#111827]' : 'text-gray-800'
+                                                                }`}
+                                                            >
+                                                                {m.title}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {/* Bottom Assessment Jump Button */}
+                                    {assessments.length > 0 && (
+                                        <div className="mt-4 pt-3 border-t-2 border-[#E5E7EB]">
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveTab('assessment')}
+                                                className="w-full bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs py-2.5 px-3 rounded flex items-center justify-between transition-transform active:scale-[0.98]"
+                                            >
+                                                <span>Final Assessment ({assessments.length} Questions)</span>
+                                                <ArrowRightIcon className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
                                     )}
                                 </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-100 border-dashed">
-                        <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                        <p className="text-lg text-gray-500 font-medium">No modules available yet.</p>
-                        <p className="text-sm text-gray-400 mt-2">Check back later once the instructor adds content.</p>
-                    </div>
-                )}
-
-                {/* Final Assessment entry */}
-                {!isCompleted && assessments.length > 0 && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center">
-                        <h3 className="text-xl font-bold text-gray-900">Final Assessment</h3>
-                        <p className="mt-1 text-sm text-gray-500">
-                            {assessments.length} {assessments.length === 1 ? 'question' : 'questions'}. You need 100% to complete this course.
-                        </p>
-                        <button
-                            type="button"
-                            onClick={() => setShowQuiz(true)}
-                            className="mt-4 inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
-                        >
-                            Take Final Assessment
-                        </button>
-                    </div>
-                )}
-
-                {!isCompleted && assessments.length === 0 && (
-                    <div className="text-center text-sm text-gray-400">
-                        No assessment available for this course yet.
-                    </div>
-                )}
-
-                {/* Quiz modal */}
-                {showQuiz && !isCompleted && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div
-                            className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm"
-                            onClick={() => setShowQuiz(false)}
-                        />
-                        <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 sm:p-8">
-                            <div className="flex items-start justify-between gap-4 mb-6">
-                                <div>
-                                    <h3 className="text-2xl font-black text-gray-900">Final Assessment</h3>
-                                    <p className="text-sm text-gray-500 mt-1">Select one answer per question. 100% required to pass.</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowQuiz(false)}
-                                    className="shrink-0 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition-colors"
-                                    aria-label="Close quiz"
-                                >
-                                    ✕
-                                </button>
                             </div>
 
-                            <form onSubmit={submitQuiz} className="space-y-6">
-                                {assessments.map((q, idx) => (
-                                    <fieldset key={q.id} className="border border-gray-100 rounded-2xl p-5 bg-gray-50/50">
-                                        <legend className="sr-only">Question {idx + 1}</legend>
-                                        <p className="font-bold text-gray-900">
-                                            <span className="text-indigo-600 mr-2">Q{idx + 1}.</span>
-                                            {q.question}
-                                        </p>
-                                        <div className="mt-3 space-y-2">
-                                            {['a', 'b', 'c', 'd'].map((key) => (
-                                                <label
-                                                    key={key}
-                                                    className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer transition-colors ${
-                                                        form.data.answers[q.id] === key
-                                                            ? 'border-indigo-500 bg-indigo-50 text-indigo-900'
-                                                            : 'border-gray-200 bg-white hover:border-indigo-300'
+                            {/* Center/Right Learning Stage (lg:col-span-8) */}
+                            <div className="lg:col-span-8 space-y-6">
+                                {activeModule ? (
+                                    <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-6">
+                                        {/* Module Header */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                    Module {activeIndex + 1} of {modules.length}
+                                                </span>
+                                                <span
+                                                    className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
+                                                        activeModule.content_type === 'embed'
+                                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                            : 'bg-gray-100 text-gray-700 border-gray-300'
                                                     }`}
                                                 >
-                                                    <input
-                                                        type="radio"
-                                                        name={`question-${q.id}`}
-                                                        value={key}
-                                                        checked={form.data.answers[q.id] === key}
-                                                        onChange={() => setAnswer(q.id, key)}
-                                                        className="accent-indigo-600"
-                                                    />
-                                                    <span className="font-bold uppercase text-xs w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                                                        {key}
-                                                    </span>
-                                                    <span className="text-sm font-medium">{q[`option_${key}`]}</span>
-                                                </label>
-                                            ))}
+                                                    {activeModule.content_type === 'embed' ? 'Interactive Embed' : 'Resource Link'}
+                                                </span>
+                                            </div>
+                                            <h2 className="font-display font-extrabold text-2xl text-[#111827]">
+                                                {activeModule.title}
+                                            </h2>
+                                            {activeModule.description && (
+                                                <p className="text-sm text-gray-700 leading-relaxed">
+                                                    {activeModule.description}
+                                                </p>
+                                            )}
                                         </div>
-                                        {form.errors[`answers.${q.id}`] && (
-                                            <p className="mt-2 text-red-500 text-sm font-medium">{form.errors[`answers.${q.id}`]}</p>
+
+                                        {/* Media Content Stage */}
+                                        <div className="border-2 border-[#E5E7EB] rounded-md overflow-hidden bg-[#111827]">
+                                            {activeModule.content_type === 'embed' && activeEmbedUrl ? (
+                                                <iframe
+                                                    src={activeEmbedUrl}
+                                                    title={activeModule.title}
+                                                    className="w-full aspect-video rounded-md border-2 border-[#E5E7EB] bg-[#111827]"
+                                                    allowFullScreen
+                                                />
+                                            ) : activeSafeUrl ? (
+                                                <div className="bg-white p-8 text-center space-y-4">
+                                                    <LinkIcon className="w-12 h-12 text-[#3B82F6] mx-auto" />
+                                                    <div>
+                                                        <h3 className="font-display font-bold text-lg text-[#111827]">
+                                                            External Course Resource
+                                                        </h3>
+                                                        <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
+                                                            This module references an external resource or slide deck. Click below to launch it in a new window.
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <a
+                                                            href={activeSafeUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-5 py-3 rounded transition-transform active:scale-[0.98]"
+                                                        >
+                                                            <span>Open External Resource ↗</span>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-white p-8 text-center space-y-2">
+                                                    <BookOpenIcon className="w-10 h-10 text-gray-400 mx-auto" />
+                                                    <h3 className="font-display font-bold text-base text-[#111827]">
+                                                        Lecture Notes & Content
+                                                    </h3>
+                                                    <p className="text-xs text-gray-500 max-w-md mx-auto">
+                                                        No external media URL attached to this module. Review the module overview and take notes below.
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Prev / Next Navigation Buttons */}
+                                        <div className="flex items-center justify-between pt-4 border-t-2 border-[#E5E7EB]">
+                                            {prevModule ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveModuleId(prevModule.id)}
+                                                    className="inline-flex items-center gap-2 bg-white border-2 border-[#E5E7EB] hover:border-[#111827] text-[#111827] font-bold text-xs px-4 py-2.5 rounded transition-colors"
+                                                >
+                                                    <span>← Previous Module</span>
+                                                </button>
+                                            ) : (
+                                                <div />
+                                            )}
+
+                                            {nextModule ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveModuleId(nextModule.id)}
+                                                    className="inline-flex items-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-4 py-2.5 rounded transition-transform active:scale-[0.98]"
+                                                >
+                                                    <span>Next Module →</span>
+                                                </button>
+                                            ) : assessments.length > 0 ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('assessment')}
+                                                    className="inline-flex items-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold text-xs px-5 py-2.5 rounded transition-transform active:scale-[0.98]"
+                                                >
+                                                    <span>Proceed to Final Assessment →</span>
+                                                </button>
+                                            ) : null}
+                                        </div>
+
+                                        {/* Quick Notes Scratchpad */}
+                                        <div className="bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-lg p-5 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="font-display font-bold text-sm text-[#111827]">
+                                                    Quick Study Notes
+                                                </h3>
+                                                {notesSavedNotice && (
+                                                    <span className="text-[11px] text-[#10B981] font-bold">
+                                                        Saved locally ✓
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <textarea
+                                                rows={4}
+                                                value={courseNotes}
+                                                onChange={handleNotesChange}
+                                                placeholder="Type your notes here while watching videos or reading slides..."
+                                                className="w-full p-3 bg-white border-2 border-[#E5E7EB] rounded-md text-xs text-[#111827] placeholder:text-gray-400 focus:outline-none focus:border-[#111827]"
+                                            />
+                                        </div>
+
+                                        {/* Bottom Action Footer for Final Assessment */}
+                                        {assessments.length > 0 && !isCompleted && (
+                                            <div className="p-4 bg-[#F3F4F6] border-2 border-[#E5E7EB] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                <div>
+                                                    <p className="font-bold text-xs text-[#111827]">
+                                                        Ready for certification?
+                                                    </p>
+                                                    <p className="text-[11px] text-gray-600">
+                                                        100% required on all {assessments.length} questions to earn your certificate.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('assessment')}
+                                                    className="bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-5 py-2.5 rounded shrink-0 transition-transform active:scale-[0.98]"
+                                                >
+                                                    Take Final Assessment
+                                                </button>
+                                            </div>
                                         )}
-                                    </fieldset>
-                                ))}
-
-                                {form.errors.answers && (
-                                    <p className="text-red-500 text-sm font-medium">{form.errors.answers}</p>
+                                    </div>
+                                ) : (
+                                    <div className="bg-white border-2 border-dashed border-[#E5E7EB] rounded-lg p-12 text-center">
+                                        <p className="text-gray-500 font-medium text-sm">
+                                            No module selected. Choose a chapter from the curriculum on the left.
+                                        </p>
+                                    </div>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
+                {/* Tab 2: Dates (edX Vertical Milestone Timeline from 2.png) */}
+                {activeTab === 'dates' && (
+                    <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-8 max-w-3xl space-y-6">
+                        <div>
+                            <h2 className="font-display font-extrabold text-2xl text-[#111827]">
+                                Important Dates & Milestones
+                            </h2>
+                            <p className="text-xs text-gray-600 mt-1">
+                                Self-paced timeline tracking your course enrollment, study progress, and assessment deadlines.
+                            </p>
+                        </div>
+
+                        {/* Vertical Timeline */}
+                        <div className="relative border-l-2 border-[#111827] ml-4 pl-6 space-y-8 my-6">
+                            {/* Milestone 1: Enrollment Date */}
+                            <div className="relative">
+                                <span className="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#111827] border-2 border-white" />
+                                <div>
+                                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        Enrollment Confirmed
+                                    </span>
+                                    <h3 className="font-display font-bold text-base text-[#111827]">
+                                        {formatDate(enrollment?.created_at)}
+                                    </h3>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        Enrollment confirmed in CoPED PULSE. Self-paced course window activated.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Milestone 2: Today Badge */}
+                            <div className="relative">
+                                <span className="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#F59E0B] border-2 border-white" />
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                            Current Date
+                                        </span>
+                                        <span className="bg-[#F59E0B] text-[#111827] text-[10px] font-extrabold px-2 py-0.5 rounded">
+                                            Today
+                                        </span>
+                                    </div>
+                                    <h3 className="font-display font-bold text-base text-[#111827]">
+                                        {new Date().toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                        })}
+                                    </h3>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        Active study session. Current progress: {progressPct}% completed.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Milestone 3: Final Assessment Gate */}
+                            <div className="relative">
+                                <span
+                                    className={`absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                                        isCompleted ? 'bg-[#10B981]' : 'bg-[#3B82F6]'
+                                    }`}
+                                />
+                                <div>
+                                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        Grading Gate
+                                    </span>
+                                    <h3 className="font-display font-bold text-base text-[#111827]">
+                                        Final Assessment (100% Mastery Required)
+                                    </h3>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        {isCompleted
+                                            ? 'Passed with 100% score. Requirement fulfilled.'
+                                            : 'Pending completion. You may attempt the assessment at any time.'}
+                                    </p>
+                                    {!isCompleted && assessments.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('assessment')}
+                                            className="mt-2 text-xs font-bold text-[#111827] underline hover:text-[#3B82F6]"
+                                        >
+                                            Go to Final Assessment →
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Milestone 4: Record Issued */}
+                            <div className="relative">
+                                <span
+                                    className={`absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                                        isCompleted ? 'bg-[#10B981]' : 'bg-gray-300'
+                                    }`}
+                                />
+                                <div>
+                                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        Certificate Unlocked
+                                    </span>
+                                    <h3 className="font-display font-bold text-base text-[#111827]">
+                                        Official Verified Record
+                                    </h3>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        {isCompleted
+                                            ? `Verified record unlocked on ${formatDate(enrollment?.completed_at)}.`
+                                            : 'Complete all modules and pass the Final Assessment to unlock your official record.'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Tab 3: Progress & Assessment (Inline Final Quiz & Score Breakdown) */}
+                {activeTab === 'assessment' && (
+                    <div className="max-w-3xl space-y-6">
+                        {/* Score Breakdown Card */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div>
+                                    <h2 className="font-display font-extrabold text-xl text-[#111827]">
+                                        Assessment Status & Progress
+                                    </h2>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        Passing criteria: 100% correct answers on all questions.
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xs text-gray-500 font-bold uppercase">Current Score</span>
+                                    <p className="font-display text-2xl font-black text-[#111827]">
+                                        {progressPct}%
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Flash Alert Messages */}
+                            {flash?.success && (
+                                <div className="bg-emerald-50 border-2 border-[#10B981] text-emerald-900 p-4 rounded-md text-xs font-bold">
+                                    {flash.success}
+                                </div>
+                            )}
+                            {flash?.error && (
+                                <div className="bg-red-50 border-2 border-red-500 text-red-900 p-4 rounded-md text-xs font-bold">
+                                    {flash.error}
+                                </div>
+                            )}
+                            {flash?.assessment_score !== undefined && !flash?.assessment_passed && (
+                                <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] text-[#111827] p-4 rounded-md text-xs font-bold">
+                                    You scored {flash.assessment_score}%. 100% is required to pass. Please review your answers and retry.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Interactive Final Assessment Form */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-6">
+                            <div className="flex items-center justify-between pb-4 border-b-2 border-[#E5E7EB]">
+                                <div>
+                                    <h3 className="font-display font-extrabold text-lg text-[#111827]">
+                                        Final Assessment
+                                    </h3>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        {assessments.length} {assessments.length === 1 ? 'question' : 'questions'} · Select one answer per question
+                                    </p>
+                                </div>
+                                <span className="bg-[#111827] text-white text-xs font-black px-2.5 py-1 rounded">
+                                    100% Mastery
+                                </span>
+                            </div>
+
+                            {assessments.length === 0 ? (
+                                <div className="py-12 text-center border-2 border-dashed border-[#E5E7EB] rounded-md">
+                                    <ClipboardCheckIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-500 font-medium">
+                                        No assessment questions available for this course yet.
+                                    </p>
+                                </div>
+                            ) : (
+                                <form onSubmit={submitQuiz} className="space-y-6">
+                                    {assessments.map((q, idx) => (
+                                        <fieldset
+                                            key={q.id}
+                                            className="border-2 border-[#E5E7EB] rounded-lg p-5 bg-[#F9FAFB] space-y-3"
+                                        >
+                                            <legend className="sr-only">Question {idx + 1}</legend>
+                                            <div className="flex items-start gap-2">
+                                                <span className="text-xs font-black text-[#111827] bg-[#E5E7EB] px-2 py-0.5 rounded">
+                                                    Q{idx + 1}
+                                                </span>
+                                                <p className="font-bold text-sm text-[#111827] leading-snug">
+                                                    {q.question}
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-2 pt-1">
+                                                {['a', 'b', 'c', 'd'].map((key) => {
+                                                    const isChecked = form.data.answers[q.id] === key;
+                                                    return (
+                                                        <label
+                                                            key={key}
+                                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-md border-2 cursor-pointer transition-colors ${
+                                                                isChecked
+                                                                    ? 'border-[#111827] bg-[#111827] text-white'
+                                                                    : 'border-[#E5E7EB] bg-white text-[#111827] hover:border-gray-400'
+                                                            }`}
+                                                        >
+                                                            <input
+                                                                type="radio"
+                                                                name={`question-${q.id}`}
+                                                                value={key}
+                                                                checked={isChecked}
+                                                                onChange={() => setAnswer(q.id, key)}
+                                                                className="sr-only"
+                                                            />
+                                                            <span
+                                                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black uppercase shrink-0 ${
+                                                                    isChecked
+                                                                        ? 'border-white bg-white text-[#111827]'
+                                                                        : 'border-gray-300 text-gray-600 bg-[#F3F4F6]'
+                                                                }`}
+                                                            >
+                                                                {key}
+                                                            </span>
+                                                            <span className="text-xs font-semibold flex-1">
+                                                                {q[`option_${key}`]}
+                                                            </span>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {form.errors[`answers.${q.id}`] && (
+                                                <p className="text-xs text-red-600 font-bold mt-1">
+                                                    {form.errors[`answers.${q.id}`]}
+                                                </p>
+                                            )}
+                                        </fieldset>
+                                    ))}
+
+                                    {form.errors.answers && (
+                                        <p className="text-xs text-red-600 font-bold">
+                                            {form.errors.answers}
+                                        </p>
+                                    )}
+
+                                    <div className="pt-2">
+                                        <button
+                                            type="submit"
+                                            disabled={form.processing}
+                                            className="w-full bg-[#111827] hover:bg-gray-800 disabled:opacity-50 text-white font-bold py-3.5 px-6 rounded text-sm transition-transform active:scale-[0.98]"
+                                        >
+                                            {form.processing ? 'Submitting Answers...' : 'Submit Answers'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Tab 4: Course Tools & Notes */}
+                {activeTab === 'notes' && (
+                    <div className="max-w-3xl space-y-6">
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
+                            <div className="flex items-center justify-between pb-3 border-b-2 border-[#E5E7EB]">
+                                <div>
+                                    <h2 className="font-display font-extrabold text-xl text-[#111827]">
+                                        Course Study Notes
+                                    </h2>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        Personal scratchpad saved locally in your browser.
+                                    </p>
+                                </div>
+                                {notesSavedNotice && (
+                                    <span className="text-xs text-[#10B981] font-bold">
+                                        Saved locally ✓
+                                    </span>
+                                )}
+                            </div>
+
+                            <textarea
+                                rows={10}
+                                value={courseNotes}
+                                onChange={handleNotesChange}
+                                placeholder="Type your full study notes, lecture takeaways, and questions here..."
+                                className="w-full p-4 bg-white border-2 border-[#E5E7EB] rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:outline-none focus:border-[#111827]"
+                            />
+
+                            <div className="flex items-center justify-between text-xs text-gray-500 pt-2">
+                                <span>Auto-saves on keystroke</span>
                                 <button
-                                    type="submit"
-                                    disabled={form.processing}
-                                    className="w-full py-3.5 rounded-xl text-white font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                                    type="button"
+                                    onClick={() => {
+                                        if (confirm('Clear all study notes for this course?')) {
+                                            setCourseNotes('');
+                                            localStorage.removeItem(`coped_notes_${course.id}`);
+                                        }
+                                    }}
+                                    className="text-red-600 hover:underline font-bold"
                                 >
-                                    {form.processing ? 'Submitting...' : 'Submit Answers'}
+                                    Clear Notes
                                 </button>
-                            </form>
+                            </div>
+                        </div>
+
+                        {/* Course Tools Card */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-3">
+                            <h3 className="font-display font-bold text-base text-[#111827]">
+                                About this Course & Guidelines
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                                <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded">
+                                    <p className="font-bold text-[#111827]">Instructor</p>
+                                    <p className="text-gray-600 mt-0.5">{course.instructor?.name || 'Faculty'}</p>
+                                </div>
+                                <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded">
+                                    <p className="font-bold text-[#111827]">Passing Standard</p>
+                                    <p className="text-gray-600 mt-0.5">100% required on final assessment</p>
+                                </div>
+                                <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded">
+                                    <p className="font-bold text-[#111827]">Curriculum Structure</p>
+                                    <p className="text-gray-600 mt-0.5">{modules.length} interactive modules</p>
+                                </div>
+                                <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded">
+                                    <p className="font-bold text-[#111827]">Institutional Partner</p>
+                                    <p className="text-gray-600 mt-0.5">Universiti Utara Malaysia · CoPED</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

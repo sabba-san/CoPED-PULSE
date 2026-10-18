@@ -64,21 +64,21 @@ export default function RightSidebar({ course, module, modules = [], initialNote
     ];
 
     return (
-        <aside id="study-sidebar" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden h-fit xl:sticky xl:top-20" aria-label="Study sidebar">
-            <div className="grid grid-cols-2 p-2 gap-1 bg-gray-50/70" role="tablist">
+        <aside id="study-sidebar" className="bg-white rounded-md border-2 border-[#E5E7EB] overflow-hidden h-fit xl:sticky xl:top-20" aria-label="Study sidebar">
+            <div className="grid grid-cols-2 p-1.5 gap-1 bg-[#F9FAFB] border-b-2 border-[#E5E7EB]" role="tablist">
                 {['notes', 'files'].map((t) => (
                     <button
                         key={t}
                         role="tab"
                         aria-selected={tab === t}
                         onClick={() => setTab(t)}
-                        className={`py-2 rounded-xl text-sm font-bold capitalize transition-colors ${
-                            tab === t ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        className={`py-2 rounded-md text-sm font-bold capitalize transition-colors ${
+                            tab === t ? 'bg-[#111827] text-white' : 'text-gray-600 hover:text-[#111827] hover:bg-[#F3F4F6]'
                         }`}
                     >
                         {t}
                         {t === 'files' && files.length > 0 && (
-                            <span className="ml-1.5 inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-indigo-100 text-indigo-700 text-[11px]">
+                            <span className="ml-1.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-md bg-[#10B981] text-white text-[11px] font-bold">
                                 {files.length}
                             </span>
                         )}
@@ -89,7 +89,7 @@ export default function RightSidebar({ course, module, modules = [], initialNote
             {tab === 'notes' ? (
                 <form onSubmit={save} className="p-4 space-y-3">
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        Notes • {module.title}
+                        Notes · {module.title}
                     </p>
                     <textarea
                         id="module-note-textarea"
@@ -97,11 +97,11 @@ export default function RightSidebar({ course, module, modules = [], initialNote
                         value={data.content}
                         onChange={(e) => setData('content', e.target.value)}
                         placeholder="Type your personal takeaways for this module..."
-                        className="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm resize-y focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                        className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] resize-y focus:bg-white focus:border-[#3B82F6] focus:outline-none transition-colors"
                     />
-                    {errors.content && <p className="text-red-500 text-xs font-medium">{errors.content}</p>}
+                    {errors.content && <p className="text-red-600 text-xs font-medium">{errors.content}</p>}
                     <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] text-gray-400" aria-live="polite">
+                        <span className="text-[11px] text-gray-500 font-medium" aria-live="polite">
                             {wasSuccessful ? '✓ Saved' : savedAt ? `Saved ${new Date(savedAt).toLocaleString()}` : 'Not saved yet'}
                         </span>
                         <span className="flex gap-2">
@@ -109,7 +109,7 @@ export default function RightSidebar({ course, module, modules = [], initialNote
                                 <button
                                     type="button"
                                     onClick={clear}
-                                    className="px-3 py-2 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                    className="px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                 >
                                     Delete
                                 </button>
@@ -117,7 +117,7 @@ export default function RightSidebar({ course, module, modules = [], initialNote
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-xs font-bold text-white bg-[#3B82F6] hover:bg-blue-600 rounded-md transition-colors disabled:opacity-50"
                             >
                                 {processing ? 'Saving...' : 'Save Note'}
                             </button>
@@ -138,17 +138,17 @@ export default function RightSidebar({ course, module, modules = [], initialNote
                                     href={f.url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                                    className={`flex items-center gap-3 p-3 rounded-md border-2 transition-colors ${
                                         f.current
-                                            ? 'border-indigo-200 bg-indigo-50/60 hover:bg-indigo-50'
-                                            : 'border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/40'
+                                            ? 'border-[#3B82F6] bg-blue-50/50'
+                                            : 'border-[#E5E7EB] hover:border-gray-400 bg-white'
                                     }`}
                                 >
-                                    <span className="shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white text-[10px] font-black flex items-center justify-center uppercase">
+                                    <span className="shrink-0 w-9 h-9 rounded-md bg-[#111827] text-white text-[10px] font-black flex items-center justify-center uppercase">
                                         {ext.slice(0, 4) || 'file'}
                                     </span>
                                     <span className="flex-1 min-w-0">
-                                        <span className="block text-xs font-bold text-gray-900 truncate">
+                                        <span className="block text-xs font-bold text-[#111827] truncate">
                                             {f.name}
                                         </span>
                                         <span className="block text-[11px] text-gray-500 truncate">

@@ -101,23 +101,23 @@ export default function Module({
                 <div>
                     <Link
                         href={route('learner.course.learn', course.id)}
-                        className="inline-flex items-center text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+                        className="inline-flex items-center text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors"
                     >
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                         Back to {course.title}
                     </Link>
-                    <p className="mt-2 text-xs font-bold text-indigo-600 uppercase tracking-wider">
+                    <p className="mt-2 text-xs font-bold text-[#3B82F6] uppercase tracking-wider">
                         Module {activeIndex + 1} of {modules.length}
                     </p>
                 </div>
 
                 {flash?.success && (
-                    <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-2xl px-6 py-4 text-sm font-medium">
+                    <div className="bg-blue-50 border-2 border-blue-200 text-blue-900 rounded-md px-6 py-4 text-sm font-medium">
                         {flash.success}
                     </div>
                 )}
                 {flash?.error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-6 py-4 text-sm font-medium">
+                    <div className="bg-red-50 border-2 border-red-200 text-red-700 rounded-md px-6 py-4 text-sm font-medium">
                         {flash.error}
                     </div>
                 )}
@@ -134,17 +134,17 @@ export default function Module({
                         dailyGoal={dailyGoal}
                     />
 
-                    <article className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                        <h1 className="text-2xl font-black text-gray-900 break-words">
+                    <article className="bg-white rounded-md border-2 border-[#E5E7EB] p-6">
+                        <h1 className="text-2xl font-black text-[#111827] font-display break-words">
                             {module.title}
                         </h1>
                         {module.description && (
-                            <p className="mt-2 text-gray-500 leading-relaxed whitespace-pre-line break-words">
+                            <p className="mt-2 text-gray-600 leading-relaxed whitespace-pre-line break-words text-sm sm:text-base">
                                 {module.description}
                             </p>
                         )}
                         {module.duration != null && (
-                            <p className="mt-1 text-xs font-semibold text-gray-400">
+                            <p className="mt-1 text-xs font-semibold text-gray-500">
                                 {Math.floor(module.duration / 60)}:{String(module.duration % 60).padStart(2, '0')} min
                             </p>
                         )}
@@ -158,7 +158,7 @@ export default function Module({
                             <button
                                 type="button"
                                 onClick={goToNotes}
-                                className="px-4 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-colors"
+                                className="px-4 py-2 text-xs font-bold text-[#111827] bg-[#F3F4F6] hover:bg-gray-200 rounded-md transition-colors"
                             >
                                 Save note
                             </button>
@@ -166,7 +166,7 @@ export default function Module({
                                 type="button"
                                 onClick={() => setDeepOpen((v) => !v)}
                                 aria-expanded={deepOpen}
-                                className="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                                className="px-4 py-2 text-xs font-bold text-[#111827] bg-[#F3F4F6] hover:bg-gray-200 rounded-md transition-colors"
                             >
                                 Dive deeper on this topic {deepOpen ? '▴' : '▾'}
                             </button>
@@ -189,31 +189,31 @@ export default function Module({
 
                         {/* Mini-quiz practice */}
                         {moduleQuizzes.length > 0 && (
-                            <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
-                                <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
-                                    Mini-Quiz • {moduleQuizzes.length} {moduleQuizzes.length === 1 ? 'question' : 'questions'} (practice)
+                            <div className="mt-5 rounded-md border-2 border-[#E5E7EB] bg-emerald-50/50 p-4">
+                                <p className="text-xs font-bold text-[#10B981] uppercase tracking-wider">
+                                    Mini-Quiz · {moduleQuizzes.length} {moduleQuizzes.length === 1 ? 'question' : 'questions'} (practice)
                                 </p>
                                 <div className="mt-3 space-y-3">
                                     {moduleQuizzes.map((q, qIdx) => {
                                         const picked = miniAnswers[q.id] || null;
                                         const isCorrect = miniChecked && picked?.toLowerCase() === String(q.correct_option || '').toLowerCase();
                                         return (
-                                            <div key={q.id} className="bg-white rounded-xl border border-gray-100 p-4">
-                                                <p className="text-sm font-bold text-gray-900">
-                                                    <span className="text-emerald-600 mr-1">Q{qIdx + 1}.</span>
+                                            <div key={q.id} className="bg-white rounded-md border-2 border-[#E5E7EB] p-4">
+                                                <p className="text-sm font-bold text-[#111827]">
+                                                    <span className="text-[#10B981] mr-1">Q{qIdx + 1}.</span>
                                                     {q.question}
                                                 </p>
                                                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                     {OPTION_KEYS.map((key) => {
                                                         const selected = picked === key;
-                                                        let cls = 'bg-gray-50 border-gray-200 text-gray-600 hover:border-emerald-300';
-                                                        if (miniChecked && selected && isCorrect) cls = 'bg-emerald-50 border-emerald-400 text-emerald-900';
-                                                        else if (miniChecked && selected && !isCorrect) cls = 'bg-red-50 border-red-300 text-red-800';
-                                                        else if (selected) cls = 'bg-emerald-50 border-emerald-400 text-emerald-900';
+                                                        let cls = 'bg-[#F9FAFB] border-[#E5E7EB] text-gray-700 hover:border-gray-400';
+                                                        if (miniChecked && selected && isCorrect) cls = 'bg-emerald-50 border-emerald-500 text-emerald-900';
+                                                        else if (miniChecked && selected && !isCorrect) cls = 'bg-red-50 border-red-500 text-red-800';
+                                                        else if (selected) cls = 'bg-blue-50 border-[#3B82F6] text-blue-900';
                                                         return (
                                                             <label
                                                                 key={key}
-                                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer transition-colors ${cls}`}
+                                                                className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold border-2 cursor-pointer transition-colors ${cls}`}
                                                             >
                                                                 <input
                                                                     type="radio"
@@ -221,7 +221,7 @@ export default function Module({
                                                                     value={key}
                                                                     checked={selected}
                                                                     onChange={() => setMiniAnswer(q.id, key)}
-                                                                    className="accent-emerald-600"
+                                                                    className="accent-[#10B981]"
                                                                 />
                                                                 <span className="uppercase font-bold">{key}.</span>
                                                                 <span>{q[`option_${key}`]}</span>
@@ -231,7 +231,7 @@ export default function Module({
                                                 </div>
                                                 {miniChecked && (
                                                     <p className={`mt-2 text-xs font-bold ${isCorrect ? 'text-emerald-700' : 'text-red-600'}`}>
-                                                        {isCorrect ? '✓ Correct' : '✕ Try again — review the module content.'}
+                                                        {isCorrect ? '✓ Correct' : '✕ Try again. Review the module content.'}
                                                     </p>
                                                 )}
                                             </div>
@@ -247,7 +247,7 @@ export default function Module({
                                             <button
                                                 type="button"
                                                 onClick={resetMiniQuiz}
-                                                className="px-3 py-1.5 text-xs font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors"
+                                                className="px-3 py-1.5 text-xs font-bold text-[#111827] bg-white border-2 border-[#E5E7EB] hover:bg-[#F3F4F6] rounded-md transition-colors"
                                             >
                                                 Retry
                                             </button>
@@ -257,7 +257,7 @@ export default function Module({
                                             type="button"
                                             disabled={!moduleQuizzes.every((q) => miniAnswers[q.id])}
                                             onClick={checkMiniQuiz}
-                                            className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors disabled:opacity-40"
+                                            className="px-4 py-2 text-xs font-bold text-white bg-[#10B981] hover:bg-emerald-600 rounded-md transition-colors disabled:opacity-40"
                                         >
                                             Check Answers
                                         </button>
@@ -270,35 +270,35 @@ export default function Module({
                             {prev ? (
                                 <Link
                                     href={route('learner.course.module.learn', [course.id, prev.id])}
-                                    className="px-4 py-2.5 rounded-xl bg-gray-100 font-bold text-sm text-center hover:bg-gray-200 transition-colors"
+                                    className="px-4 py-2.5 rounded-md bg-[#F3F4F6] font-bold text-sm text-[#111827] text-center hover:bg-gray-200 transition-colors"
                                 >
                                     ← Previous
                                 </Link>
                             ) : (
-                                <span className="px-4 py-2.5 rounded-xl bg-gray-50 font-bold text-sm text-gray-300 text-center">← Previous</span>
+                                <span className="px-4 py-2.5 rounded-md bg-[#F9FAFB] font-bold text-sm text-gray-400 text-center">← Previous</span>
                             )}
                             <button
                                 type="button"
                                 onClick={toggleComplete}
-                                className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-colors ${
+                                className={`px-5 py-2.5 rounded-md font-bold text-sm transition-colors ${
                                     isModuleDone
                                         ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                        : 'bg-[#10B981] text-white hover:bg-emerald-600'
                                 }`}
                             >
-                                {isModuleDone ? '✓ Completed — Undo?' : 'Mark as Complete'}
+                                {isModuleDone ? '✓ Completed - Undo?' : 'Mark as Complete'}
                             </button>
                             {next ? (
                                 <Link
                                     href={route('learner.course.module.learn', [course.id, next.id])}
-                                    className="px-4 py-2.5 rounded-xl bg-gray-900 text-white font-bold text-sm text-center hover:bg-gray-800 transition-colors"
+                                    className="px-4 py-2.5 rounded-md bg-[#111827] text-white font-bold text-sm text-center hover:bg-gray-800 transition-colors"
                                 >
                                     Next →
                                 </Link>
                             ) : (
                                 <Link
                                     href={route('learner.course.learn', course.id)}
-                                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm text-center shadow-md transition-all"
+                                    className="px-5 py-2.5 rounded-md bg-[#3B82F6] text-white font-bold text-sm text-center hover:bg-blue-600 transition-colors"
                                 >
                                     Finish →
                                 </Link>

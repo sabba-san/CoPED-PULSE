@@ -9,15 +9,31 @@ use Inertia\Inertia;
 
 class CatalogController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $courses = Course::with('instructor')
-            ->where('status', 'published')
-            ->latest()
-            ->get();
+        $q = trim((string) $request->query('q', ''));
+
+        $query = Course::with('instructor')
+            ->withCount('modules')
+            ->where('status', 'published');
+
+        if ($q !== '') {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('title', 'like', "%{$q}%")
+                    ->orWhere('description', 'like', "%{$q}%");
+            });
+        }
+
+        $courses = $query->latest()->get();
 
         return Inertia::render('design_v1/Learner/Catalog', [
             'courses' => $courses,
+            'enrolledCourseIds' => $request->user()
+                ? $request->user()->enrollments()->pluck('course_id')->all()
+                : [],
+            'filters' => [
+                'q' => (string) $request->query('q', ''),
+            ],
         ]);
     }
 

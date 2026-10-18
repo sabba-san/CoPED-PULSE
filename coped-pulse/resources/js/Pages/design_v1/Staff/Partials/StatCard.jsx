@@ -1,12 +1,14 @@
-export default function StatCard({ value, label, sub = null, tone = 'bg-emerald-50 text-emerald-600' }) {
+export default function StatCard({ value, label, sub = null, tone = 'bg-[#F3F4F6] text-[#111827]' }) {
     return (
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg font-black ${tone}`}>
+        <div className="bg-white rounded-lg border-2 border-[#E5E7EB] p-6 space-y-3">
+            <div className={`w-10 h-10 rounded-md flex items-center justify-center text-sm font-extrabold border-2 border-[#E5E7EB] ${tone}`}>
                 {value}
             </div>
-            <p className="mt-4 text-3xl font-black text-gray-900">{value}</p>
-            <p className="text-sm font-bold text-gray-500">{label}</p>
-            {sub && <p className="mt-1 text-xs text-gray-400">{sub}</p>}
+            <div>
+                <p className="text-3xl font-display font-extrabold text-[#111827]">{value}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mt-1">{label}</p>
+                {sub && <p className="mt-1 text-xs text-gray-600">{sub}</p>}
+            </div>
         </div>
     );
 }
@@ -17,20 +19,18 @@ export function ProgressBar({ pct, done = false }) {
         <div>
             <div className="flex justify-between text-xs font-bold mb-1">
                 <span className="text-gray-500">Progress</span>
-                <span className={done ? 'text-green-700' : 'text-emerald-700'}>{clamped}%</span>
+                <span className={done ? 'text-[#10B981]' : 'text-[#111827]'}>{clamped}%</span>
             </div>
             <div
-                className="h-2 bg-gray-100 rounded-full overflow-hidden"
+                className="h-2.5 bg-[#F3F4F6] border border-[#E5E7EB] rounded-full overflow-hidden"
                 role="progressbar"
                 aria-valuenow={clamped}
                 aria-valuemin={0}
                 aria-valuemax={100}
             >
                 <div
-                    className={`h-full rounded-full transition-all ${
-                        done
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500'
-                            : 'bg-gradient-to-r from-emerald-600 to-teal-600'
+                    className={`h-full rounded-full transition-all duration-300 ${
+                        done ? 'bg-[#10B981]' : 'bg-[#111827]'
                     }`}
                     style={{ width: `${clamped}%` }}
                 />

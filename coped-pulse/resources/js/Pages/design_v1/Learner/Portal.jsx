@@ -1,136 +1,431 @@
 import { Head, Link } from '@inertiajs/react';
+import { useState, useMemo, useEffect } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
+import { ArrowRightIcon, TrophyIcon, TargetIcon, CircleCheckIcon } from '@/Components/flat/icons';
 
-export default function Portal({ enrollments }) {
+export default function Portal({ enrollments, stats }) {
+    const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'in-progress', 'not-started', 'completed'
+    const [sortBy, setSortBy] = useState('recent'); // 'recent', 'title'
+
+    const [weeklyGoal, setWeeklyGoal] = useState('regular');
+    const [goalReminder, setGoalReminder] = useState(false);
+
+    useEffect(() => {
+        try {
+            const savedGoal = localStorage.getItem('coped_weekly_goal');
+            if (savedGoal) setWeeklyGoal(savedGoal);
+            const savedReminder = localStorage.getItem('coped_goal_reminder');
+            if (savedReminder !== null) setGoalReminder(savedReminder === 'true');
+        } catch {}
+    }, []);
+
+    const handleSelectGoal = (goalId) => {
+        setWeeklyGoal(goalId);
+        try {
+            localStorage.setItem('coped_weekly_goal', goalId);
+        } catch {}
+    };
+
+    const handleToggleReminder = (checked) => {
+        setGoalReminder(checked);
+        try {
+            localStorage.setItem('coped_goal_reminder', String(checked));
+        } catch {}
+    };
+
+    const filteredEnrollments = useMemo(() => {
+        const raw = enrollments?.data || [];
+        let result = [...raw];
+
+        // Filter
+        if (activeFilter === 'in-progress') {
+            result = result.filter((e) => !e.completed_at && (e.progress ?? 0) > 0);
+        } else if (activeFilter === 'not-started') {
+            result = result.filter((e) => !e.completed_at && (e.progress ?? 0) === 0);
+        } else if (activeFilter === 'completed') {
+            result = result.filter((e) => Boolean(e.completed_at));
+        }
+
+        // Sort
+        if (sortBy === 'title') {
+            result.sort((a, b) => (a.course?.title || '').localeCompare(b.course?.title || ''));
+        } else {
+            result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        }
+
+        return result;
+    }, [enrollments?.data, activeFilter, sortBy]);
+
+    const completedEnrollments = useMemo(() => {
+        return (enrollments?.data || []).filter((e) => Boolean(e.completed_at));
+    }, [enrollments?.data]);
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+        });
+    };
+
+    const getStatusBadge = (enrollment) => {
+        if (enrollment.completed_at) {
+            return {
+                label: 'COMPLETED',
+                bg: 'bg-emerald-50',
+                text: 'text-[#10B981]',
+                border: 'border-[#10B981]',
+            };
+        }
+        if ((enrollment.progress ?? 0) > 0) {
+            return {
+                label: 'IN PROGRESS',
+                bg: 'bg-blue-50',
+                text: 'text-[#3B82F6]',
+                border: 'border-[#3B82F6]',
+            };
+        }
+        return {
+            label: 'NOT STARTED',
+            bg: 'bg-gray-100',
+            text: 'text-gray-700',
+            border: 'border-gray-300',
+        };
+    };
+
+    const getCTAText = (enrollment) => {
+        if (enrollment.completed_at) return 'Review Course';
+        if ((enrollment.progress ?? 0) > 0) return 'Resume Course';
+        return 'Begin Course';
+    };
+
+    const progressPct = (enrollment) =>
+        Math.min(100, Math.max(0, Math.round(Number(enrollment.progress ?? 0))));
+
     return (
         <LearnerLayout>
             <Head title="My Learning Portal" />
-            
-            <div className="mb-10 text-center md:text-left">
-                <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-800 to-purple-700 tracking-tight mb-4">
-                    My Learning Portal
-                </h1>
-                <p className="text-lg text-gray-600 max-w-2xl leading-relaxed">
-                    Welcome back! Here are the courses you are currently enrolled in.
-                </p>
-            </div>
 
-            {enrollments.data.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-sm">
-                    <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <p className="text-xl text-gray-500 font-medium mb-6">You are not enrolled in any courses yet.</p>
-                    <Link
-                        href={route('learner.catalog')}
-                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-bold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
-                    >
-                        Browse Course Catalog
-                    </Link>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {enrollments.data.map(enrollment => (
-                        <div 
-                            key={enrollment.id} 
-                            className="group flex flex-col bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                        >
-                            <div className="h-40 bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center p-6 relative overflow-hidden">
-                                <div className="absolute inset-0 bg-indigo-500/5 mix-blend-overlay group-hover:bg-indigo-500/10 transition-colors duration-300"></div>
-                                <h3 className="text-xl font-bold text-indigo-900 text-center relative z-10 group-hover:scale-105 transition-transform duration-300">
-                                    {enrollment.course?.title}
-                                </h3>
-                                
-                                <div className="absolute top-4 right-4 z-20">
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md ${
-                                        enrollment.completed_at
-                                            ? 'bg-green-100/90 text-green-800 border border-green-200'
-                                            : 'bg-blue-100/90 text-blue-800 border border-blue-200'
-                                    }`}>
-                                        {enrollment.completed_at ? 'COMPLETED' : 'ENROLLED'}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div className="p-8 flex flex-col flex-grow">
-                                <div className="flex items-center space-x-3 mb-4">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold text-xs shadow-md">
-                                        {enrollment.course?.instructor?.name?.charAt(0)}
-                                    </div>
-                                    <span className="text-sm font-semibold text-gray-700">
-                                        {enrollment.course?.instructor?.name || 'Instructor'}
-                                    </span>
-                                </div>
+            <div className="space-y-8">
+                {/* Top Heading & Refine Bar */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h1 className="font-display text-3xl font-extrabold text-[#111827]">
+                            My Courses
+                        </h1>
+                        <p className="text-sm text-gray-600 mt-1">
+                            Track your active courses, weekly study goals, and official records.
+                        </p>
+                    </div>
 
-                                {/* Progress line */}
-                                <div className="mb-6">
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <span className="text-xs font-bold text-gray-600">Progress</span>
-                                        <span className={`text-xs font-bold ${enrollment.completed_at ? 'text-green-700' : 'text-indigo-700'}`}>
-                                            {Math.min(100, Math.max(0, Math.round(Number(enrollment.progress ?? 0))))}%
-                                        </span>
-                                    </div>
-                                    <div
-                                        className="w-full h-2 bg-gray-100 rounded-full overflow-hidden"
-                                        role="progressbar"
-                                        aria-valuenow={Math.round(Number(enrollment.progress ?? 0))}
-                                        aria-valuemin={0}
-                                        aria-valuemax={100}
-                                        aria-label={`Progress for ${enrollment.course?.title}`}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        {/* Refine Filter Pills */}
+                        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Course status filters">
+                            {[
+                                { id: 'all', label: 'All' },
+                                { id: 'in-progress', label: 'In-Progress' },
+                                { id: 'not-started', label: 'Not Started' },
+                                { id: 'completed', label: 'Completed' },
+                            ].map((filter) => {
+                                const active = activeFilter === filter.id;
+                                return (
+                                    <button
+                                        key={filter.id}
+                                        role="tab"
+                                        aria-selected={active}
+                                        onClick={() => setActiveFilter(filter.id)}
+                                        className={`px-3 py-1.5 text-xs font-bold rounded-md border-2 transition-colors ${
+                                            active
+                                                ? 'bg-[#111827] text-white border-[#111827]'
+                                                : 'bg-white text-[#111827] border-[#E5E7EB] hover:border-[#111827]'
+                                        }`}
                                     >
-                                        <div
-                                            className={`h-full rounded-full transition-all ${
-                                                enrollment.completed_at
-                                                    ? 'bg-gradient-to-r from-green-500 to-emerald-500'
-                                                    : 'bg-gradient-to-r from-indigo-600 to-purple-600'
-                                            }`}
-                                            style={{ width: `${Math.min(100, Math.max(0, Math.round(Number(enrollment.progress ?? 0))))}%` }}
-                                        />
-                                    </div>
-                                </div>
-                                
-                                <div className="flex-grow"></div>
-                                
+                                        {filter.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Sort Dropdown */}
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            aria-label="Sort courses"
+                            className="px-3 py-1.5 text-xs font-bold rounded-md border-2 border-[#E5E7EB] bg-white text-[#111827] focus:outline-none focus:border-[#111827] cursor-pointer"
+                        >
+                            <option value="recent">Last enrolled</option>
+                            <option value="title">Title (A-Z)</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* 2-Column Asymmetric Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Left Column (Horizontal edX Course Cards) */}
+                    <div className="lg:col-span-8 space-y-6">
+                        {filteredEnrollments.length === 0 ? (
+                            <div className="bg-white border-2 border-dashed border-[#E5E7EB] rounded-lg py-16 px-6 text-center">
+                                <TrophyIcon className="w-14 h-14 text-gray-300 mx-auto mb-4" />
+                                <h2 className="font-display font-bold text-lg text-[#111827] mb-1">
+                                    {activeFilter !== 'all'
+                                        ? 'No courses found matching this filter.'
+                                        : 'You are not enrolled in any courses yet.'}
+                                </h2>
+                                <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
+                                    {activeFilter !== 'all'
+                                        ? 'Try switching to another filter tab to view all enrolled courses.'
+                                        : 'Explore our catalog of professional courses and start learning today.'}
+                                </p>
                                 <Link
-                                    href={route('learner.course.learn', enrollment.course)}
-                                    className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-bold text-sm shadow-md hover:shadow-lg hover:from-indigo-500 hover:to-purple-500 transform hover:-translate-y-0.5 transition-all duration-200 active:scale-95 flex justify-center items-center space-x-2"
+                                    href={route('learner.catalog')}
+                                    className="inline-flex items-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-5 py-2.5 rounded transition-transform active:scale-[0.98]"
                                 >
-                                    <span>Continue Learning</span>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                    </svg>
+                                    <span>Browse Course Catalog</span>
+                                    <ArrowRightIcon className="w-4 h-4" />
                                 </Link>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Pagination */}
-            {enrollments.links && enrollments.links.length > 3 && (
-                <div className="mt-12 flex justify-center space-x-2">
-                    {enrollments.links.map((link, i) => (
-                        link.url ? (
-                            <Link
-                                key={i}
-                                href={link.url}
-                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                                    link.active 
-                                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' 
-                                        : 'bg-white text-gray-700 border border-gray-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200'
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
                         ) : (
-                            <span
-                                key={i}
-                                className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-400 border border-gray-100"
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        )
-                    ))}
+                            filteredEnrollments.map((enrollment) => {
+                                const course = enrollment.course;
+                                const status = getStatusBadge(enrollment);
+                                const pct = progressPct(enrollment);
+                                const enrolledAt = formatDate(enrollment.created_at);
+
+                                return (
+                                    <div
+                                        key={enrollment.id}
+                                        className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden transition-transform duration-200 hover:scale-[1.005]"
+                                    >
+                                        {/* Main Row */}
+                                        <div className="flex flex-col sm:flex-row items-stretch">
+                                            {/* Left Flat Graphic Block */}
+                                            <div className="bg-[#111827] text-white p-6 flex flex-col justify-center items-center w-full sm:w-44 shrink-0 border-b-2 sm:border-b-0 sm:border-r-2 border-[#E5E7EB]">
+                                                <span className="text-[11px] font-extrabold uppercase tracking-widest text-gray-400 mb-1">
+                                                    CoPED
+                                                </span>
+                                                <p className="text-3xl font-black text-white">{pct}%</p>
+                                                <span className="text-[11px] text-gray-400 font-semibold mt-0.5">
+                                                    Progress
+                                                </span>
+                                            </div>
+
+                                            {/* Center Course Details */}
+                                            <div className="flex-1 p-6 flex flex-col justify-between min-w-0 space-y-3">
+                                                <div>
+                                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                            UUM CoPED · Enrolled {enrolledAt}
+                                                        </span>
+                                                        <span
+                                                            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border ${status.border} ${status.bg} ${status.text}`}
+                                                        >
+                                                            {status.label}
+                                                        </span>
+                                                    </div>
+                                                    <h2 className="font-display text-xl font-bold text-[#111827] truncate">
+                                                        {course?.title}
+                                                    </h2>
+                                                    <p className="text-sm text-gray-600 mt-0.5">
+                                                        {course?.instructor?.name || 'Faculty Instructor'}
+                                                    </p>
+                                                </div>
+
+                                                <div className="text-xs text-gray-500">
+                                                    Self-paced learning · 100% required to pass Final Assessment
+                                                </div>
+                                            </div>
+
+                                            {/* Right Primary CTA Button */}
+                                            <div className="p-6 flex items-center justify-center shrink-0 border-t-2 sm:border-t-0 sm:border-l-2 border-[#E5E7EB] bg-[#F9FAFB]">
+                                                <Link
+                                                    href={route('learner.course.learn', course.id)}
+                                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-5 rounded text-sm transition-transform active:scale-[0.98]"
+                                                >
+                                                    <span>{getCTAText(enrollment)}</span>
+                                                    <ArrowRightIcon className="w-4 h-4" />
+                                                </Link>
+                                            </div>
+                                        </div>
+
+                                        {/* Bottom Passing-Grade Strip */}
+                                        <div className="bg-[#F3F4F6] border-t-2 border-[#E5E7EB] px-5 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs font-semibold text-[#111827]">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-gray-500">ⓘ</span>
+                                                <span>Grade required to pass Final Assessment: 100%</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className="w-28 sm:w-40 bg-white border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden"
+                                                    role="progressbar"
+                                                    aria-valuenow={pct}
+                                                    aria-valuemin={0}
+                                                    aria-valuemax={100}
+                                                    aria-label={`Progress for ${course?.title}`}
+                                                >
+                                                    <div
+                                                        className="h-full bg-[#10B981] rounded-full transition-all"
+                                                        style={{ width: `${pct}%` }}
+                                                    />
+                                                </div>
+                                                <span className="font-bold text-[#111827] min-w-[3ch] text-right">
+                                                    {pct}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+
+                        {/* Pagination Links */}
+                        {enrollments.links && enrollments.links.length > 3 && (
+                            <div className="mt-8 flex justify-center gap-2">
+                                {enrollments.links.map((link, i) =>
+                                    link.url ? (
+                                        <Link
+                                            key={i}
+                                            href={link.url}
+                                            className={`px-3.5 py-1.5 rounded text-xs font-bold border-2 transition-colors ${
+                                                link.active
+                                                    ? 'bg-[#111827] text-white border-[#111827]'
+                                                    : 'bg-white text-gray-700 border-[#E5E7EB] hover:bg-[#F3F4F6] hover:text-[#111827]'
+                                            }`}
+                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                        />
+                                    ) : (
+                                        <span
+                                            key={i}
+                                            className="px-3.5 py-1.5 rounded text-xs font-bold bg-[#F3F4F6] text-gray-400 border-2 border-[#E5E7EB]"
+                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                        />
+                                    )
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right Sidebar (Weekly Learning Goal + My Learner Records) */}
+                    <div className="lg:col-span-4 space-y-6">
+                        {/* Card 1: Set a weekly learning goal */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-5">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <TargetIcon className="w-5 h-5 text-[#3B82F6]" />
+                                    <h2 className="font-display font-extrabold text-lg text-[#111827]">
+                                        Set a weekly learning goal
+                                    </h2>
+                                </div>
+                                <p className="text-xs text-gray-600">
+                                    Learners who set a goal are 75% more likely to finish.
+                                </p>
+                            </div>
+
+                            <div className="space-y-2.5">
+                                {[
+                                    { id: 'casual', title: 'Casual', subtitle: '1 day a week' },
+                                    { id: 'regular', title: 'Regular', subtitle: '3 days a week' },
+                                    { id: 'intense', title: 'Intense', subtitle: '5 days a week' },
+                                ].map((goal) => {
+                                    const active = weeklyGoal === goal.id;
+                                    return (
+                                        <button
+                                            key={goal.id}
+                                            type="button"
+                                            onClick={() => handleSelectGoal(goal.id)}
+                                            className={`w-full text-left p-3 rounded-md border-2 transition-colors flex items-center justify-between ${
+                                                active
+                                                    ? 'border-[#111827] bg-[#F3F4F6] text-[#111827] font-bold'
+                                                    : 'border-[#E5E7EB] bg-white text-gray-700 hover:border-gray-400'
+                                            }`}
+                                        >
+                                            <div>
+                                                <p className="text-sm font-bold">{goal.title}</p>
+                                                <p className="text-xs text-gray-500">{goal.subtitle}</p>
+                                            </div>
+                                            <span
+                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                                    active
+                                                        ? 'border-[#111827] bg-[#111827] text-white'
+                                                        : 'border-[#E5E7EB]'
+                                                }`}
+                                            >
+                                                {active && <CircleCheckIcon className="w-3.5 h-3.5 text-white" />}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <label className="flex items-center gap-2.5 cursor-pointer pt-2 border-t-2 border-[#E5E7EB]">
+                                <input
+                                    type="checkbox"
+                                    checked={goalReminder}
+                                    onChange={(e) => handleToggleReminder(e.target.checked)}
+                                    className="w-4 h-4 rounded border-2 border-[#E5E7EB] text-[#111827] focus:ring-0 focus:outline-none cursor-pointer"
+                                />
+                                <span className="text-xs font-semibold text-gray-700">
+                                    Set a goal reminder
+                                </span>
+                            </label>
+                        </div>
+
+                        {/* Card 2: My Learner Records & Certificates */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <TrophyIcon className="w-5 h-5 text-[#10B981]" />
+                                    <h2 className="font-display font-extrabold text-lg text-[#111827]">
+                                        My Learner Records
+                                    </h2>
+                                </div>
+                                <span className="bg-[#10B981] text-white text-xs font-black px-2 py-0.5 rounded">
+                                    {completedEnrollments.length}
+                                </span>
+                            </div>
+
+                            <p className="text-xs text-gray-600">
+                                Official verifiable records earned upon passing with 100%.
+                            </p>
+
+                            {completedEnrollments.length > 0 ? (
+                                <ul className="space-y-3 pt-2">
+                                    {completedEnrollments.map((item) => (
+                                        <li
+                                            key={item.id}
+                                            className="p-3 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md space-y-2"
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <h3 className="font-display font-bold text-sm text-[#111827] line-clamp-1">
+                                                    {item.course?.title}
+                                                </h3>
+                                                <span className="bg-emerald-50 text-[#059669] border border-[#10B981] text-[9px] font-black uppercase px-2 py-0.5 rounded shrink-0">
+                                                    VERIFIED RECORD
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs text-gray-500">
+                                                <span>Passed on {formatDate(item.completed_at)}</span>
+                                                <Link
+                                                    href={route('learner.course.learn', item.course?.id)}
+                                                    className="font-bold text-[#111827] hover:underline"
+                                                >
+                                                    Review
+                                                </Link>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="py-8 px-4 text-center border-2 border-dashed border-[#E5E7EB] rounded-md bg-[#F9FAFB]">
+                                    <p className="text-xs text-gray-500 leading-relaxed">
+                                        No records yet. Course records are created once you pass the Final Assessment with 100%.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
-            )}
+            </div>
         </LearnerLayout>
     );
 }

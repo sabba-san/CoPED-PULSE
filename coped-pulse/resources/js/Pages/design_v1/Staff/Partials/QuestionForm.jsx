@@ -28,60 +28,70 @@ export default function QuestionForm({ course, moduleId = null, allowAddAnother 
     };
 
     return (
-        <form onSubmit={(e) => submit(e, true)} className="pt-6 border-t border-gray-100 space-y-4">
-            <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+        <form onSubmit={(e) => submit(e, true)} className="pt-6 border-t-2 border-[#E5E7EB] space-y-4">
+            <h3 className="font-display font-bold text-base text-[#111827]">{title}</h3>
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Question</label>
+                <label htmlFor="question-text" className="block text-xs font-bold text-[#111827] uppercase tracking-wider mb-1.5">
+                    Question Text
+                </label>
                 <textarea
+                    id="question-text"
                     rows={2}
                     value={data.question}
                     onChange={(e) => setData('question', e.target.value)}
                     required
-                    placeholder="Enter question..."
-                    className="block w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl sm:text-sm resize-none focus:bg-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="Enter question text..."
+                    className="block w-full p-3 bg-white border-2 border-[#E5E7EB] rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:outline-none focus:border-[#111827] resize-none"
                 />
-                {errors.question && <p className="mt-2 text-red-500 text-sm font-medium">{errors.question}</p>}
+                {errors.question && <p className="mt-1 text-red-600 text-xs font-bold">{errors.question}</p>}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {['a', 'b', 'c', 'd'].map((key) => (
                     <div key={key}>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                        <label htmlFor={`option-${key}`} className="block text-xs font-bold text-[#111827] uppercase tracking-wider mb-1.5">
                             Option {key.toUpperCase()}
-                            {data.correct_option === key && <span className="ml-1 text-emerald-600">✓</span>}
+                            {data.correct_option === key && <span className="ml-1 text-[#10B981] font-black">✓ Correct</span>}
                         </label>
                         <input
+                            id={`option-${key}`}
                             type="text"
                             value={data[`option_${key}`]}
                             onChange={(e) => setData(`option_${key}`, e.target.value)}
                             required
                             placeholder={`Option ${key.toUpperCase()}`}
-                            className="block w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl sm:text-sm focus:bg-white focus:border-emerald-500 focus:outline-none"
+                            className="block w-full p-2.5 bg-white border-2 border-[#E5E7EB] rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:outline-none focus:border-[#111827]"
                         />
-                        {errors[`option_${key}`] && <p className="mt-2 text-red-500 text-sm font-medium">{errors[`option_${key}`]}</p>}
+                        {errors[`option_${key}`] && <p className="mt-1 text-red-600 text-xs font-bold">{errors[`option_${key}`]}</p>}
                     </div>
                 ))}
             </div>
+
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Correct Answer</label>
+                <label htmlFor="correct-option-select" className="block text-xs font-bold text-[#111827] uppercase tracking-wider mb-1.5">
+                    Correct Option
+                </label>
                 <select
+                    id="correct-option-select"
                     value={data.correct_option}
                     onChange={(e) => setData('correct_option', e.target.value)}
-                    className="block w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl sm:text-sm"
+                    className="block w-full p-2.5 bg-white border-2 border-[#E5E7EB] rounded-md text-sm text-[#111827] font-bold focus:outline-none focus:border-[#111827] cursor-pointer"
                 >
-                    <option value="a">A</option>
-                    <option value="b">B</option>
-                    <option value="c">C</option>
-                    <option value="d">D</option>
+                    <option value="a">Option A</option>
+                    <option value="b">Option B</option>
+                    <option value="c">Option C</option>
+                    <option value="d">Option D</option>
                 </select>
-                {errors.correct_option && <p className="mt-2 text-red-500 text-sm font-medium">{errors.correct_option}</p>}
+                {errors.correct_option && <p className="mt-1 text-red-600 text-xs font-bold">{errors.correct_option}</p>}
             </div>
-            <div className="flex justify-end gap-2">
+
+            <div className="flex justify-end gap-2 pt-2">
                 {allowAddAnother && (
                     <button
                         type="button"
                         disabled={processing}
                         onClick={(e) => submit(e, false)}
-                        className="px-4 py-2.5 text-sm font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-xl transition-colors disabled:opacity-50"
+                        className="px-4 py-2.5 text-xs font-bold text-[#111827] bg-[#F3F4F6] hover:bg-gray-200 border-2 border-[#E5E7EB] rounded-md transition-colors disabled:opacity-50"
                     >
                         {processing ? 'Saving...' : '+ Save & Add Another'}
                     </button>
@@ -89,7 +99,7 @@ export default function QuestionForm({ course, moduleId = null, allowAddAnother 
                 <button
                     type="submit"
                     disabled={processing}
-                    className="px-6 py-2.5 text-sm font-bold text-white bg-gray-900 hover:bg-gray-800 rounded-xl shadow-md disabled:opacity-50"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-[#111827] hover:bg-gray-800 rounded-md transition-transform active:scale-[0.98] disabled:opacity-50"
                 >
                     {processing ? 'Saving...' : allowAddAnother ? 'Save & Done' : 'Add Question'}
                 </button>

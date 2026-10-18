@@ -10,28 +10,28 @@ export default function LearnerLayout({ children }) {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 text-gray-900 font-sans">
+        <div className="min-h-screen bg-[#F9FAFB] text-[#111827] font-sans">
             {/* Top Navigation */}
-            <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-gray-200/50 shadow-sm transition-all duration-300">
+            <nav className="sticky top-0 z-50 bg-white border-b-2 border-[#E5E7EB]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
                         <div className="flex items-center space-x-8">
-                            <Link href={route('portal')} className="flex items-center space-x-2" aria-label="CoPED PULSE Home">
+                            <Link href={route('portal')} className="flex items-center space-x-3" aria-label="CoPED PULSE Home">
                                 <img src={logo} alt="CoPED PULSE Logo" className="h-8 w-auto" />
-                                <span className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight hidden sm:block">
+                                <span className="text-xl font-display font-extrabold text-[#111827] tracking-tight hidden sm:block">
                                     CoPED PULSE
                                 </span>
                             </Link>
                             
-                            <div className="hidden md:flex space-x-1">
+                            <div className="hidden md:flex space-x-2">
                                 {navLinks.map((link) => (
                                     <Link
                                         key={link.name}
                                         href={link.href}
-                                        className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
+                                        className={`px-4 py-2 rounded-md text-sm transition-colors ${
                                             link.active
-                                                ? 'bg-indigo-100/80 text-indigo-700 shadow-inner'
-                                                : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-100/50'
+                                                ? 'bg-[#111827] text-white font-bold'
+                                                : 'text-gray-700 hover:text-[#111827] hover:bg-[#F3F4F6] font-semibold'
                                         }`}
                                     >
                                         {link.name}
@@ -45,7 +45,7 @@ export default function LearnerLayout({ children }) {
                                 href={route('logout')}
                                 method="post"
                                 as="button"
-                                className="px-5 py-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all duration-300 shadow-sm hover:shadow-md"
+                                className="px-4 py-2 text-sm font-bold text-red-600 bg-white border-2 border-red-200 rounded-md hover:bg-red-50 hover:border-red-500 transition-colors"
                             >
                                 Logout
                             </Link>
@@ -55,9 +55,10 @@ export default function LearnerLayout({ children }) {
             </nav>
 
             {/* Main Content Area */}
-            <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fade-in-up">
+            <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                 {children}
             </main>
         </div>
     );
 }
+

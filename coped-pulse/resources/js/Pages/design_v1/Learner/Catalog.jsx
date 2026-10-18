@@ -1,80 +1,251 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useState, useMemo } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
+import FlatButton from '@/Components/flat/FlatButton';
+import FlatInput from '@/Components/flat/FlatInput';
+import {
+    MagnifyingGlassIcon,
+    XMarkIcon,
+    BookOpenIcon,
+    CircleCheckIcon,
+    ArrowRightIcon,
+    GraduationCapIcon,
+} from '@/Components/flat/icons';
 
-export default function Catalog({ courses }) {
-    const handleEnroll = (courseId) => {
-        router.post(route('learner.catalog.enroll', courseId));
+export default function Catalog({ courses = [], enrolledCourseIds = [], filters = { q: '' } }) {
+    const [searchQuery, setSearchQuery] = useState(filters.q || '');
+    const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'available', 'enrolled'
+
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        router.get(route('learner.catalog'), searchQuery.trim() ? { q: searchQuery.trim() } : {}, {
+            preserveState: true,
+            replace: true,
+        });
     };
+
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        router.get(route('learner.catalog'), {}, { preserveState: true, replace: true });
+    };
+
+    const filteredCourses = useMemo(() => {
+        let result = courses;
+        if (searchQuery.trim() !== '') {
+            const q = searchQuery.toLowerCase().trim();
+            result = result.filter(
+                (course) =>
+                    course.title?.toLowerCase().includes(q) ||
+                    course.description?.toLowerCase().includes(q)
+            );
+        }
+        if (activeFilter === 'enrolled') {
+            result = result.filter((course) => enrolledCourseIds.includes(course.id));
+        } else if (activeFilter === 'available') {
+            result = result.filter((course) => !enrolledCourseIds.includes(course.id));
+        }
+        return result;
+    }, [courses, searchQuery, activeFilter, enrolledCourseIds]);
+
+    const isEnrolled = (courseId) => enrolledCourseIds.includes(courseId);
 
     return (
         <LearnerLayout>
             <Head title="Course Catalog" />
-            
-            <div className="mb-10 text-center md:text-left">
-                <Link
-                    href={route('portal')}
-                    className="inline-flex items-center text-sm font-semibold text-indigo-600 hover:text-indigo-700 mb-4 transition-colors"
-                >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                    Back to Main page
-                </Link>
-                <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-800 to-purple-700 tracking-tight mb-4">
-                    Explore Courses
-                </h1>
-                <p className="text-lg text-gray-600 max-w-2xl leading-relaxed">
-                    Discover new skills and knowledge. Browse our curated selection of high-quality courses and enroll today.
-                </p>
-            </div>
 
-            {courses.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-sm">
-                    <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <p className="text-xl text-gray-500 font-medium">No published courses available right now.</p>
+            <div className="space-y-8">
+                {/* Header Back Link & Title */}
+                <div className="space-y-2">
+                    <Link
+                        href={route('portal')}
+                        className="inline-flex items-center text-sm font-bold text-[#111827] hover:underline"
+                    >
+                        ← Back to My Courses
+                    </Link>
+                    <h1 className="font-display font-extrabold text-3xl md:text-4xl text-[#111827] tracking-tight">
+                        Explore Courses
+                    </h1>
+                    <p className="text-sm md:text-base text-gray-600 max-w-2xl">
+                        Discover new skills and knowledge. Browse our curated selection of high-quality courses and enroll today.
+                    </p>
                 </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {courses.map((course) => (
-                        <div 
-                            key={course.id} 
-                            className="group flex flex-col bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                        >
-                            <div className="h-48 bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center p-6 relative overflow-hidden">
-                                <div className="absolute inset-0 bg-indigo-500/5 mix-blend-overlay group-hover:bg-indigo-500/10 transition-colors duration-300"></div>
-                                <h3 className="text-2xl font-bold text-indigo-900 text-center relative z-10 group-hover:scale-105 transition-transform duration-300">
-                                    {course.title}
-                                </h3>
-                            </div>
-                            
-                            <div className="p-8 flex flex-col flex-grow">
-                                <div className="flex items-center space-x-3 mb-4">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold text-xs shadow-md">
-                                        {course.instructor?.name?.charAt(0)}
-                                    </div>
-                                    <span className="text-sm font-semibold text-gray-700">
-                                        {course.instructor?.name || 'Instructor'}
-                                    </span>
-                                </div>
-                                
-                                <p className="text-gray-600 line-clamp-3 mb-8 flex-grow leading-relaxed">
-                                    {course.description || 'No description provided.'}
-                                </p>
-                                
+
+                {/* Top Search & Filter Bar */}
+                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-6">
+                    <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
+                        <div className="relative flex-1">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                <MagnifyingGlassIcon className="w-5 h-5" />
+                            </span>
+                            <FlatInput
+                                id="catalog-search"
+                                type="text"
+                                placeholder="Search for programs, courses, or topics..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full"
+                            />
+                            {searchQuery && (
                                 <button
-                                    onClick={() => handleEnroll(course.id)}
-                                    className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-bold text-sm shadow-md hover:shadow-lg hover:from-indigo-500 hover:to-purple-500 transform hover:-translate-y-0.5 transition-all duration-200 active:scale-95 flex justify-center items-center space-x-2"
+                                    type="button"
+                                    onClick={handleClearSearch}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-[#111827] transition-colors"
+                                    aria-label="Clear search"
                                 >
-                                    <span>Enroll Now</span>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                    </svg>
+                                    <XMarkIcon className="w-4 h-4" />
                                 </button>
-                            </div>
+                            )}
                         </div>
-                    ))}
+                        <FlatButton type="submit" variant="dark" className="shrink-0 h-auto py-3">
+                            Search
+                        </FlatButton>
+                    </form>
+
+                    {/* Result Counter & Filter Pills */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 border-t-2 border-[#E5E7EB]">
+                        <span className="font-display font-extrabold text-lg text-[#111827]">
+                            {filteredCourses.length} result{filteredCourses.length !== 1 ? 's' : ''}
+                        </span>
+                        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Course filters">
+                            {[
+                                { id: 'all', label: 'All Courses' },
+                                { id: 'available', label: 'Available to Enroll' },
+                                { id: 'enrolled', label: 'Enrolled' },
+                            ].map((filter) => {
+                                const active = activeFilter === filter.id;
+                                return (
+                                    <button
+                                        key={filter.id}
+                                        role="tab"
+                                        aria-selected={active}
+                                        onClick={() => setActiveFilter(filter.id)}
+                                        className={`px-4 py-2 text-xs font-bold rounded-md border-2 transition-colors ${
+                                            active
+                                                ? 'bg-[#111827] text-white border-[#111827]'
+                                                : 'bg-white text-[#111827] border-[#E5E7EB] hover:border-[#111827]'
+                                        }`}
+                                    >
+                                        {filter.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
-            )}
+
+                {/* edX Professional Certificate Card Grid */}
+                {filteredCourses.length === 0 ? (
+                    <div className="bg-white border-2 border-dashed border-[#E5E7EB] rounded-lg py-16 px-6 text-center">
+                        <BookOpenIcon className="w-14 h-14 text-gray-300 mx-auto mb-4" />
+                        <h2 className="font-display font-bold text-lg text-[#111827] mb-1">
+                            No courses match your criteria
+                        </h2>
+                        <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
+                            {searchQuery || activeFilter !== 'all'
+                                ? 'Try searching for another keyword or resetting the filter pills.'
+                                : 'Check back later as new published courses are added to the catalog.'}
+                        </p>
+                        {(searchQuery || activeFilter !== 'all') && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setActiveFilter('all');
+                                    router.get(route('learner.catalog'), {}, { preserveState: true, replace: true });
+                                }}
+                                className="inline-flex items-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-5 py-2.5 rounded transition-transform active:scale-[0.98]"
+                            >
+                                Clear All Filters
+                            </button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredCourses.map((course, index) => {
+                            const enrolled = isEnrolled(course.id);
+                            const bannerBg = index % 2 === 0 ? 'bg-[#111827]' : 'bg-[#3B82F6]';
+
+                            return (
+                                <div
+                                    key={course.id}
+                                    className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden flex flex-col justify-between transition-transform duration-200 hover:scale-[1.01]"
+                                >
+                                    <div>
+                                        {/* Top Eyebrow Strip */}
+                                        <div className="px-4 py-2 bg-[#F3F4F6] border-b-2 border-[#E5E7EB] text-xs font-bold uppercase tracking-wider text-[#111827]">
+                                            Professional Certificate
+                                        </div>
+
+                                        {/* Color-Blocked Banner */}
+                                        <div className={`${bannerBg} p-6 relative min-h-[110px] flex items-end`}>
+                                            <div className="absolute top-4 right-4 bg-white border-2 border-[#111827] px-3 py-1 rounded text-xs font-extrabold text-[#111827]">
+                                                UUM · CoPED
+                                            </div>
+                                            <span className="text-xs uppercase tracking-widest font-extrabold text-white/80">
+                                                Self-Paced Course
+                                            </span>
+                                        </div>
+
+                                        {/* Body */}
+                                        <div className="p-6 space-y-4">
+                                            <div>
+                                                <h2 className="font-display font-bold text-lg text-[#111827] line-clamp-2">
+                                                    {course.title}
+                                                </h2>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    {course.instructor?.name || 'Faculty Instructor'}
+                                                </p>
+                                            </div>
+
+                                            <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                                                {course.description || 'Comprehensive curriculum designed for applied professional development.'}
+                                            </p>
+
+                                            {/* edX Metadata List */}
+                                            <div className="border-t-2 border-[#E5E7EB] pt-4 space-y-2 text-xs font-semibold text-[#111827]">
+                                                <div className="flex items-center gap-2.5">
+                                                    <BookOpenIcon className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                                                    <span>{course.modules_count ?? 0} modules</span>
+                                                </div>
+                                                <div className="flex items-center gap-2.5">
+                                                    <GraduationCapIcon className="w-4 h-4 text-[#10B981] shrink-0" />
+                                                    <span>Self-paced learning</span>
+                                                </div>
+                                                <div className="flex items-center gap-2.5">
+                                                    <CircleCheckIcon className="w-4 h-4 text-[#F59E0B] shrink-0" />
+                                                    <span>Verifiable completion</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Footer */}
+                                    <div className="p-6 pt-0">
+                                        {enrolled ? (
+                                            <Link
+                                                href={route('learner.course.learn', course.id)}
+                                                className="w-full inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
+                                            >
+                                                <span>Enrolled ✓ · Continue Course</span>
+                                                <ArrowRightIcon className="w-4 h-4" />
+                                            </Link>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => router.post(route('learner.catalog.enroll', course.id))}
+                                                className="w-full inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
+                                            >
+                                                <span>Enroll Now</span>
+                                                <ArrowRightIcon className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </LearnerLayout>
     );
 }
