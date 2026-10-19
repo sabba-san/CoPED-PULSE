@@ -52,9 +52,14 @@ class CourseController extends Controller
     {
         $this->authorize('view', $course);
 
-        $course->load(['modules' => function($q) {
-            $q->orderBy('order');
-        }, 'modules.lessons', 'assessments']);
+        $course->load([
+            'instructor:id,name,email',
+            'modules' => function($q) {
+                $q->orderBy('order');
+            },
+            'modules.lessons',
+            'assessments',
+        ]);
 
         return Inertia::render('design_v1/Staff/Courses/Show', [
             'course' => $course,
@@ -65,9 +70,14 @@ class CourseController extends Controller
     {
         $this->authorize('update', $course);
 
-        $course->load(['modules' => function($q) {
-            $q->orderBy('order');
-        }, 'assessments']);
+        $course->load([
+            'instructor:id,name,email',
+            'modules' => function($q) {
+                $q->orderBy('order');
+            },
+            'modules.lessons',
+            'assessments',
+        ]);
 
         return Inertia::render('design_v1/Staff/Courses/Edit', [
             'course' => $course,

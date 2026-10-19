@@ -28,7 +28,7 @@ export default function Create() {
                     <h1 className="mt-2 text-3xl font-bold text-gray-900">Create Course</h1>
                 </div>
 
-                <form onSubmit={submit} className="bg-white shadow-sm rounded-lg p-6 space-y-6">
+                <form onSubmit={submit} className="bg-white border border-gray-200 rounded-lg p-6 space-y-6">
                     <div>
                         <label htmlFor="title" className="block text-sm font-medium text-gray-700">
                             Title
@@ -40,7 +40,7 @@ export default function Create() {
                             value={data.title}
                             onChange={(e) => setData(e.target.name, e.target.value)}
                             required
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
                         {errors.title && (
                             <span className="text-red-500 text-sm">{errors.title}</span>
@@ -57,7 +57,7 @@ export default function Create() {
                             rows={4}
                             value={data.description}
                             onChange={(e) => setData(e.target.name, e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
                         {errors.description && (
                             <span className="text-red-500 text-sm">{errors.description}</span>
@@ -74,7 +74,7 @@ export default function Create() {
                             value={data.status}
                             onChange={(e) => setData(e.target.name, e.target.value)}
                             required
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         >
                             <option value="draft">Draft</option>
                             <option value="published">Published</option>

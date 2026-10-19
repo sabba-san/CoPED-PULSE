@@ -5,7 +5,7 @@ export function useRole() {
 }
 
 /**
- * Client-side role guard (UX only — never a security boundary).
+ * Client-side role guard (UX only - never a security boundary).
  * Server must still enforce RoleMiddleware + Policies.
  *
  * Usage: <Can roles={['staff']}><Link ...>New Course</Link></Can>

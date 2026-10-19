@@ -2,7 +2,8 @@ import { Link, usePage } from '@inertiajs/react';
 import logo from '@/images/logo.png';
 
 export default function StaffLayout({ children }) {
-    const { url, auth } = usePage();
+    const { url } = usePage();
+    const { auth, flash } = usePage().props;
 
     const navLinks = [
         { name: 'Dashboard', href: route('dashboard'), active: url === '/dashboard' },
@@ -56,6 +57,28 @@ export default function StaffLayout({ children }) {
                     </div>
                 </div>
             </nav>
+
+            {/* Global Flash Messages */}
+            {flash?.success && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+                    <div className="bg-emerald-50 border-2 border-[#10B981] text-[#065F46] rounded-md px-5 py-3 text-sm font-bold flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 bg-[#10B981] text-white rounded-full flex items-center justify-center text-xs font-black">✓</span>
+                            <span>{flash.success}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {flash?.error && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+                    <div className="bg-red-50 border-2 border-red-500 text-red-900 rounded-md px-5 py-3 text-sm font-bold flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-black">!</span>
+                            <span>{flash.error}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Main Content Area */}
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

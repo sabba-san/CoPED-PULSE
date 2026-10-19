@@ -68,11 +68,13 @@ Route::middleware('auth')->group(function () {
 
             $course->load(['modules.lessons', 'assessments']);
 
-            $completedModuleIds = Schema::hasTable('module_completions')
-                ? ModuleCompletion::where('user_id', auth()->id())
-                    ->where('course_id', $course->id)
-                    ->pluck('module_id')
-                : collect();
+            $completedModuleIds = Schema::hasTable('module_user')
+                ? auth()->user()->completedModules()->whereIn('modules.id', $course->modules()->pluck('id'))->pluck('modules.id')
+                : (Schema::hasTable('module_completions')
+                    ? ModuleCompletion::where('user_id', auth()->id())
+                        ->where('course_id', $course->id)
+                        ->pluck('module_id')
+                    : collect());
 
             $notes = [];
             if (Schema::hasTable('notes')) {
@@ -142,11 +144,13 @@ Route::middleware('auth')->group(function () {
             $course->load(['modules.lessons', 'assessments']);
             $module->load(['lessons']);
 
-            $completedModuleIds = Schema::hasTable('module_completions')
-                ? ModuleCompletion::where('user_id', auth()->id())
-                    ->where('course_id', $course->id)
-                    ->pluck('module_id')
-                : collect();
+            $completedModuleIds = Schema::hasTable('module_user')
+                ? auth()->user()->completedModules()->whereIn('modules.id', $course->modules()->pluck('id'))->pluck('modules.id')
+                : (Schema::hasTable('module_completions')
+                    ? ModuleCompletion::where('user_id', auth()->id())
+                        ->where('course_id', $course->id)
+                        ->pluck('module_id')
+                    : collect());
 
             $completedLessonIds = Schema::hasTable('lesson_completions')
                 ? \App\Models\LessonCompletion::where('user_id', auth()->id())
@@ -207,8 +211,8 @@ Route::middleware('auth')->group(function () {
         })->name('course.module.learn');
 
         Route::post('courses/{course}/assess', [\App\Http\Controllers\Learner\AssessmentController::class, 'assess'])->name('course.assess');
-        Route::post('courses/{course}/modules/{module}/complete', [\App\Http\Controllers\Learner\ProgressController::class, 'complete'])->name('course.module.complete');
-        Route::delete('courses/{course}/modules/{module}/complete', [\App\Http\Controllers\Learner\ProgressController::class, 'uncomplete'])->name('course.module.uncomplete');
+        Route::post('courses/{course}/modules/{module}/complete', [\App\Http\Controllers\Learner\ModuleCompletionController::class, 'store'])->name('course.module.complete');
+        Route::delete('courses/{course}/modules/{module}/complete', [\App\Http\Controllers\Learner\ModuleCompletionController::class, 'destroy'])->name('course.module.uncomplete');
         Route::post('courses/{course}/modules/{module}/lessons/{lesson}/complete', [\App\Http\Controllers\Learner\ProgressController::class, 'lessonComplete'])->name('course.module.lesson.complete');
         Route::delete('courses/{course}/modules/{module}/lessons/{lesson}/complete', [\App\Http\Controllers\Learner\ProgressController::class, 'lessonUncomplete'])->name('course.module.lesson.uncomplete');
         Route::put('goal', [\App\Http\Controllers\Learner\GoalController::class, 'update'])->name('goal.update');

@@ -25,7 +25,7 @@ export default function Index({ courses }) {
                 </Link>
             </div>
 
-            <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 {courses.data.length === 0 ? (
                     <div className="text-center py-12">
                         <p className="text-gray-500">No courses yet.</p>

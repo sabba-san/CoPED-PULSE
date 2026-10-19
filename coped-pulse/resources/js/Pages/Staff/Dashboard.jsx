@@ -14,7 +14,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 <Link
                     href={route('staff.courses.create')}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                    className="bg-white rounded-lg border border-gray-200 p-6 hover:border-gray-400 transition-colors"
                 >
                     <div className="flex items-center justify-between">
                         <div>
@@ -29,7 +29,7 @@ export default function Dashboard() {
 
                 <Link
                     href={route('staff.courses.index')}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                    className="bg-white rounded-lg border border-gray-200 p-6 hover:border-gray-400 transition-colors"
                 >
                     <div className="flex items-center justify-between">
                         <div>
@@ -42,7 +42,7 @@ export default function Dashboard() {
                     </div>
                 </Link>
 
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="text-lg font-medium text-gray-900">Quick Stats</h3>

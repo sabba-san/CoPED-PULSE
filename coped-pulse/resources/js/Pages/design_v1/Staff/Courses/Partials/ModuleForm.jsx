@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import { formatEmbedUrl, isVideoUrl, safeUrl } from '@/Utils/mediaUtils';
 
 const MAX_MODULE_FILE_SIZE = 15 * 1024 * 1024;
 const MAX_MODULE_FILE_LABEL = '15MB';
@@ -100,17 +101,41 @@ export default function ModuleForm({ course }) {
                     </div>
 
                     {data.content_type === 'link' && (
-                        <div>
-                            <label htmlFor="module_media" className="block text-sm font-bold text-[#111827] mb-2">Media URL</label>
-                            <input
-                                id="module_media"
-                                type="text"
-                                value={data.media_url}
-                                onChange={(e) => setData('media_url', e.target.value)}
-                                placeholder="https://..."
-                                className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
-                            />
-                            {errors.media_url && <p className="mt-2 text-red-600 text-sm font-medium">{errors.media_url}</p>}
+                        <div className="space-y-3">
+                            <div>
+                                <label htmlFor="module_media" className="block text-sm font-bold text-[#111827] mb-2">Media URL (YouTube or Direct Video)</label>
+                                <input
+                                    id="module_media"
+                                    type="text"
+                                    value={data.media_url}
+                                    onChange={(e) => setData('media_url', e.target.value)}
+                                    placeholder="https://www.youtube.com/watch?v=..."
+                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
+                                />
+                                {errors.media_url && <p className="mt-2 text-red-600 text-sm font-medium">{errors.media_url}</p>}
+                            </div>
+
+                            {/* Live Video Preview Box */}
+                            {safeUrl(data.media_url) && formatEmbedUrl(data.media_url) && isVideoUrl(data.media_url) && (
+                                <div className="border-2 border-[#E5E7EB] rounded-md overflow-hidden bg-[#111827] animate-fade-in">
+                                    <div className="p-2 bg-[#1F2937] text-white flex items-center justify-between text-xs font-bold border-b border-gray-700">
+                                        <div className="inline-flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse-dot" />
+                                            <span>Inline Video Preview</span>
+                                        </div>
+                                        <span className="text-gray-400 text-[11px]">Will embed inline for learners</span>
+                                    </div>
+                                    <div className="aspect-video w-full">
+                                        <iframe
+                                            src={formatEmbedUrl(data.media_url)}
+                                            title="Module Video Preview"
+                                            className="w-full h-full border-0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            allowFullScreen
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

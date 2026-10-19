@@ -26,7 +26,7 @@ export default function Login() {
                         </p>
                     </div>
                     <form className="mt-8 space-y-6" onSubmit={submit}>
-                        <div className="rounded-md shadow-sm -space-y-px">
+                        <div className="rounded-md -space-y-px">
                             <div>
                                 <label htmlFor="email" className="sr-only">Email address</label>
                                 <input

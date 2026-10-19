@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
@@ -13,29 +13,95 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create Staff Account
+        $defaultPassword = Hash::make('password');
+
+        // Staff / Instructor Accounts
         User::firstOrCreate(
             ['email' => 'instruct@gmail.com'],
             [
                 'name' => 'Irdina Athielia',
-                'password' => Hash::make('password'),
-                'role' => 'staff',
+                'password' => $defaultPassword,
+                'role' => User::ROLE_STAFF,
             ]
         );
 
-        // Create Learner Account
+        User::firstOrCreate(
+            ['email' => 'instructor@coped.org'],
+            [
+                'name' => 'Staff Instructor',
+                'password' => $defaultPassword,
+                'role' => User::ROLE_STAFF,
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'rusdi@gmail.com'],
+            [
+                'name' => 'Rusdi Ismail',
+                'password' => $defaultPassword,
+                'role' => User::ROLE_STAFF,
+            ]
+        );
+
+        // Learner Accounts
         User::firstOrCreate(
             ['email' => 'learn@gmail.com'],
             [
                 'name' => 'Learner A',
-                'password' => Hash::make('password'),
-                'role' => 'learner',
+                'password' => $defaultPassword,
+                'role' => User::ROLE_LEARNER,
             ]
         );
 
-        // Call your course seeder next
+        User::firstOrCreate(
+            ['email' => 'abbasabudzarr@gmail.com'],
+            [
+                'name' => 'Abbas Abu Dzarr',
+                'password' => $defaultPassword,
+                'role' => User::ROLE_LEARNER,
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'ameer@gmail.com'],
+            [
+                'name' => 'ameer zafran',
+                'password' => $defaultPassword,
+                'role' => User::ROLE_LEARNER,
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'arman@gmail.com'],
+            [
+                'name' => 'arman fansuri',
+                'password' => $defaultPassword,
+                'role' => User::ROLE_LEARNER,
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'learner@coped.org'],
+            [
+                'name' => 'Test Learner',
+                'password' => $defaultPassword,
+                'role' => User::ROLE_LEARNER,
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => $defaultPassword,
+                'role' => User::ROLE_LEARNER,
+            ]
+        );
+
+        // Call course and enrollment seeders
         $this->call([
             CourseSeeder::class,
+            EnrollmentSeeder::class,
         ]);
     }
 }

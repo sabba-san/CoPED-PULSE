@@ -4,6 +4,7 @@ import QuestionCard from '../Partials/QuestionCard';
 import QuestionEditForm from '../Partials/QuestionEditForm';
 import QuestionForm from '../Partials/QuestionForm';
 import { useEffect, useState } from 'react';
+import { formatEmbedUrl, getYouTubeId, isVideoUrl, safeUrl } from '@/Utils/mediaUtils';
 
 const MAX_MODULE_FILE_SIZE = 15 * 1024 * 1024; // 15MB - must stay below PHP post_max_size
 const MAX_MODULE_FILE_LABEL = '15MB';
@@ -31,6 +32,7 @@ export default function Edit({ course, module, assessments }) {
     const [isDragging, setIsDragging] = useState(false);
 
     const [showAddQuiz, setShowAddQuiz] = useState(false);
+    const [showQuizSection, setShowQuizSection] = useState(quizzes.length > 0);
     const [editingId, setEditingId] = useState(null);
     const [editErrors, setEditErrors] = useState({});
     const [editSaving, setEditSaving] = useState(false);
@@ -219,6 +221,28 @@ export default function Edit({ course, module, assessments }) {
                     </div>
                 )}
 
+                {/* Current Unit Main Video Preview if attached */}
+                {module.media_url && safeUrl(module.media_url) && isVideoUrl(module.media_url) && (
+                    <div className="bg-white rounded-md border-2 border-[#E5E7EB] overflow-hidden animate-fade-in">
+                        <div className="p-4 bg-[#F9FAFB] border-b-2 border-[#E5E7EB] flex items-center justify-between">
+                            <div className="inline-flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse-dot" />
+                                <span className="text-sm font-extrabold text-[#111827] font-display">Unit Main Media Stage</span>
+                            </div>
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Inline Playback Active</span>
+                        </div>
+                        <div className="aspect-video bg-[#111827]">
+                            <iframe
+                                src={formatEmbedUrl(module.media_url)}
+                                title={module.title}
+                                className="w-full h-full border-0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                            />
+                        </div>
+                    </div>
+                )}
+
                 {/* 1 - Module details (big title) */}
                 <form onSubmit={saveDetails} className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8 space-y-5">
                     <h2 className="text-xl font-extrabold text-[#111827] font-display">Module Details</h2>
@@ -318,15 +342,35 @@ export default function Edit({ course, module, assessments }) {
                                                 />
                                             </div>
                                             {lessonDraft.content_type === 'link' ? (
-                                            <div className="sm:col-span-2">
-                                                <label className="block text-xs font-bold text-[#111827] mb-1">Media URL (video link, mp4, or page)</label>
+                                            <div className="sm:col-span-2 space-y-2">
+                                                <label className="block text-xs font-bold text-[#111827] mb-1">Media URL (YouTube, Vimeo, or direct video)</label>
                                                 <input
                                                     type="text"
                                                     value={lessonDraft.content_url}
                                                     onChange={(e) => setLessonDraft((p) => ({ ...p, content_url: e.target.value }))}
-                                                    placeholder="https://..."
+                                                    placeholder="https://www.youtube.com/watch?v=..."
                                                     className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
                                                 />
+                                                {safeUrl(lessonDraft.content_url) && formatEmbedUrl(lessonDraft.content_url) && isVideoUrl(lessonDraft.content_url) && (
+                                                    <div className="border-2 border-[#E5E7EB] rounded-md overflow-hidden bg-[#111827] animate-fade-in mt-2">
+                                                        <div className="p-2 bg-[#1F2937] text-white flex items-center justify-between text-xs font-bold border-b border-gray-700">
+                                                            <div className="inline-flex items-center gap-1.5">
+                                                                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse-dot" />
+                                                                <span>Live Subtopic Video Preview</span>
+                                                            </div>
+                                                            <span className="text-gray-400 text-[11px]">Inline playback</span>
+                                                        </div>
+                                                        <div className="aspect-video w-full">
+                                                            <iframe
+                                                                src={formatEmbedUrl(lessonDraft.content_url)}
+                                                                title="Subtopic Preview"
+                                                                className="w-full h-full border-0"
+                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                                allowFullScreen
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                             ) : (
                                             <div className="sm:col-span-2">
@@ -458,8 +502,8 @@ export default function Edit({ course, module, assessments }) {
                                 </select>
                             </div>
                             {newLesson.content_type === 'link' ? (
-                            <div className="sm:col-span-2">
-                                <label className="block text-sm font-bold text-[#111827] mb-2">Media URL</label>
+                            <div className="sm:col-span-2 space-y-2">
+                                <label className="block text-sm font-bold text-[#111827] mb-2">Media URL (YouTube, Vimeo, or direct video)</label>
                                 <input
                                     type="text"
                                     value={newLesson.content_url}
@@ -467,6 +511,26 @@ export default function Edit({ course, module, assessments }) {
                                     placeholder="https://... (YouTube, Vimeo, or direct mp4)"
                                     className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
                                 />
+                                {safeUrl(newLesson.content_url) && formatEmbedUrl(newLesson.content_url) && isVideoUrl(newLesson.content_url) && (
+                                    <div className="border-2 border-[#E5E7EB] rounded-md overflow-hidden bg-[#111827] animate-fade-in mt-2">
+                                        <div className="p-2 bg-[#1F2937] text-white flex items-center justify-between text-xs font-bold border-b border-gray-700">
+                                            <div className="inline-flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse-dot" />
+                                                <span>Live Subtopic Video Preview</span>
+                                            </div>
+                                            <span className="text-gray-400 text-[11px]">Inline playback</span>
+                                        </div>
+                                        <div className="aspect-video w-full">
+                                            <iframe
+                                                src={formatEmbedUrl(newLesson.content_url)}
+                                                title="New Subtopic Preview"
+                                                className="w-full h-full border-0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                allowFullScreen
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             ) : (
                             <div className="sm:col-span-2">
@@ -529,60 +593,92 @@ export default function Edit({ course, module, assessments }) {
                     </form>
                 </div>
 
-                {/* 3 - Mini-quiz (unchanged) */}
+                {/* 3 - Mini-quiz (Explicitly Optional) */}
                 <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8">
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                         <div>
-                            <h2 className="text-2xl font-extrabold text-[#111827] font-display">Mini-Quiz</h2>
-                            <p className="text-sm text-gray-500">{quizzes.length} {quizzes.length === 1 ? 'question' : 'questions'} in this module.</p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setShowAddQuiz((v) => !v)}
-                            className="px-4 py-2 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 rounded-md transition-colors"
-                        >
-                            {showAddQuiz ? 'Close Form' : '+ Add Question'}
-                        </button>
-                    </div>
-
-                    <div className="space-y-3 mb-8">
-                        {quizzes.length > 0 ? (
-                            quizzes.map((q, qIdx) => (
-                                editingId === q.id ? (
-                                    <QuestionEditForm
-                                        key={q.id}
-                                        initial={q}
-                                        saving={editSaving}
-                                        errors={editErrors}
-                                        onCancel={() => setEditingId(null)}
-                                        onSave={(data) => saveEdit(q, data)}
-                                    />
-                                ) : (
-                                    <QuestionCard
-                                        key={q.id}
-                                        q={q}
-                                        index={qIdx}
-                                        onEdit={() => { setEditingId(q.id); setEditErrors({}); }}
-                                        onDelete={() => deleteQuiz(q)}
-                                    />
-                                )
-                            ))
-                        ) : (
-                            <div className="text-center py-10 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
-                                <p className="text-gray-500 font-medium text-sm">No mini-quiz questions yet. Add the first one.</p>
+                            <div className="flex items-center gap-2.5">
+                                <h2 className="text-2xl font-extrabold text-[#111827] font-display">Module Practice Quiz</h2>
+                                <span className="bg-[#F3F4F6] border border-[#E5E7EB] text-xs font-bold uppercase px-2 py-0.5 rounded text-gray-700">
+                                    OPTIONAL
+                                </span>
                             </div>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Optional · Leave empty for lecture-only or introductory modules. Questions provide instant self-test feedback to learners without blocking course progression.
+                            </p>
+                        </div>
+                        {(quizzes.length > 0 || showQuizSection) && (
+                            <button
+                                type="button"
+                                onClick={() => setShowAddQuiz((v) => !v)}
+                                className="px-4 py-2 text-xs font-bold text-white bg-[#10B981] hover:bg-emerald-600 rounded-md transition-colors shrink-0"
+                            >
+                                {showAddQuiz ? 'Close Form' : '+ Add Question'}
+                            </button>
                         )}
                     </div>
 
-                    {showAddQuiz && (
-                        <QuestionForm
-                            course={course}
-                            moduleId={module.id}
-                            allowAddAnother
-                            onDone={() => setShowAddQuiz(false)}
-                            onSaved={() => pop('Mini-quiz question saved.')}
-                            title="Add Mini-Quiz Question"
-                        />
+                    {!showQuizSection && quizzes.length === 0 ? (
+                        <div className="text-center py-12 px-6 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
+                            <p className="text-[#111827] font-bold text-sm mb-1">No Practice Quiz For This Module</p>
+                            <p className="text-xs text-gray-500 max-w-md mx-auto mb-5">
+                                Practice mini-quizzes are completely optional. If this unit is an introductory chapter or lecture without questions, you can leave this blank.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowQuizSection(true);
+                                    setShowAddQuiz(true);
+                                }}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-[#111827] bg-white border-2 border-[#E5E7EB] hover:border-[#10B981] rounded-md transition-colors"
+                            >
+                                <span>+ Add Optional Practice Quiz for This Module</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="space-y-3 mb-8">
+                                {quizzes.length > 0 ? (
+                                    quizzes.map((q, qIdx) => (
+                                        editingId === q.id ? (
+                                            <QuestionEditForm
+                                                key={q.id}
+                                                initial={q}
+                                                saving={editSaving}
+                                                errors={editErrors}
+                                                onCancel={() => setEditingId(null)}
+                                                onSave={(data) => saveEdit(q, data)}
+                                            />
+                                        ) : (
+                                            <QuestionCard
+                                                key={q.id}
+                                                q={q}
+                                                index={qIdx}
+                                                onEdit={() => { setEditingId(q.id); setEditErrors({}); }}
+                                                onDelete={() => deleteQuiz(q)}
+                                            />
+                                        )
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
+                                        <p className="text-gray-500 font-medium text-xs">
+                                            No questions created yet. Use the form below to add your first question, or collapse this section.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {showAddQuiz && (
+                                <QuestionForm
+                                    course={course}
+                                    moduleId={module.id}
+                                    allowAddAnother
+                                    onDone={() => setShowAddQuiz(false)}
+                                    onSaved={() => pop('Mini-quiz question saved.')}
+                                    title="Add Mini-Quiz Question (Optional)"
+                                />
+                            )}
+                        </>
                     )}
                 </div>
             </div>

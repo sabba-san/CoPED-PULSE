@@ -41,7 +41,7 @@ export default function Learn({ course, enrollment }) {
 
                     <div className="space-y-4">
                         {course.modules?.map(module => (
-                            <div key={module.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
+                            <div key={module.id} className="bg-white rounded-lg border border-gray-200">
                                 <div className="p-4 border-b border-gray-200">
                                     <h2 className="text-lg font-medium text-gray-900">{module.title}</h2>
                                 </div>
@@ -56,7 +56,7 @@ export default function Learn({ course, enrollment }) {
                         ))}
 
                         {(!course.modules || course.modules.length === 0) && (
-                            <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+                            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
                                 <p className="text-gray-500">No modules available yet.</p>
                             </div>
                         )}

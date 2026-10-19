@@ -105,9 +105,17 @@ export default function CurriculumSidebar({
                                 >
                                     <span className="flex-1 min-w-0">
                                         <span className="block text-sm font-bold text-[#111827] truncate">{m.title}</span>
-                                        <span className={`text-[11px] font-bold ${finished ? 'text-[#10B981]' : 'text-gray-500'}`}>
-                                            {finished ? 'COMPLETED' : lessons.length > 0 ? `${lessons.filter((l) => doneLessons.has(l.id)).length}/${lessons.length} lessons` : 'NOT STARTED'}
-                                        </span>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            {finished ? (
+                                                <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pop">
+                                                    ✓ DONE
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] font-bold text-gray-500">
+                                                    {lessons.length > 0 ? `${lessons.filter((l) => doneLessons.has(l.id)).length}/${lessons.length} lessons` : 'NOT STARTED'}
+                                                </span>
+                                            )}
+                                        </div>
                                     </span>
                                 </button>
                                 {lessons.length > 0 && (

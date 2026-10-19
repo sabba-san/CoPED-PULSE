@@ -1,14 +1,6 @@
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
-
-const fileNameFromUrl = (url) => {
-    try {
-        const raw = decodeURIComponent(String(url).split('?')[0].split('/').pop() || '');
-        return raw.replace(/^\d+_/, '') || raw || 'attachment';
-    } catch {
-        return 'attachment';
-    }
-};
+import { fileNameFromUrl, isVideoUrl, safeUrl } from '@/Utils/mediaUtils';
 
 const extOf = (url) => (String(url).split('?')[0].split('.').pop() || '').toLowerCase();
 
@@ -17,7 +9,16 @@ const extOf = (url) => (String(url).split('?')[0].split('.').pop() || '').toLowe
  * no reload) and Files (every instructor attachment in this course).
  * Keyed by module id from the parent so the editor resets per module.
  */
-export default function RightSidebar({ course, module, modules = [], initialNote = '', savedAt = null, tab: controlledTab, onTabChange }) {
+export default function RightSidebar({
+    course,
+    module,
+    modules = [],
+    initialNote = '',
+    savedAt = null,
+    tab: controlledTab,
+    onTabChange,
+    onSelectResource,
+}) {
     const [innerTab, setInnerTab] = useState('notes');
     const tab = controlledTab ?? innerTab;
     const setTab = onTabChange ?? setInnerTab;
@@ -131,11 +132,50 @@ export default function RightSidebar({ course, module, modules = [], initialNote
                     </p>
                     {files.length > 0 ? (
                         files.map((f) => {
+                            const isVid = isVideoUrl(f.url);
+                            const validUrl = safeUrl(f.url);
                             const ext = extOf(f.url);
+
+                            if (isVid) {
+                                return (
+                                    <button
+                                        key={f.key}
+                                        type="button"
+                                        onClick={() => {
+                                            if (onSelectResource && validUrl) {
+                                                onSelectResource(validUrl, f.name);
+                                            } else if (validUrl) {
+                                                window.open(validUrl, '_blank', 'noreferrer');
+                                            }
+                                        }}
+                                        className={`w-full text-left flex items-center gap-3 p-3 rounded-md border-2 transition-all active:scale-[0.98] ${
+                                            f.current
+                                                ? 'border-[#3B82F6] bg-blue-50/50'
+                                                : 'border-[#E5E7EB] hover:border-gray-400 bg-white'
+                                        }`}
+                                    >
+                                        <span className="shrink-0 w-9 h-9 rounded-md bg-[#EF4444] text-white text-[10px] font-black flex items-center justify-center uppercase">
+                                            ▶ Play
+                                        </span>
+                                        <span className="flex-1 min-w-0">
+                                            <span className="block text-xs font-bold text-[#111827] truncate">
+                                                {f.name}
+                                            </span>
+                                            <span className="block text-[11px] text-gray-500 truncate">
+                                                {f.sub} · Play in Website
+                                            </span>
+                                        </span>
+                                        <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 shrink-0">
+                                            Stage
+                                        </span>
+                                    </button>
+                                );
+                            }
+
                             return (
                                 <a
                                     key={f.key}
-                                    href={f.url}
+                                    href={validUrl || '#'}
                                     target="_blank"
                                     rel="noreferrer"
                                     className={`flex items-center gap-3 p-3 rounded-md border-2 transition-colors ${

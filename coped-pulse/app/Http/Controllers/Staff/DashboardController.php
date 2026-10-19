@@ -15,7 +15,7 @@ class DashboardController extends Controller
     {
         $instructorId = auth()->id();
 
-        // One pluck, reused — avoids repeated instructor joins.
+        // One pluck, reused - avoids repeated instructor joins.
         $courseIds = Course::where('instructor_id', $instructorId)->pluck('id');
 
         $enrollQuery = Enrollment::whereIn('course_id', $courseIds);
@@ -32,29 +32,27 @@ class DashboardController extends Controller
             'avg_completion' => round((clone $enrollQuery)->avg('progress') ?? 0, 1),
         ];
 
-        // Per-course table: counts + average pre-computed, no N+1.
-        $breakdown = Course::where('instructor_id', $instructorId)
-            ->select('id', 'title', 'status')
+        // Per-course list: all instructor courses with counts + avg progress
+        $courses = Course::where('instructor_id', $instructorId)
             ->withCount(['modules', 'enrollments'])
             ->withAvg('enrollments as avg_progress', 'progress')
             ->withCount(['enrollments as completed_count' => fn ($q) => $q->whereNotNull('completed_at')])
             ->latest()
-            ->take(5)
             ->get();
 
-        // Recent activity: 7 rows max, minimal columns, eager-loaded names.
+        // Recent activity feed: 10 rows max with learner and course relationships
         $recentActivity = $courseIds->isNotEmpty()
             ? Enrollment::whereIn('course_id', $courseIds)
-                ->with(['user:id,name', 'course:id,title'])
-                ->select('id', 'user_id', 'course_id', 'progress', 'completed_at', 'created_at')
-                ->latest()
-                ->take(7)
+                ->with(['user:id,name,email', 'course:id,title'])
+                ->latest('updated_at')
+                ->limit(10)
                 ->get()
             : collect();
 
         return Inertia::render('design_v1/Staff/Dashboard', [
             'stats' => $stats,
-            'breakdown' => $breakdown,
+            'courses' => $courses,
+            'breakdown' => $courses,
             'recentActivity' => $recentActivity,
         ]);
     }

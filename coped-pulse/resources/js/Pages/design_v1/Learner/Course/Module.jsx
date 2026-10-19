@@ -7,16 +7,9 @@ import VideoPlayer from './Partials/VideoPlayer';
 import DiveDeeper from './Partials/DiveDeeper';
 import FeedbackBar from './Partials/FeedbackBar';
 
-const OPTION_KEYS = ['a', 'b', 'c', 'd'];
+import { safeUrl } from '@/Utils/mediaUtils';
 
-const safeUrl = (url) => {
-    if (!url || typeof url !== 'string') return null;
-    if (url.startsWith('/storage/')) return url;
-    try {
-        const p = new URL(url.trim());
-        return p.protocol === 'http:' || p.protocol === 'https:' ? p.href : null;
-    } catch { return null; }
-};
+const OPTION_KEYS = ['a', 'b', 'c', 'd'];
 
 export default function Module({
     course,
@@ -41,8 +34,13 @@ export default function Module({
     const prev = modules[activeIndex - 1] || null;
     const next = modules[activeIndex + 1] || null;
 
-    const activeMediaUrl = safeUrl(module.media_url)
+    const [selectedMediaUrl, setSelectedMediaUrl] = useState(null);
+    const [selectedMediaTitle, setSelectedMediaTitle] = useState(null);
+
+    const activeMediaUrl = selectedMediaUrl
+        ?? safeUrl(module.media_url)
         ?? safeUrl((module.lessons || []).find((l) => l.content_url)?.content_url);
+    const activeMediaTitle = selectedMediaTitle || module.title;
     const deepTranscript = module.transcript
         ?? (module.lessons || []).find((l) => l.transcript)?.transcript
         ?? null;
@@ -149,10 +147,82 @@ export default function Module({
                             </p>
                         )}
 
-                        <VideoPlayer
-                            module={{ ...module, content_type: module.media_url ? module.content_type : 'file' }}
-                            mediaUrl={activeMediaUrl}
-                        />
+                        <div id="module-player-stage" className="scroll-mt-6">
+                            <VideoPlayer
+                                key={activeMediaUrl}
+                                module={{ ...module, content_type: module.media_url ? module.content_type : 'file' }}
+                                mediaUrl={activeMediaUrl}
+                                activeTitle={activeMediaTitle}
+                            />
+                        </div>
+
+                        {/* Quick Module Completion Action */}
+                        <div className="mt-3 pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t-2 border-[#E5E7EB]">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
+                                <span className={`w-2 h-2 rounded-full ${isModuleDone ? 'bg-[#10B981]' : 'bg-gray-400'}`} />
+                                <span>Unit Completion Status: {isModuleDone ? 'Completed' : 'In Progress'}</span>
+                            </div>
+                            {isModuleDone ? (
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#10B981] text-white font-bold text-xs px-5 py-2.5 rounded-md cursor-default transition-all duration-200"
+                                >
+                                    <span>✓ Completed</span>
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={toggleComplete}
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98]"
+                                >
+                                    <span>✓ Mark Module as Complete</span>
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Subtopics / Lessons in this Unit */}
+                        {module.lessons && module.lessons.length > 0 && (
+                            <div className="mt-4 pt-3 border-t-2 border-[#E5E7EB] space-y-2">
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Subtopic Lectures & Materials:
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {module.lessons.map((lesson, lIdx) => {
+                                        const lessonSafe = safeUrl(lesson.content_url);
+                                        const isCurrent = activeMediaUrl === lessonSafe;
+                                        return (
+                                            <button
+                                                key={lesson.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (lessonSafe) {
+                                                        setSelectedMediaUrl(lessonSafe);
+                                                        setSelectedMediaTitle(`${module.title} · ${lesson.title}`);
+                                                        document.getElementById('module-player-stage')?.scrollIntoView({ behavior: 'smooth' });
+                                                    }
+                                                }}
+                                                className={`text-left p-3 rounded-md border-2 transition-all flex items-center justify-between gap-2 ${
+                                                    isCurrent
+                                                        ? 'border-[#3B82F6] bg-blue-50 text-[#111827] font-bold'
+                                                        : 'border-[#E5E7EB] bg-[#F9FAFB] hover:border-gray-400 text-gray-700'
+                                                }`}
+                                            >
+                                                <div className="min-w-0">
+                                                    <span className="text-[10px] uppercase font-bold text-gray-500 block">Lesson {lIdx + 1}</span>
+                                                    <span className="text-xs truncate block">{lesson.title}</span>
+                                                </div>
+                                                {lessonSafe && (
+                                                    <span className="shrink-0 text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-white border border-[#E5E7EB] text-[#3B82F6]">
+                                                        ▶ Play
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="mt-4 flex flex-wrap items-center gap-2">
                             <button
@@ -277,17 +347,23 @@ export default function Module({
                             ) : (
                                 <span className="px-4 py-2.5 rounded-md bg-[#F9FAFB] font-bold text-sm text-gray-400 text-center">← Previous</span>
                             )}
-                            <button
-                                type="button"
-                                onClick={toggleComplete}
-                                className={`px-5 py-2.5 rounded-md font-bold text-sm transition-colors ${
-                                    isModuleDone
-                                        ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                                        : 'bg-[#10B981] text-white hover:bg-emerald-600'
-                                }`}
-                            >
-                                {isModuleDone ? '✓ Completed - Undo?' : 'Mark as Complete'}
-                            </button>
+                            {isModuleDone ? (
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="px-5 py-2.5 rounded-md font-bold text-sm bg-[#10B981] text-white cursor-default transition-all"
+                                >
+                                    ✓ Completed
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={toggleComplete}
+                                    className="px-5 py-2.5 rounded-md font-bold text-sm bg-[#10B981] hover:bg-emerald-600 text-white transition-transform active:scale-[0.98]"
+                                >
+                                    ✓ Mark Module as Complete
+                                </button>
+                            )}
                             {next ? (
                                 <Link
                                     href={route('learner.course.module.learn', [course.id, next.id])}
@@ -315,6 +391,11 @@ export default function Module({
                         savedAt={notes?.[module.id]?.updated_at ?? null}
                         tab={sidebarTab}
                         onTabChange={setSidebarTab}
+                        onSelectResource={(url, title) => {
+                            setSelectedMediaUrl(url);
+                            setSelectedMediaTitle(title);
+                            document.getElementById('module-player-stage')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
                     />
                 </div>
             </div>

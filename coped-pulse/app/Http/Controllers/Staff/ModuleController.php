@@ -84,7 +84,7 @@ class ModuleController extends Controller
 
         return redirect()
             ->route('staff.courses.modules.edit', [$course, $module])
-            ->with('success', 'Module created — now fill in its details below.');
+            ->with('success', 'Module created - now fill in its details below.');
     }
 
     public function update(UpdateModuleRequest $request, Course $course, Module $module)

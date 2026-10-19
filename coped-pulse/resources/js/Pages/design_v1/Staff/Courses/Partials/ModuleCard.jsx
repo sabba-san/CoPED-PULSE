@@ -25,10 +25,22 @@ export default function ModuleCard({ course, module, index, quizCount = 0 }) {
                     {module.description && (
                         <span className="block text-sm text-gray-600 mt-1 line-clamp-2">{module.description}</span>
                     )}
-                    <span className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
-                        <span className="px-2.5 py-1 rounded-md bg-[#F3F4F6] text-[#111827]">
-                            {quizCount} mini-quiz {quizCount === 1 ? 'question' : 'questions'}
-                        </span>
+                    <span className="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold">
+                        {quizCount > 0 ? (
+                            <span className="px-2.5 py-1 rounded-md bg-[#F3F4F6] text-[#111827] flex items-center gap-1.5">
+                                <span>{quizCount} mini-quiz {quizCount === 1 ? 'question' : 'questions'}</span>
+                                <span className="text-[9px] uppercase font-bold text-gray-500 bg-white border border-[#E5E7EB] px-1 py-0.5 rounded">
+                                    Optional
+                                </span>
+                            </span>
+                        ) : (
+                            <span className="px-2.5 py-1 rounded-md bg-[#F9FAFB] border border-[#E5E7EB] text-gray-500 flex items-center gap-1.5">
+                                <span>No quiz</span>
+                                <span className="text-[9px] uppercase font-bold text-gray-400 bg-white border border-[#E5E7EB] px-1 py-0.5 rounded">
+                                    Optional
+                                </span>
+                            </span>
+                        )}
                         {module.media_url ? (
                             <span className="px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800">
                                 {module.content_type === 'file' ? 'Document attached' : 'Link attached'}

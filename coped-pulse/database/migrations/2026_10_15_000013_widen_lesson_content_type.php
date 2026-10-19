@@ -19,6 +19,13 @@ return new class extends Migration
             return;
         }
 
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE lessons DROP CONSTRAINT IF EXISTS lessons_content_type_check');
+            DB::statement("ALTER TABLE lessons ALTER COLUMN content_type TYPE VARCHAR(20)");
+            DB::statement("ALTER TABLE lessons ALTER COLUMN content_type SET DEFAULT 'text'");
+            return;
+        }
+
         // SQLite cannot MODIFY columns — rebuild preserving all rows.
         $hasTranscript = Schema::hasColumn('lessons', 'transcript');
         $transcriptColumn = $hasTranscript ? ', transcript TEXT NULL' : '';

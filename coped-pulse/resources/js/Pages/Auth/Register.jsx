@@ -29,7 +29,7 @@ export default function Register() {
                         </p>
                     </div>
                     <form className="mt-8 space-y-6" onSubmit={submit}>
-                        <div className="rounded-md shadow-sm space-y-2">
+                        <div className="rounded-md space-y-2">
                             <div>
                                 <label htmlFor="name" className="sr-only">Name</label>
                                 <input

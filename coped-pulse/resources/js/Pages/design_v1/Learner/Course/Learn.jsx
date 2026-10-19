@@ -1,4 +1,4 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useState, useEffect, useMemo } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 import {
@@ -14,34 +14,8 @@ import {
     XMarkIcon,
 } from '@/Components/flat/icons';
 
-function safeMediaUrl(url) {
-    if (!url || typeof url !== 'string') return null;
-    const trimmed = url.trim();
-    if (trimmed.startsWith('/storage/')) return trimmed;
-    try {
-        const parsed = new URL(trimmed);
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-            return null;
-        }
-        return parsed.href;
-    } catch {
-        return null;
-    }
-}
-
-function formatEmbedUrl(url) {
-    const safe = safeMediaUrl(url);
-    if (!safe) return null;
-    const ytMatch = safe.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([\w-]{6,})/);
-    if (ytMatch?.[1]) {
-        return `https://www.youtube.com/embed/${ytMatch[1]}`;
-    }
-    const vmMatch = safe.match(/vimeo\.com\/(\d+)/);
-    if (vmMatch?.[1]) {
-        return `https://player.vimeo.com/video/${vmMatch[1]}`;
-    }
-    return safe;
-}
+import VideoPlayer from './Partials/VideoPlayer';
+import { safeUrl, formatEmbedUrl, getYouTubeId, isVideoUrl } from '@/Utils/mediaUtils';
 
 export default function Learn({
     course,
@@ -74,39 +48,24 @@ export default function Learn({
     // Active selected module in the stage
     const [activeModuleId, setActiveModuleId] = useState(resumeModule?.id ?? modules[0]?.id ?? null);
 
-    // Local module checkmark completion state (persisted in localStorage)
-    const [checkedModules, setCheckedModules] = useState({});
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem(`coped_course_${course.id}_checks`);
-            if (saved) {
-                setCheckedModules(JSON.parse(saved));
-            } else {
-                const init = {};
-                (completedModuleIds || []).forEach((id) => {
-                    init[id] = true;
-                });
-                setCheckedModules(init);
-            }
-        } catch {
-            const init = {};
-            (completedModuleIds || []).forEach((id) => {
-                init[id] = true;
-            });
-            setCheckedModules(init);
-        }
-    }, [course.id, completedModuleIds]);
-
     const toggleModuleCheck = (moduleId, e) => {
-        e.stopPropagation();
-        const updated = {
-            ...checkedModules,
-            [moduleId]: !checkedModules[moduleId],
-        };
-        setCheckedModules(updated);
-        try {
-            localStorage.setItem(`coped_course_${course.id}_checks`, JSON.stringify(updated));
-        } catch {}
+        if (e && e.stopPropagation) e.stopPropagation();
+        const isDone = doneSet.has(moduleId);
+        if (isDone) {
+            router.delete(route('learner.course.module.uncomplete', [course.id, moduleId]), {
+                preserveScroll: true,
+            });
+        } else {
+            router.post(route('learner.course.module.complete', [course.id, moduleId]), {}, {
+                preserveScroll: true,
+            });
+        }
+    };
+
+    const handleMarkComplete = (moduleId) => {
+        router.post(route('learner.course.module.complete', [course.id, moduleId]), {}, {
+            preserveScroll: true,
+        });
     };
 
     // Quick notes scratchpad (saved per course in localStorage)
@@ -177,8 +136,19 @@ export default function Learn({
         });
     };
 
-    const activeSafeUrl = safeMediaUrl(activeModule?.media_url);
-    const activeEmbedUrl = formatEmbedUrl(activeModule?.media_url);
+    const [selectedLessonUrl, setSelectedLessonUrl] = useState(null);
+    const [selectedLessonTitle, setSelectedLessonTitle] = useState(null);
+
+    // Reset selected lesson URL when module changes
+    useEffect(() => {
+        setSelectedLessonUrl(null);
+        setSelectedLessonTitle(null);
+    }, [activeModuleId]);
+
+    const activeSafeUrl = selectedLessonUrl
+        ?? safeUrl(activeModule?.media_url)
+        ?? safeUrl((activeModule?.lessons || []).find((l) => l.content_url)?.content_url);
+    const activeMediaTitle = selectedLessonTitle || activeModule?.title || 'Lesson Unit';
 
     return (
         <LearnerLayout>
@@ -242,7 +212,7 @@ export default function Learn({
                             aria-valuemax={100}
                         >
                             <div
-                                className="h-full bg-[#10B981] rounded-full transition-all duration-300"
+                                className="h-full bg-[#10B981] rounded-full transition-all duration-500"
                                 style={{ width: `${progressPct}%` }}
                             />
                         </div>
@@ -307,7 +277,7 @@ export default function Learn({
                                 }}
                                 className="bg-[#111827] hover:bg-gray-800 text-white font-bold text-sm px-6 py-3 rounded shrink-0 transition-transform active:scale-[0.98]"
                             >
-                                {checkedModules[activeModuleId] ? 'Next Module' : 'Start Course'}
+                                {doneSet.has(activeModuleId) ? 'Next Module' : 'Start Course'}
                             </button>
                         </div>
 
@@ -341,7 +311,7 @@ export default function Learn({
                                         <div className="space-y-2">
                                             {modules.map((m, idx) => {
                                                 const isActive = m.id === activeModuleId;
-                                                const isChecked = Boolean(checkedModules[m.id]);
+                                                const isChecked = doneSet.has(m.id);
                                                 const isEmbed = m.content_type === 'embed';
 
                                                 return (
@@ -373,15 +343,21 @@ export default function Learn({
                                                                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
                                                                     Chapter {idx + 1}
                                                                 </span>
-                                                                <span
-                                                                    className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider border ${
-                                                                        isEmbed
-                                                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                                                            : 'bg-gray-100 text-gray-700 border-gray-300'
-                                                                    }`}
-                                                                >
-                                                                    {isEmbed ? 'EMBED' : 'LINK'}
-                                                                </span>
+                                                                {isChecked ? (
+                                                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pop">
+                                                                        ✓ DONE
+                                                                    </span>
+                                                                ) : (
+                                                                    <span
+                                                                        className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider border ${
+                                                                            isEmbed
+                                                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                                                : 'bg-gray-100 text-gray-700 border-gray-300'
+                                                                        }`}
+                                                                    >
+                                                                        {isEmbed ? 'EMBED' : 'LINK'}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                             <p
                                                                 className={`text-xs font-bold truncate mt-0.5 ${
@@ -443,39 +419,17 @@ export default function Learn({
                                             )}
                                         </div>
 
-                                        {/* Media Content Stage */}
-                                        <div className="border-2 border-[#E5E7EB] rounded-md overflow-hidden bg-[#111827]">
-                                            {activeModule.content_type === 'embed' && activeEmbedUrl ? (
-                                                <iframe
-                                                    src={activeEmbedUrl}
-                                                    title={activeModule.title}
-                                                    className="w-full aspect-video rounded-md border-2 border-[#E5E7EB] bg-[#111827]"
-                                                    allowFullScreen
+                                        {/* Media Content Stage (Universal In-App Player) */}
+                                        <div id="course-media-stage" className="scroll-mt-6">
+                                            {activeSafeUrl ? (
+                                                <VideoPlayer
+                                                    key={activeSafeUrl}
+                                                    module={activeModule}
+                                                    mediaUrl={activeSafeUrl}
+                                                    activeTitle={activeMediaTitle}
                                                 />
-                                            ) : activeSafeUrl ? (
-                                                <div className="bg-white p-8 text-center space-y-4">
-                                                    <LinkIcon className="w-12 h-12 text-[#3B82F6] mx-auto" />
-                                                    <div>
-                                                        <h3 className="font-display font-bold text-lg text-[#111827]">
-                                                            External Course Resource
-                                                        </h3>
-                                                        <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
-                                                            This module references an external resource or slide deck. Click below to launch it in a new window.
-                                                        </p>
-                                                    </div>
-                                                    <div>
-                                                        <a
-                                                            href={activeSafeUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-5 py-3 rounded transition-transform active:scale-[0.98]"
-                                                        >
-                                                            <span>Open External Resource ↗</span>
-                                                        </a>
-                                                    </div>
-                                                </div>
                                             ) : (
-                                                <div className="bg-white p-8 text-center space-y-2">
+                                                <div className="bg-white border-2 border-[#E5E7EB] rounded-md p-8 text-center space-y-2">
                                                     <BookOpenIcon className="w-10 h-10 text-gray-400 mx-auto" />
                                                     <h3 className="font-display font-bold text-base text-[#111827]">
                                                         Lecture Notes & Content
@@ -486,6 +440,74 @@ export default function Learn({
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* Module Completion Action Bar */}
+                                        <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t-2 border-[#E5E7EB]">
+                                            <div className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                                                <span className={`w-2 h-2 rounded-full ${doneSet.has(activeModule.id) ? 'bg-[#10B981]' : 'bg-gray-400'}`} />
+                                                <span>Unit Completion Status: {doneSet.has(activeModule.id) ? 'Completed' : 'In Progress'}</span>
+                                            </div>
+                                            {doneSet.has(activeModule.id) ? (
+                                                <button
+                                                    type="button"
+                                                    disabled
+                                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#10B981] text-white font-bold text-xs px-5 py-2.5 rounded-md cursor-default transition-all duration-200"
+                                                >
+                                                    <span>✓ Completed</span>
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleMarkComplete(activeModule.id)}
+                                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98]"
+                                                >
+                                                    <span>✓ Mark Module as Complete</span>
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Subtopics / Lessons Playlist */}
+                                        {activeModule.lessons && activeModule.lessons.length > 0 && (
+                                            <div className="mt-4 pt-4 border-t-2 border-[#E5E7EB] space-y-2">
+                                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                    Subtopics & Lessons in this Module:
+                                                </p>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {activeModule.lessons.map((lesson, lIdx) => {
+                                                        const lessonSafe = safeUrl(lesson.content_url);
+                                                        const isCurrentLesson = selectedLessonUrl ? selectedLessonUrl === lessonSafe : (activeSafeUrl === lessonSafe);
+                                                        return (
+                                                            <button
+                                                                key={lesson.id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    if (lessonSafe) {
+                                                                        setSelectedLessonUrl(lessonSafe);
+                                                                        setSelectedLessonTitle(`${activeModule.title} · ${lesson.title}`);
+                                                                        document.getElementById('course-media-stage')?.scrollIntoView({ behavior: 'smooth' });
+                                                                    }
+                                                                }}
+                                                                className={`text-left p-3 rounded-md border-2 transition-all flex items-center justify-between gap-2 ${
+                                                                    isCurrentLesson
+                                                                        ? 'border-[#3B82F6] bg-blue-50 text-[#111827] font-bold'
+                                                                        : 'border-[#E5E7EB] bg-[#F9FAFB] hover:border-gray-400 text-gray-700'
+                                                                }`}
+                                                            >
+                                                                <div className="min-w-0">
+                                                                    <span className="text-[10px] uppercase font-bold text-gray-500 block">Lesson {lIdx + 1}</span>
+                                                                    <span className="text-xs truncate block">{lesson.title}</span>
+                                                                </div>
+                                                                {lessonSafe && (
+                                                                    <span className="shrink-0 text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-white border border-[#E5E7EB] text-[#3B82F6]">
+                                                                        ▶ Play
+                                                                    </span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Prev / Next Navigation Buttons */}
                                         <div className="flex items-center justify-between pt-4 border-t-2 border-[#E5E7EB]">

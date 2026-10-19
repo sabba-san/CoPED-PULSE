@@ -26,6 +26,10 @@ class ProgressController extends Controller
             return back()->with('error', 'Progress tracking is unavailable right now. Please ask an administrator to run migrations.');
         }
 
+        if (Schema::hasTable('module_user')) {
+            auth()->user()->completedModules()->syncWithoutDetaching([$module->id]);
+        }
+
         ModuleCompletion::firstOrCreate(
             ['user_id' => auth()->id(), 'module_id' => $module->id],
             ['course_id' => $course->id]
@@ -44,7 +48,7 @@ class ProgressController extends Controller
 
         $this->sync($enrollment, $course);
 
-        return back()->with('success', 'Module marked as complete.');
+        return back()->with('success', 'Module completed! Progress updated.');
     }
 
     public function uncomplete(Course $course, Module $module)
@@ -55,13 +59,19 @@ class ProgressController extends Controller
             ->where('course_id', $course->id)
             ->firstOrFail();
 
-        if (! Schema::hasTable('module_completions')) {
+        if (! Schema::hasTable('module_completions') && ! Schema::hasTable('module_user')) {
             return back()->with('error', 'Progress tracking is unavailable right now. Please ask an administrator to run migrations.');
         }
 
-        ModuleCompletion::where('user_id', auth()->id())
-            ->where('module_id', $module->id)
-            ->delete();
+        if (Schema::hasTable('module_user')) {
+            auth()->user()->completedModules()->detach($module->id);
+        }
+
+        if (Schema::hasTable('module_completions')) {
+            ModuleCompletion::where('user_id', auth()->id())
+                ->where('module_id', $module->id)
+                ->delete();
+        }
 
         if (Schema::hasTable('lesson_completions')) {
             LessonCompletion::where('user_id', auth()->id())
@@ -71,7 +81,7 @@ class ProgressController extends Controller
 
         $this->sync($enrollment, $course);
 
-        return back();
+        return back()->with('success', 'Module marked incomplete.');
     }
 
     public function lessonComplete(Course $course, Module $module, Lesson $lesson)
@@ -94,13 +104,16 @@ class ProgressController extends Controller
         );
 
         // Cascade up: all lessons done → parent module complete.
-        if (Schema::hasTable('module_completions')) {
-            $total = $module->lessons()->count();
-            $done = LessonCompletion::where('user_id', auth()->id())
-                ->where('module_id', $module->id)
-                ->count();
+        $total = $module->lessons()->count();
+        $done = LessonCompletion::where('user_id', auth()->id())
+            ->where('module_id', $module->id)
+            ->count();
 
-            if ($total > 0 && $done >= $total) {
+        if ($total > 0 && $done >= $total) {
+            if (Schema::hasTable('module_user')) {
+                auth()->user()->completedModules()->syncWithoutDetaching([$module->id]);
+            }
+            if (Schema::hasTable('module_completions')) {
                 ModuleCompletion::firstOrCreate(
                     ['user_id' => auth()->id(), 'module_id' => $module->id],
                     ['course_id' => $course->id]
@@ -131,6 +144,9 @@ class ProgressController extends Controller
             ->delete();
 
         // Cascade up: a child undone → parent no longer all-complete.
+        if (Schema::hasTable('module_user')) {
+            auth()->user()->completedModules()->detach($module->id);
+        }
         if (Schema::hasTable('module_completions')) {
             ModuleCompletion::where('user_id', auth()->id())
                 ->where('module_id', $module->id)
