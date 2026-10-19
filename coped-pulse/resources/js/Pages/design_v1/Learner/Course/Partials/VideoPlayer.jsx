@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import {
     safeUrl,
     getYouTubeId,
@@ -10,9 +11,9 @@ import {
 /**
  * Universal In-App Video & Media Player for CoPED PULSE.
  * Guarantees inline YouTube / Vimeo / MP4 playback inside the website.
- * Uses key={mediaUrl} for smooth fade-in animations on unit changes.
+ * Emits onEnded() when a video completes for automated progress tracking.
  */
-export default function VideoPlayer({ module, mediaUrl, activeTitle = null }) {
+export default function VideoPlayer({ module, mediaUrl, activeTitle = null, onEnded = null }) {
     const safe = safeUrl(mediaUrl);
     if (!safe) return null;
 
@@ -21,6 +22,71 @@ export default function VideoPlayer({ module, mediaUrl, activeTitle = null }) {
     const isVideo = isVideoFile(safe);
     const isPdf = isPdfFile(safe);
     const titleText = activeTitle || module?.title || 'Lesson Unit';
+    const iframeRef = useRef(null);
+
+    // YouTube IFrame API & postMessage listener for automated completion on video end
+    useEffect(() => {
+        if (!onEnded || !ytId) return;
+
+        const handleMessage = (event) => {
+            if (!event.origin || !event.origin.includes('youtube.com')) return;
+
+            try {
+                let data = event.data;
+                if (typeof data === 'string') {
+                    data = JSON.parse(data);
+                }
+
+                // YouTube postMessage: playerState 0 represents ENDED
+                if (
+                    (data?.event === 'infoDelivery' && data?.info?.playerState === 0) ||
+                    (data?.event === 'onStateChange' && data?.info === 0)
+                ) {
+                    onEnded();
+                }
+            } catch {}
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Tell YouTube iframe that parent window is listening
+        const timer = setTimeout(() => {
+            if (iframeRef.current?.contentWindow) {
+                iframeRef.current.contentWindow.postMessage(
+                    JSON.stringify({ event: 'listening' }),
+                    '*'
+                );
+            }
+        }, 1200);
+
+        return () => {
+            window.removeEventListener('message', handleMessage);
+            clearTimeout(timer);
+        };
+    }, [ytId, onEnded]);
+
+    // Vimeo postMessage listener
+    useEffect(() => {
+        if (!onEnded || !vimeoId) return;
+
+        const handleVimeoMessage = (event) => {
+            if (!event.origin || !event.origin.includes('vimeo.com')) return;
+            try {
+                let data = event.data;
+                if (typeof data === 'string') data = JSON.parse(data);
+                if (data?.event === 'finish' || data?.event === 'ended') {
+                    onEnded();
+                }
+            } catch {}
+        };
+
+        window.addEventListener('message', handleVimeoMessage);
+        return () => window.removeEventListener('message', handleVimeoMessage);
+    }, [vimeoId, onEnded]);
+
+    const ytEmbedUrl = ytId
+        ? formatEmbedUrl(safe, typeof window !== 'undefined' ? window.location.origin : '')
+        : null;
 
     return (
         <div key={safe} className="mt-4 animate-fade-in space-y-2">
@@ -42,7 +108,9 @@ export default function VideoPlayer({ module, mediaUrl, activeTitle = null }) {
                 {ytId ? (
                     <div className="aspect-video w-full bg-black">
                         <iframe
-                            src={`https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`}
+                            ref={iframeRef}
+                            id={`yt-player-${ytId}`}
+                            src={ytEmbedUrl}
                             title={titleText}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
@@ -52,7 +120,7 @@ export default function VideoPlayer({ module, mediaUrl, activeTitle = null }) {
                 ) : vimeoId ? (
                     <div className="aspect-video w-full bg-black">
                         <iframe
-                            src={`https://player.vimeo.com/video/${vimeoId}?autoplay=0&dnt=1`}
+                            src={`https://player.vimeo.com/video/${vimeoId}?autoplay=0&dnt=1&api=1`}
                             title={titleText}
                             allow="autoplay; fullscreen; picture-in-picture"
                             allowFullScreen
@@ -66,6 +134,7 @@ export default function VideoPlayer({ module, mediaUrl, activeTitle = null }) {
                             controls
                             playsInline
                             preload="metadata"
+                            onEnded={() => onEnded && onEnded()}
                             className="h-full w-full"
                         >
                             Your browser does not support HTML5 video playback.

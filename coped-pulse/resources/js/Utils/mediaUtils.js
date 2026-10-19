@@ -79,13 +79,14 @@ export function isVideoUrl(url) {
     return Boolean(getYouTubeId(safe) || getVimeoId(safe) || isVideoFile(safe));
 }
 
-export function formatEmbedUrl(url) {
+export function formatEmbedUrl(url, origin = '') {
     const safe = safeUrl(url);
     if (!safe) return null;
 
     const ytId = getYouTubeId(safe);
     if (ytId) {
-        return `https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`;
+        const originParam = origin ? `&origin=${encodeURIComponent(origin)}` : '';
+        return `https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1${originParam}`;
     }
 
     const vimeoId = getVimeoId(safe);

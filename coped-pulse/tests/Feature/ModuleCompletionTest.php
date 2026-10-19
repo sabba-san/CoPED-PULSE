@@ -57,7 +57,7 @@ class ModuleCompletionTest extends TestCase
         );
 
         $response->assertRedirect();
-        $response->assertSessionHas('success', 'Module completed! Progress updated.');
+        $response->assertSessionHas('success', fn ($msg) => str_contains($msg, 'Module completed: Module 1'));
 
         $this->assertDatabaseHas('module_user', [
             'user_id' => $learner->id,
@@ -80,7 +80,7 @@ class ModuleCompletionTest extends TestCase
             'progress' => 0,
         ]);
 
-        // Complete 1st module (50%)
+        // Complete 1st module (50% for 0-assessment course)
         $this->actingAs($learner)->post(
             route('learner.course.module.complete', [$course, $modules[0]])
         );
@@ -88,13 +88,54 @@ class ModuleCompletionTest extends TestCase
         $enrollment->refresh();
         $this->assertEquals(50.0, (float) $enrollment->progress);
 
-        // Complete 2nd module (100%)
+        // Complete 2nd module (100% and completed_at set)
         $this->actingAs($learner)->post(
             route('learner.course.module.complete', [$course, $modules[1]])
         );
 
         $enrollment->refresh();
         $this->assertEquals(100.0, (float) $enrollment->progress);
+        $this->assertNotNull($enrollment->completed_at);
+    }
+
+    public function test_module_completion_caps_at_80_percent_when_assessments_exist(): void
+    {
+        $instructor = $this->staff();
+        $learner = $this->learner();
+        $course = $this->createCourseWithModules($instructor, 2);
+        // Add a final exam assessment
+        $course->assessments()->create([
+            'question' => 'Final Exam Question 1',
+            'option_a' => 'Opt A',
+            'option_b' => 'Opt B',
+            'option_c' => 'Opt C',
+            'option_d' => 'Opt D',
+            'correct_option' => 'a',
+        ]);
+
+        $modules = $course->modules()->orderBy('order')->get();
+
+        $enrollment = Enrollment::create([
+            'user_id' => $learner->id,
+            'course_id' => $course->id,
+            'progress' => 0,
+        ]);
+
+        // Complete 1st module (1/2 * 80% = 40%)
+        $this->actingAs($learner)->post(
+            route('learner.course.module.complete', [$course, $modules[0]])
+        );
+        $enrollment->refresh();
+        $this->assertEquals(40.0, (float) $enrollment->progress);
+        $this->assertNull($enrollment->completed_at);
+
+        // Complete 2nd module (2/2 * 80% = 80%)
+        $this->actingAs($learner)->post(
+            route('learner.course.module.complete', [$course, $modules[1]])
+        );
+        $enrollment->refresh();
+        $this->assertEquals(80.0, (float) $enrollment->progress);
+        $this->assertNull($enrollment->completed_at); // remains null until assessment passed
     }
 
     public function test_unenrolled_learner_cannot_complete_module(): void
@@ -180,6 +221,10 @@ class ModuleCompletionTest extends TestCase
             ->has('recentActivity', 1)
             ->where('recentActivity.0.user.name', $learner->name)
             ->where('recentActivity.0.progress', fn ($val) => (float) $val == 50.0)
+            ->where('recentActivity.0.completed_modules_count', 1)
+            ->where('recentActivity.0.total_modules_count', 2)
+            ->where('recentActivity.0.latest_module_title', $module->title)
+            ->where('recentActivity.0.assessment_status', 'pending')
         );
     }
 }

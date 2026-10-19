@@ -48,6 +48,9 @@ export default function Learn({
     // Active selected module in the stage
     const [activeModuleId, setActiveModuleId] = useState(resumeModule?.id ?? modules[0]?.id ?? null);
 
+    // State for instant automatic/manual completion banner
+    const [autoCompletedNotice, setAutoCompletedNotice] = useState(null);
+
     const toggleModuleCheck = (moduleId, e) => {
         if (e && e.stopPropagation) e.stopPropagation();
         const isDone = doneSet.has(moduleId);
@@ -55,7 +58,14 @@ export default function Learn({
             router.delete(route('learner.course.module.uncomplete', [course.id, moduleId]), {
                 preserveScroll: true,
             });
+            setAutoCompletedNotice(null);
         } else {
+            const m = modules.find((mod) => mod.id === moduleId);
+            setAutoCompletedNotice({
+                moduleId,
+                title: m?.title || 'Module',
+                manual: true,
+            });
             router.post(route('learner.course.module.complete', [course.id, moduleId]), {}, {
                 preserveScroll: true,
             });
@@ -63,7 +73,27 @@ export default function Learn({
     };
 
     const handleMarkComplete = (moduleId) => {
+        const m = modules.find((mod) => mod.id === moduleId);
+        setAutoCompletedNotice({
+            moduleId,
+            title: m?.title || 'Module',
+            manual: true,
+        });
         router.post(route('learner.course.module.complete', [course.id, moduleId]), {}, {
+            preserveScroll: true,
+        });
+    };
+
+    const handleAutoVideoComplete = (targetModule) => {
+        if (!targetModule || doneSet.has(targetModule.id)) return;
+
+        setAutoCompletedNotice({
+            moduleId: targetModule.id,
+            title: targetModule.title,
+            manual: false,
+        });
+
+        router.post(route('learner.course.module.complete', [course.id, targetModule.id]), {}, {
             preserveScroll: true,
         });
     };
@@ -139,10 +169,11 @@ export default function Learn({
     const [selectedLessonUrl, setSelectedLessonUrl] = useState(null);
     const [selectedLessonTitle, setSelectedLessonTitle] = useState(null);
 
-    // Reset selected lesson URL when module changes
+    // Reset selected lesson URL and notice when module changes
     useEffect(() => {
         setSelectedLessonUrl(null);
         setSelectedLessonTitle(null);
+        setAutoCompletedNotice(null);
     }, [activeModuleId]);
 
     const activeSafeUrl = selectedLessonUrl
@@ -420,13 +451,46 @@ export default function Learn({
                                         </div>
 
                                         {/* Media Content Stage (Universal In-App Player) */}
-                                        <div id="course-media-stage" className="scroll-mt-6">
+                                        <div id="course-media-stage" className="scroll-mt-6 space-y-4">
+                                            {/* Auto-Completed Flat Toast Banner */}
+                                            {autoCompletedNotice && autoCompletedNotice.moduleId === activeModule.id && (
+                                                <div className="bg-[#10B981] text-white p-4 rounded-md font-bold text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in border-2 border-[#10B981]">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="w-7 h-7 rounded-full bg-white text-[#10B981] flex items-center justify-center font-black text-sm shrink-0">
+                                                            ✓
+                                                        </span>
+                                                        <div>
+                                                            <p className="font-extrabold text-sm text-white">
+                                                                {autoCompletedNotice.manual ? 'Module Marked Complete!' : 'Module Completed Automatically!'}
+                                                            </p>
+                                                            <p className="text-xs text-emerald-100 font-medium">
+                                                                "{autoCompletedNotice.title}" has been ticked off. Progress updated in your records.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    {nextModule && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setActiveModuleId(nextModule.id);
+                                                                setAutoCompletedNotice(null);
+                                                            }}
+                                                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#111827] hover:bg-gray-800 text-white rounded text-xs font-extrabold shrink-0 transition-transform active:scale-[0.98]"
+                                                        >
+                                                            <span>Next Module: {nextModule.title}</span>
+                                                            <span>→</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {activeSafeUrl ? (
                                                 <VideoPlayer
                                                     key={activeSafeUrl}
                                                     module={activeModule}
                                                     mediaUrl={activeSafeUrl}
                                                     activeTitle={activeMediaTitle}
+                                                    onEnded={() => handleAutoVideoComplete(activeModule)}
                                                 />
                                             ) : (
                                                 <div className="bg-white border-2 border-[#E5E7EB] rounded-md p-8 text-center space-y-2">

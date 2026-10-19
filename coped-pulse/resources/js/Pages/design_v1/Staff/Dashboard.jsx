@@ -233,9 +233,10 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                                 <tr className="border-b-2 border-[#E5E7EB] bg-white text-[11px] font-extrabold uppercase text-gray-500 tracking-wider">
                                     <th className="py-3.5 px-6">Learner</th>
                                     <th className="py-3.5 px-6">Course</th>
-                                    <th className="py-3.5 px-6">Progress</th>
-                                    <th className="py-3.5 px-6">Completion Status</th>
-                                    <th className="py-3.5 px-6 text-right">Timestamp</th>
+                                    <th className="py-3.5 px-6">Modules Done</th>
+                                    <th className="py-3.5 px-6">Overall Progress</th>
+                                    <th className="py-3.5 px-6">Assessment Status</th>
+                                    <th className="py-3.5 px-6 text-right">Last Active</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y-2 divide-[#E5E7EB] text-sm">
@@ -244,6 +245,8 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                                     const isDone = Boolean(activity.completed_at) || progressVal >= 100;
                                     const learnerName = activity.user?.name || 'Enrolled Learner';
                                     const learnerEmail = activity.user?.email || '';
+                                    const completedMods = activity.completed_modules_count ?? 0;
+                                    const totalMods = activity.total_modules_count ?? 0;
 
                                     return (
                                         <tr key={activity.id} className="hover:bg-[#F9FAFB] transition-colors">
@@ -254,14 +257,26 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                                                     </span>
                                                     <div className="min-w-0">
                                                         <p className="font-bold text-[#111827] truncate">
-                                                            {learnerName} reached {progressVal}% progress in {activity.course?.title || 'Course'}
+                                                            {learnerName}
                                                         </p>
-                                                        {learnerEmail && <p className="text-xs text-gray-500 truncate">{learnerEmail}</p>}
+                                                        {activity.latest_module_title ? (
+                                                            <p className="text-[11px] text-gray-500 font-medium truncate">
+                                                                Latest: {activity.latest_module_title}
+                                                            </p>
+                                                        ) : (
+                                                            learnerEmail && <p className="text-xs text-gray-400 truncate">{learnerEmail}</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="py-4 px-6 font-semibold text-[#111827]">
                                                 <span className="line-clamp-1">{activity.course?.title || 'Course'}</span>
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#F3F4F6] text-[#111827] text-xs font-bold border border-[#E5E7EB]">
+                                                    <span className="text-emerald-600 font-extrabold">✓</span>
+                                                    <span>{completedMods} / {totalMods} Done</span>
+                                                </span>
                                             </td>
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-2.5">
@@ -277,11 +292,11 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                                             <td className="py-4 px-6">
                                                 {isDone ? (
                                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                                        <span>✓</span> 100% PASSED
+                                                        <span>✓</span> 100% Certified
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded text-[11px] font-extrabold bg-blue-50 text-blue-800 border border-blue-200">
-                                                        IN PROGRESS
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-extrabold bg-amber-50 text-amber-800 border border-amber-300">
+                                                        <span>⏳</span> Quiz Pending
                                                     </span>
                                                 )}
                                             </td>

@@ -11,7 +11,7 @@ import {
     safeUrl,
 } from '@/Utils/mediaUtils';
 
-export default function Edit({ course, initialMode = 'editor' }) {
+export default function Edit({ course, initialMode = 'editor', enrolledCount = 0 }) {
     const { flash } = usePage().props;
     const modules = course.modules || [];
     const assessments = course.assessments || [];
@@ -229,6 +229,44 @@ export default function Edit({ course, initialMode = 'editor' }) {
                             </button>
                         </div>
                         
+                        {/* Module Completion & Student Progress Summary Strip */}
+                        {modules.length > 0 && (
+                            <div className="bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md p-5 mb-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#111827]">
+                                        Module Completion & Telemetry ({enrolledCount} Enrolled Learners)
+                                    </h4>
+                                    <span className="text-[11px] font-semibold text-gray-500">
+                                        Live learner unit completion rates
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    {modules.map((m, idx) => {
+                                        const completed = m.completions_count ?? 0;
+                                        const pct = enrolledCount > 0 ? Math.round((completed / enrolledCount) * 100) : 0;
+                                        return (
+                                            <div key={m.id} className="bg-white border-2 border-[#E5E7EB] rounded p-3">
+                                                <div className="flex items-center justify-between text-xs mb-1">
+                                                    <span className="font-bold text-[#111827] truncate">Unit {idx + 1}</span>
+                                                    <span className="font-extrabold text-[#10B981]">{pct}%</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-600 truncate mb-2">{m.title}</p>
+                                                <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="bg-[#10B981] h-full rounded-full transition-all"
+                                                        style={{ width: `${pct}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-[10px] text-gray-500 font-medium mt-1.5 block">
+                                                    {completed} / {enrolledCount} completed
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="space-y-4 mb-8">
                             {modules.length > 0 ? (
                                 modules.map((module, index) => (
@@ -238,6 +276,7 @@ export default function Edit({ course, initialMode = 'editor' }) {
                                         module={module}
                                         index={index}
                                         quizCount={assessments.filter((q) => q.module_id === module.id).length}
+                                        enrolledCount={enrolledCount}
                                     />
                                 ))
                             ) : (

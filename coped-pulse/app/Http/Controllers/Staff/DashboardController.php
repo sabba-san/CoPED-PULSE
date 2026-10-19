@@ -40,14 +40,41 @@ class DashboardController extends Controller
             ->latest()
             ->get();
 
-        // Recent activity feed: 10 rows max with learner and course relationships
-        $recentActivity = $courseIds->isNotEmpty()
+        // Recent activity feed: 10 rows max with learner and course relationships + module telemetry
+        $recentEnrollments = $courseIds->isNotEmpty()
             ? Enrollment::whereIn('course_id', $courseIds)
                 ->with(['user:id,name,email', 'course:id,title'])
                 ->latest('updated_at')
                 ->limit(10)
                 ->get()
             : collect();
+
+        $recentActivity = $recentEnrollments->map(function ($enrollment) {
+            $totalModules = $enrollment->course ? $enrollment->course->modules()->count() : 0;
+            $completedCount = 0;
+            $latestModuleTitle = null;
+
+            if (\Illuminate\Support\Facades\Schema::hasTable('module_completions')) {
+                $latestCompletion = \App\Models\ModuleCompletion::where('user_id', $enrollment->user_id)
+                    ->where('course_id', $enrollment->course_id)
+                    ->latest('completed_at')
+                    ->with('module:id,title')
+                    ->first();
+
+                $completedCount = \App\Models\ModuleCompletion::where('user_id', $enrollment->user_id)
+                    ->where('course_id', $enrollment->course_id)
+                    ->count();
+
+                $latestModuleTitle = $latestCompletion?->module?->title;
+            }
+
+            $enrollment->completed_modules_count = $completedCount;
+            $enrollment->total_modules_count = $totalModules;
+            $enrollment->latest_module_title = $latestModuleTitle;
+            $enrollment->assessment_status = $enrollment->completed_at ? 'certified' : 'pending';
+
+            return $enrollment;
+        });
 
         return Inertia::render('design_v1/Staff/Dashboard', [
             'stats' => $stats,

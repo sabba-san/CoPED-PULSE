@@ -51,26 +51,38 @@ class ModuleCompletionController extends Controller
             }
         }
 
-        // 4. Auto-calculate progress: completed modules / total modules in course
+        // 4. Auto-calculate weighted progress:
         $totalModules = $course->modules()->count();
         if (Schema::hasTable('module_user')) {
-            $completedCount = $user->completedModules()
+            $doneModules = $user->completedModules()
                 ->whereIn('modules.id', $course->modules()->pluck('id'))
                 ->count();
         } else {
-            $completedCount = ModuleCompletion::where('user_id', $user->id)
+            $doneModules = ModuleCompletion::where('user_id', $user->id)
                 ->where('course_id', $course->id)
                 ->count();
         }
 
-        $progress = $totalModules > 0 ? round(($completedCount / $totalModules) * 100, 2) : 0;
+        $hasAssessments = $course->assessments()->whereNull('module_id')->count() > 0;
 
-        // Updating progress automatically touches updated_at, floating learner to top of instructor feed
-        $enrollment->update([
-            'progress' => $progress,
-        ]);
+        if ($enrollment->completed_at === null) {
+            if ($hasAssessments) {
+                // Modules account for up to 80% progress; remaining 20% reserved for Final Assessment
+                $progress = $totalModules > 0 ? round(($doneModules / $totalModules) * 80, 2) : 0;
+            } else {
+                // 100% awarded when all modules are done
+                $progress = $totalModules > 0 ? round(($doneModules / $totalModules) * 100, 2) : 0;
+                if ($doneModules >= $totalModules && $totalModules > 0) {
+                    $enrollment->completed_at = now();
+                }
+            }
+            $enrollment->progress = $progress;
+        }
 
-        return back()->with('success', 'Module completed! Progress updated.');
+        $enrollment->touch(); // Floats learner to top of Instructor Recent Activity
+        $enrollment->save();
+
+        return back()->with('success', "Module completed: {$module->title} ({$doneModules}/{$totalModules} modules done · {$enrollment->progress}% course progress).");
     }
 
     /**
@@ -104,20 +116,32 @@ class ModuleCompletionController extends Controller
 
         $totalModules = $course->modules()->count();
         if (Schema::hasTable('module_user')) {
-            $completedCount = $user->completedModules()
+            $doneModules = $user->completedModules()
                 ->whereIn('modules.id', $course->modules()->pluck('id'))
                 ->count();
         } else {
-            $completedCount = ModuleCompletion::where('user_id', $user->id)
+            $doneModules = ModuleCompletion::where('user_id', $user->id)
                 ->where('course_id', $course->id)
                 ->count();
         }
 
-        $progress = $totalModules > 0 ? round(($completedCount / $totalModules) * 100, 2) : 0;
+        $hasAssessments = $course->assessments()->whereNull('module_id')->count() > 0;
 
-        $enrollment->update([
-            'progress' => $progress,
-        ]);
+        if ($hasAssessments) {
+            $progress = $totalModules > 0 ? round(($doneModules / $totalModules) * 80, 2) : 0;
+            if ($enrollment->completed_at === null) {
+                $enrollment->progress = $progress;
+            }
+        } else {
+            $progress = $totalModules > 0 ? round(($doneModules / $totalModules) * 100, 2) : 0;
+            if ($doneModules < $totalModules) {
+                $enrollment->completed_at = null;
+            }
+            $enrollment->progress = $progress;
+        }
+
+        $enrollment->touch();
+        $enrollment->save();
 
         return back()->with('success', 'Module marked incomplete.');
     }

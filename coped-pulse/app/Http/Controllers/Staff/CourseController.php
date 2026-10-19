@@ -61,8 +61,21 @@ class CourseController extends Controller
             'assessments',
         ]);
 
+        $enrolledCount = $course->enrollments()->count();
+        $moduleCompletions = \Illuminate\Support\Facades\Schema::hasTable('module_completions')
+            ? \App\Models\ModuleCompletion::where('course_id', $course->id)
+                ->selectRaw('module_id, count(distinct user_id) as completions_count')
+                ->groupBy('module_id')
+                ->pluck('completions_count', 'module_id')
+            : collect();
+
+        foreach ($course->modules as $m) {
+            $m->completions_count = $moduleCompletions[$m->id] ?? 0;
+        }
+
         return Inertia::render('design_v1/Staff/Courses/Show', [
             'course' => $course,
+            'enrolledCount' => $enrolledCount,
         ]);
     }
 
@@ -79,8 +92,21 @@ class CourseController extends Controller
             'assessments',
         ]);
 
+        $enrolledCount = $course->enrollments()->count();
+        $moduleCompletions = \Illuminate\Support\Facades\Schema::hasTable('module_completions')
+            ? \App\Models\ModuleCompletion::where('course_id', $course->id)
+                ->selectRaw('module_id, count(distinct user_id) as completions_count')
+                ->groupBy('module_id')
+                ->pluck('completions_count', 'module_id')
+            : collect();
+
+        foreach ($course->modules as $m) {
+            $m->completions_count = $moduleCompletions[$m->id] ?? 0;
+        }
+
         return Inertia::render('design_v1/Staff/Courses/Edit', [
             'course' => $course,
+            'enrolledCount' => $enrolledCount,
         ]);
     }
 

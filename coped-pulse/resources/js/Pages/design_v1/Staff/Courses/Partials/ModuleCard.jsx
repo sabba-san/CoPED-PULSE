@@ -1,6 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 
-export default function ModuleCard({ course, module, index, quizCount = 0 }) {
+export default function ModuleCard({ course, module, index, quizCount = 0, enrolledCount = 0 }) {
     const destroy = () => {
         if (confirm(`Delete module "${module.title}"? Its lessons and mini-quiz go with it.`)) {
             router.delete(route('staff.courses.modules.destroy', [course.id, module.id]), {
@@ -8,6 +8,8 @@ export default function ModuleCard({ course, module, index, quizCount = 0 }) {
             });
         }
     };
+
+    const completionsCount = module.completions_count ?? 0;
 
     return (
         <div className="flex items-center gap-2 p-5 sm:p-6 bg-white rounded-md border-2 border-[#E5E7EB] hover:border-[#10B981] hover:scale-[1.01] transition-all">
@@ -48,6 +50,11 @@ export default function ModuleCard({ course, module, index, quizCount = 0 }) {
                         ) : (
                             <span className="px-2.5 py-1 rounded-md bg-amber-100 text-amber-800">
                                 No media yet
+                            </span>
+                        )}
+                        {enrolledCount > 0 && (
+                            <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-200">
+                                {completionsCount} / {enrolledCount} completed
                             </span>
                         )}
                     </span>

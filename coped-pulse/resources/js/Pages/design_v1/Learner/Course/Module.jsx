@@ -58,12 +58,24 @@ export default function Module({
         });
     };
 
+    const [autoCompletedNotice, setAutoCompletedNotice] = useState(null);
+
+    const onVideoEnd = () => {
+        if (isModuleDone) return;
+        setAutoCompletedNotice(true);
+        router.post(route('learner.course.module.complete', [course.id, module.id]), {}, {
+            preserveScroll: true,
+        });
+    };
+
     const toggleComplete = () => {
         if (isModuleDone) {
             router.delete(route('learner.course.module.uncomplete', [course.id, module.id]), {
                 preserveScroll: true,
             });
+            setAutoCompletedNotice(null);
         } else {
+            setAutoCompletedNotice(true);
             router.post(route('learner.course.module.complete', [course.id, module.id]), {}, {
                 preserveScroll: true,
             });
@@ -147,12 +159,31 @@ export default function Module({
                             </p>
                         )}
 
+                        {autoCompletedNotice && (
+                            <div className="mb-4 bg-[#10B981] text-white p-4 rounded-md font-bold text-sm flex items-center justify-between gap-3 animate-fade-in border-2 border-[#10B981]">
+                                <div className="flex items-center gap-3">
+                                    <span className="w-7 h-7 rounded-full bg-white text-[#10B981] flex items-center justify-center font-black text-sm shrink-0">
+                                        ✓
+                                    </span>
+                                    <div>
+                                        <p className="font-extrabold text-sm text-white">
+                                            Module Completed!
+                                        </p>
+                                        <p className="text-xs text-emerald-100 font-medium">
+                                            "{module.title}" has been ticked off. Progress updated in your records.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div id="module-player-stage" className="scroll-mt-6">
                             <VideoPlayer
                                 key={activeMediaUrl}
                                 module={{ ...module, content_type: module.media_url ? module.content_type : 'file' }}
                                 mediaUrl={activeMediaUrl}
                                 activeTitle={activeMediaTitle}
+                                onEnded={onVideoEnd}
                             />
                         </div>
 

@@ -213,6 +213,9 @@ Route::middleware('auth')->group(function () {
         Route::post('courses/{course}/assess', [\App\Http\Controllers\Learner\AssessmentController::class, 'assess'])->name('course.assess');
         Route::post('courses/{course}/modules/{module}/complete', [\App\Http\Controllers\Learner\ModuleCompletionController::class, 'store'])->name('course.module.complete');
         Route::delete('courses/{course}/modules/{module}/complete', [\App\Http\Controllers\Learner\ModuleCompletionController::class, 'destroy'])->name('course.module.uncomplete');
+        // Plural aliases for frontend robustness
+        Route::post('courses/{course}/modules/{module}/complete-alias', [\App\Http\Controllers\Learner\ModuleCompletionController::class, 'store'])->name('course.modules.complete');
+        Route::delete('courses/{course}/modules/{module}/complete-alias', [\App\Http\Controllers\Learner\ModuleCompletionController::class, 'destroy'])->name('course.modules.uncomplete');
         Route::post('courses/{course}/modules/{module}/lessons/{lesson}/complete', [\App\Http\Controllers\Learner\ProgressController::class, 'lessonComplete'])->name('course.module.lesson.complete');
         Route::delete('courses/{course}/modules/{module}/lessons/{lesson}/complete', [\App\Http\Controllers\Learner\ProgressController::class, 'lessonUncomplete'])->name('course.module.lesson.uncomplete');
         Route::put('goal', [\App\Http\Controllers\Learner\GoalController::class, 'update'])->name('goal.update');
