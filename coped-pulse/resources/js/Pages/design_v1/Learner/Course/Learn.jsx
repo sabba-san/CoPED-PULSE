@@ -15,6 +15,7 @@ import {
 } from '@/Components/flat/icons';
 
 import VideoPlayer from './Partials/VideoPlayer';
+import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
 import { safeUrl, formatEmbedUrl, getYouTubeId, isVideoUrl } from '@/Utils/mediaUtils';
 
 export default function Learn({
@@ -198,13 +199,36 @@ export default function Learn({
                     </div>
 
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                            <h1 className="font-display text-2xl md:text-3xl font-extrabold text-[#111827]">
-                                {course.title}
-                            </h1>
-                            <p className="text-sm text-gray-600 mt-1">
-                                Instructed by {course.instructor?.name || 'Faculty Instructor'}
-                            </p>
+                        <div className="flex items-start gap-4">
+                            {course.category_logo && (
+                                <CourseLogoBadge category={course.category_logo} size="tile" />
+                            )}
+                            <div>
+                                <h1 className="font-display text-2xl md:text-3xl font-extrabold text-[#111827]">
+                                    {course.title}
+                                </h1>
+                                <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                    <p className="text-sm text-gray-600">
+                                        Instructed by {course.instructor?.name || 'Faculty Instructor'}
+                                    </p>
+                                    {course.academic_year && (
+                                        <span className="text-xs font-bold text-gray-600 bg-[#F3F4F6] border border-[#E5E7EB] px-2 py-0.5 rounded">
+                                            📅 {course.academic_year}
+                                        </span>
+                                    )}
+                                    {course.cert_title && (
+                                        <a
+                                            href={course.cert_url || '#'}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-[#1D4ED8] bg-[#EFF6FF] border border-[#93C5FD] hover:bg-[#DBEAFE] px-2 py-0.5 rounded transition-colors"
+                                        >
+                                            <span>🎓 Leads to: {course.cert_title}</span>
+                                            <span className="text-[10px]">↗</span>
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -251,11 +275,19 @@ export default function Learn({
 
                     {/* Celebration Banner */}
                     {isCompleted && (
-                        <div className="bg-[#10B981] text-white p-4 rounded-md font-bold text-sm flex items-center gap-3">
-                            <CircleCheckIcon className="w-5 h-5 text-white shrink-0" />
-                            <span>
-                                Course Completed! You have passed the Final Assessment with 100%. Your verified record is issued.
-                            </span>
+                        <div className="bg-[#10B981] text-white p-4 rounded-md font-bold text-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <CircleCheckIcon className="w-5 h-5 text-white shrink-0" />
+                                <span>
+                                    Course Completed! You have passed the Final Assessment with 100%. Your verified record is issued.
+                                </span>
+                            </div>
+                            <Link
+                                href={route('learner.course.certificate', course.id)}
+                                className="inline-flex items-center justify-center gap-1.5 bg-[#111827] hover:bg-white hover:text-[#111827] text-white font-bold text-xs px-4 py-2 rounded shrink-0 transition-colors duration-200"
+                            >
+                                <span>🎓 View &amp; Download Certificate PDF</span>
+                            </Link>
                         </div>
                     )}
                 </div>
@@ -291,6 +323,35 @@ export default function Learn({
                 {/* Tab 1: Course (Default Onboarding Banner + 3-Zone Theater Player) */}
                 {activeTab === 'course' && (
                     <div className="space-y-6">
+                        {/* Bulk Material Pack Download Banner */}
+                        {course.bundle_url && (
+                            <div className="bg-[#EFF6FF] border-2 border-[#3B82F6] p-5 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="flex items-start gap-3.5">
+                                    <span className="text-2xl shrink-0">📦</span>
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase tracking-wider text-[#1D4ED8]">
+                                            📦 BULK STUDY KIT · MUAT TURUN SEGEDEBUK
+                                        </span>
+                                        <h3 className="font-display font-extrabold text-base text-[#111827]">
+                                            {course.bundle_title || 'Complete Course Material Pack (PDF + Slides + Logbook)'}
+                                        </h3>
+                                        <p className="text-xs text-gray-600 mt-0.5">
+                                            All-in-one download pack prepared by your instructor for offline study and reference.
+                                        </p>
+                                    </div>
+                                </div>
+                                <a
+                                    href={course.bundle_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-1.5 bg-[#111827] hover:bg-[#3B82F6] text-white font-bold text-xs px-5 py-2.5 rounded shrink-0 transition-colors duration-200"
+                                >
+                                    <span>Download All Course Materials</span>
+                                    <span>↗</span>
+                                </a>
+                            </div>
+                        )}
+
                         {/* Begin your course today Callout Card */}
                         <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
@@ -793,21 +854,20 @@ export default function Learn({
                                 </div>
                             </div>
 
-                            {/* Flash Alert Messages */}
-                            {flash?.success && (
-                                <div className="bg-emerald-50 border-2 border-[#10B981] text-emerald-900 p-4 rounded-md text-xs font-bold">
-                                    {flash.success}
-                                </div>
-                            )}
-                            {flash?.error && (
-                                <div className="bg-red-50 border-2 border-red-500 text-red-900 p-4 rounded-md text-xs font-bold">
-                                    {flash.error}
-                                </div>
-                            )}
+                            {/* Success/error flash is rendered globally by LearnerLayout */}
                             {flash?.assessment_score !== undefined && !flash?.assessment_passed && (
                                 <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] text-[#111827] p-4 rounded-md text-xs font-bold">
                                     You scored {flash.assessment_score}%. 100% is required to pass. Please review your answers and retry.
                                 </div>
+                            )}
+
+                            {isCompleted && (
+                                <Link
+                                    href={route('learner.course.certificate', course.id)}
+                                    className="inline-flex items-center justify-center gap-1.5 bg-[#111827] hover:bg-[#10B981] text-white font-bold text-xs px-4 py-2.5 rounded transition-colors duration-200"
+                                >
+                                    <span>🎓 View &amp; Download Certificate PDF</span>
+                                </Link>
                             )}
                         </div>
 

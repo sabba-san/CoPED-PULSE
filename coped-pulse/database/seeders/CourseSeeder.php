@@ -11,124 +11,88 @@ class CourseSeeder extends Seeder
     public function run(): void
     {
         $staffA = User::where('email', 'instruct@gmail.com')->first()
-            ?? User::where('role', 'staff')->first();
+            ?? User::where('role', 'staff')->first()
+            ?? User::first();
 
         $staffB = User::where('email', 'instructor@coped.org')->first()
             ?? $staffA;
 
-        // -------------------------------------------------------------
-        // 1. Intro to AI (The user's authored course)
-        // -------------------------------------------------------------
-        $aiCourse = Course::firstOrCreate(
-            ['title' => 'Intro to Ai'],
-            [
-                'description' => 'testing 123',
-                'instructor_id' => $staffA ? $staffA->id : 1,
-                'status' => 'published',
-            ]
-        );
-
-        if ($aiCourse->modules()->count() === 0) {
-            $aiCourse->modules()->create([
-                'title' => 'Chapter-1st Intro to ai',
-                'description' => 'Fundamental concepts of artificial intelligence, machine learning history, and real-world applications.',
-                'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg&pp=ygUKd2hhdCBpcyBhaQ%3D%3D',
-                'order' => 1,
-            ]);
-
-            $aiCourse->modules()->create([
-                'title' => 'Chapter-2 ai',
-                'description' => 'Core AI paradigms: supervised learning, unsupervised learning, and neural network fundamentals.',
-                'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
-                'order' => 2,
-            ]);
-
-            $aiCourse->modules()->create([
-                'title' => 'chaprter 3',
-                'description' => 'Interactive deep learning demonstration, modern LLMs, and ethical considerations in AI.',
-                'content_type' => 'embed',
-                'media_url' => 'https://www.youtube.com/embed/aircAruvnKk',
-                'order' => 3,
-            ]);
-        }
-
-        if ($aiCourse->assessments()->count() === 0) {
-            $aiCourse->assessments()->create([
-                'question' => 'what does the fox say ?',
-                'option_a' => 'meow',
-                'option_b' => 'AAA',
-                'option_c' => 'Artificial intelligence',
-                'option_d' => 'VVV',
-                'correct_option' => 'a',
-            ]);
-
-            $aiCourse->assessments()->create([
-                'question' => 'What is the primary purpose of Artificial Intelligence (AI) in computer systems?',
-                'option_a' => 'To simulate human intelligence, reasoning, and problem-solving capabilities',
-                'option_b' => 'To replace physical computer keyboards with touchscreen devices',
-                'option_c' => 'To strictly increase internet download bandwidth',
-                'option_d' => 'To prevent monitors from overheating',
-                'correct_option' => 'a',
-            ]);
-        }
+        $staffId = $staffA ? $staffA->id : 1;
+        $staffBId = $staffB ? $staffB->id : $staffId;
 
         // -------------------------------------------------------------
-        // 2. Enhanced Maritime Cyber Security (JLM)
+        // 1. Enhanced Maritime Cyber Security (JLM) - Flagship Commercial
         // -------------------------------------------------------------
-        $maritimeCourse = Course::firstOrCreate(
+        $maritimeCourse = Course::updateOrCreate(
             ['title' => 'Keselamatan Siber & Perlindungan Data Maritim Lanjutan (JLM)'],
             [
                 'description' => 'Modul interaktif khas untuk warga Jabatan Laut Malaysia bagi mengenalpasti ancaman siber maritim, keselamatan sistem navigasi, dan perlindungan data rasmi.',
-                'instructor_id' => $staffA ? $staffA->id : 1,
+                'instructor_id' => $staffId,
                 'status' => 'published',
+                'academic_year' => '2026 / 2027 · Intake 1',
+                'category_logo' => 'maritime',
+                'billing_type' => 'subscription',
+                'price' => 150.00,
+                'cert_title' => 'JLM Pelaut & Pegawai Operasi Maritim Certified',
+                'cert_url' => 'https://www.marine.gov.my',
+                'bundle_title' => 'Complete Maritime Training & SOP Bundle (PDF + Slides + Logbook)',
+                'bundle_url' => 'https://drive.google.com/drive/folders/coped-maritime-bundle-demo',
             ]
         );
 
-        if ($maritimeCourse->modules()->count() === 0) {
-            $m1 = $maritimeCourse->modules()->create([
-                'title' => 'Topik 1: Ancaman Siber Terhadap Sistem Maritim & VTS',
+        $m1 = $maritimeCourse->modules()->updateOrCreate(
+            ['title' => 'Topik 1: Ancaman Siber Terhadap Sistem Maritim & VTS'],
+            [
                 'description' => 'Ketahui risiko serangan ke atas Sistem Pengurusan Trafik Vab (VTS), GPS Spoofing, dan percubaan pencerobohan pangkalan data pelabuhan.',
                 'content_type' => 'link',
                 'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
                 'order' => 1,
-            ]);
-            $m1->lessons()->create([
-                'title' => 'Subtopik 1.1: Pengenalan kepada VTS & Kerentanan Rangkaian',
+            ]
+        );
+        $m1->lessons()->firstOrCreate(
+            ['title' => 'Subtopik 1.1: Pengenalan kepada VTS & Kerentanan Rangkaian'],
+            [
                 'content_type' => 'link',
                 'content_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
                 'order' => 1,
-            ]);
+            ]
+        );
 
-            $m2 = $maritimeCourse->modules()->create([
-                'title' => 'Topik 2: Keselamatan Emel & Serangan Phishing Sasaran',
+        $m2 = $maritimeCourse->modules()->updateOrCreate(
+            ['title' => 'Topik 2: Keselamatan Emel & Serangan Phishing Sasaran'],
+            [
                 'description' => 'Teknik mengenalpasti e-mel palsu yang menyamar sebagai pihak pengurusan tertinggi JLM atau agensi antarabangsa IMO.',
                 'content_type' => 'link',
                 'media_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
                 'order' => 2,
-            ]);
-            $m2->lessons()->create([
-                'title' => 'Subtopik 2.1: Analisis Header Emel & Domain Palsu',
+            ]
+        );
+        $m2->lessons()->firstOrCreate(
+            ['title' => 'Subtopik 2.1: Analisis Header Emel & Domain Palsu'],
+            [
                 'content_type' => 'link',
                 'content_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
                 'order' => 1,
-            ]);
+            ]
+        );
 
-            $m3 = $maritimeCourse->modules()->create([
-                'title' => 'Topik 3: Protokol Tindak Balas Insiden & Pelaporan Rasmi',
+        $m3 = $maritimeCourse->modules()->updateOrCreate(
+            ['title' => 'Topik 3: Protokol Tindak Balas Insiden & Pelaporan Rasmi'],
+            [
                 'description' => 'Langkah pantas apabila mengesyaki berlakunya ketirisan data sulit perkapalan atau jangkitan perisian tebusan (ransomware).',
-                'content_type' => 'link',
+                'content_type' => 'embed',
                 'media_url' => 'https://www.youtube.com/embed/aircAruvnKk',
                 'order' => 3,
-            ]);
-            $m3->lessons()->create([
-                'title' => 'Subtopik 3.1: Pelan Pengasingan Peranti (Network Air-Gapping)',
-                'content_type' => 'link',
+            ]
+        );
+        $m3->lessons()->firstOrCreate(
+            ['title' => 'Subtopik 3.1: Pelan Pengasingan Peranti (Network Air-Gapping)'],
+            [
+                'content_type' => 'embed',
                 'content_url' => 'https://www.youtube.com/embed/aircAruvnKk',
                 'order' => 1,
-            ]);
-        }
+            ]
+        );
 
         if ($maritimeCourse->assessments()->count() === 0) {
             $maritimeCourse->assessments()->create([
@@ -178,14 +142,183 @@ class CourseSeeder extends Seeder
         }
 
         // -------------------------------------------------------------
-        // 3. Child Protection Fundamentals
+        // 2. Pengurusan Projek Profesional (CAPM® Exam Preparation) - Flagship Certification
         // -------------------------------------------------------------
-        $cpFund = Course::firstOrCreate(
+        $capmCourse = Course::updateOrCreate(
+            ['title' => 'Pengurusan Projek Profesional (CAPM® Exam Preparation)'],
+            [
+                'description' => 'Program persediaan pensijilan antarabangsa Certified Associate in Project Management (CAPM)® berpandukan PMBOK® Guide edisi terkini untuk pengurus projek dan pentadbir industri.',
+                'instructor_id' => $staffId,
+                'status' => 'published',
+                'academic_year' => '2026 / 2027 · Cohort 1',
+                'category_logo' => 'capm',
+                'billing_type' => 'subscription',
+                'price' => 199.00,
+                'cert_title' => 'CAPM® · Certified Associate in Project Management',
+                'cert_url' => 'https://www.pmi.org/certifications/certified-associate-capm',
+                'bundle_title' => 'PMI-CAPM® Complete Study Kit & Practice Exam Simulation Pack',
+                'bundle_url' => 'https://drive.google.com/drive/folders/coped-capm-study-kit-demo',
+            ]
+        );
+
+        $capm1 = $capmCourse->modules()->updateOrCreate(
+            ['title' => 'Modul 1: Kerangka Pengurusan Projek & Domain Prestasi PMBOK®'],
+            [
+                'description' => 'Pengenalan kepada kitaran hayat projek, peranan pengurus projek, dan domain prestasi projek berpandukan standard global PMI.',
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
+                'order' => 1,
+            ]
+        );
+        $capm1->lessons()->firstOrCreate(
+            ['title' => 'Subtopik 1.1: Asas Metodologi Projek & Kod Etika PMI'],
+            [
+                'content_type' => 'link',
+                'content_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
+                'order' => 1,
+            ]
+        );
+
+        $capm2 = $capmCourse->modules()->updateOrCreate(
+            ['title' => 'Modul 2: Pendekatan Pembangunan & Prinsip Agile/Hibrid'],
+            [
+                'description' => 'Memahami perbezaan antara pendekatan prediktif (waterfall), adaptif (Agile, Scrum), dan hibrid dalam mengurus skop dan jadual projek.',
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
+                'order' => 2,
+            ]
+        );
+        $capm2->lessons()->firstOrCreate(
+            ['title' => 'Subtopik 2.1: Upacara Scrum & Peranan Product Owner / Scrum Master'],
+            [
+                'content_type' => 'link',
+                'content_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
+                'order' => 1,
+            ]
+        );
+
+        $capm3 = $capmCourse->modules()->updateOrCreate(
+            ['title' => 'Modul 3: Pengurusan Risiko, Kualiti & Penyerahan Nilai Perniagaan'],
+            [
+                'description' => 'Strategi pengenalpastian risiko awal, analisis impak kualitatif/kuantitatif, dan pengukuran pulangan nilai bagi pihak berkepentingan.',
+                'content_type' => 'embed',
+                'media_url' => 'https://www.youtube.com/embed/aircAruvnKk',
+                'order' => 3,
+            ]
+        );
+        $capm3->lessons()->firstOrCreate(
+            ['title' => 'Subtopik 3.1: Matriks Penilaian Risiko & Pelan Tindak Balas Mitigasi'],
+            [
+                'content_type' => 'embed',
+                'content_url' => 'https://www.youtube.com/embed/aircAruvnKk',
+                'order' => 1,
+            ]
+        );
+
+        if ($capmCourse->assessments()->count() === 0) {
+            $capmCourse->assessments()->create([
+                'question' => 'Mengikut panduan PMBOK® terkini, apakah perbezaan utama antara pendekatan projek Prediktif (Predictive) dan Adaptif (Agile)?',
+                'option_a' => 'Pendekatan adaptif tidak memerlukan sebarang perancangan awal',
+                'option_b' => 'Pendekatan prediktif menetapkan skop, masa, dan kos di awal projek, manakala adaptif menyesuaikan skop secara berulang mengikut maklum balas pantas',
+                'option_c' => 'Pendekatan prediktif hanya digunakan untuk perisian komputer sahaja',
+                'option_d' => 'Pendekatan adaptif tidak membenarkan penglibatan pihak berkepentingan (stakeholders)',
+                'correct_option' => 'b',
+            ]);
+
+            $capmCourse->assessments()->create([
+                'question' => 'Dalam rangka kerja Scrum, siapakah individu yang bertanggungjawab memaksimumkan nilai produk dan menguruskan Product Backlog?',
+                'option_a' => 'Scrum Master',
+                'option_b' => 'Product Owner',
+                'option_c' => 'Pembangun Perisian (Developers)',
+                'option_d' => 'Pegawai Kewangan Syarikat',
+                'correct_option' => 'b',
+            ]);
+
+            $capmCourse->assessments()->create([
+                'question' => 'Apakah tujuan utama penyediaan Piagam Projek (Project Charter) pada fasa permulaan projek?',
+                'option_a' => 'Mengesahkan kelulusan bajet minit akhir secara tidak rasmi',
+                'option_b' => 'Memberi kuasa rasmi kepada Pengurus Projek untuk memulakan projek dan menggunakan sumber organisasi',
+                'option_c' => 'Menggantikan keperluan pelan pengurusan risiko',
+                'option_d' => 'Menetapkan tarikh cuti tahunan kakitangan',
+                'correct_option' => 'b',
+            ]);
+        }
+
+        // -------------------------------------------------------------
+        // 3. Intro to AI (The user's authored course)
+        // -------------------------------------------------------------
+        $aiCourse = Course::updateOrCreate(
+            ['title' => 'Intro to Ai'],
+            [
+                'description' => 'Fundamental concepts of artificial intelligence, machine learning history, and real-world applications.',
+                'instructor_id' => $staffId,
+                'status' => 'published',
+                'academic_year' => '2026 / 2027',
+                'category_logo' => 'ai',
+                'billing_type' => 'free',
+                'price' => 0.00,
+            ]
+        );
+
+        if ($aiCourse->modules()->count() === 0) {
+            $aiCourse->modules()->create([
+                'title' => 'Chapter-1st Intro to ai',
+                'description' => 'Fundamental concepts of artificial intelligence, machine learning history, and real-world applications.',
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
+                'order' => 1,
+            ]);
+
+            $aiCourse->modules()->create([
+                'title' => 'Chapter-2 ai',
+                'description' => 'Core AI paradigms: supervised learning, unsupervised learning, and neural network fundamentals.',
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
+                'order' => 2,
+            ]);
+
+            $aiCourse->modules()->create([
+                'title' => 'chaprter 3',
+                'description' => 'Interactive deep learning demonstration, modern LLMs, and ethical considerations in AI.',
+                'content_type' => 'embed',
+                'media_url' => 'https://www.youtube.com/embed/aircAruvnKk',
+                'order' => 3,
+            ]);
+        }
+
+        if ($aiCourse->assessments()->count() === 0) {
+            $aiCourse->assessments()->create([
+                'question' => 'what does the fox say ?',
+                'option_a' => 'meow',
+                'option_b' => 'AAA',
+                'option_c' => 'Artificial intelligence',
+                'option_d' => 'VVV',
+                'correct_option' => 'a',
+            ]);
+
+            $aiCourse->assessments()->create([
+                'question' => 'What is the primary purpose of Artificial Intelligence (AI) in computer systems?',
+                'option_a' => 'To simulate human intelligence, reasoning, and problem-solving capabilities',
+                'option_b' => 'To replace physical computer keyboards with touchscreen devices',
+                'option_c' => 'To strictly increase internet download bandwidth',
+                'option_d' => 'To prevent monitors from overheating',
+                'correct_option' => 'a',
+            ]);
+        }
+
+        // -------------------------------------------------------------
+        // 4. Child Protection Fundamentals
+        // -------------------------------------------------------------
+        $cpFund = Course::updateOrCreate(
             ['title' => 'Child Protection Fundamentals'],
             [
                 'description' => 'Core principles and legal frameworks for child protection in humanitarian settings. Covers UNCRC, mandatory reporting, and referral pathways.',
-                'instructor_id' => $staffB ? $staffB->id : 1,
+                'instructor_id' => $staffBId,
                 'status' => 'published',
+                'academic_year' => '2026 / 2027',
+                'category_logo' => 'child_protection',
+                'billing_type' => 'free',
+                'price' => 0.00,
             ]
         );
 
@@ -225,14 +358,18 @@ class CourseSeeder extends Seeder
         }
 
         // -------------------------------------------------------------
-        // 4. Psychosocial Support for Children
+        // 5. Psychosocial Support for Children
         // -------------------------------------------------------------
-        $pssCourse = Course::firstOrCreate(
+        $pssCourse = Course::updateOrCreate(
             ['title' => 'Psychosocial Support for Children'],
             [
                 'description' => 'Evidence-based approaches to providing psychosocial support to children affected by crisis. Includes PFA, safe spaces, and caregiver engagement.',
-                'instructor_id' => $staffB ? $staffB->id : 1,
+                'instructor_id' => $staffBId,
                 'status' => 'published',
+                'academic_year' => '2026 / 2027',
+                'category_logo' => 'child_protection',
+                'billing_type' => 'free',
+                'price' => 0.00,
             ]
         );
 
@@ -272,14 +409,18 @@ class CourseSeeder extends Seeder
         }
 
         // -------------------------------------------------------------
-        // 5. Case Management in Child Protection
+        // 6. Case Management in Child Protection
         // -------------------------------------------------------------
-        $cmCourse = Course::firstOrCreate(
+        $cmCourse = Course::updateOrCreate(
             ['title' => 'Case Management in Child Protection'],
             [
                 'description' => 'Step-by-step case management methodology: identification, assessment, planning, implementation, monitoring, and closure. Best practices for documentation.',
-                'instructor_id' => $staffB ? $staffB->id : 1,
+                'instructor_id' => $staffBId,
                 'status' => 'published',
+                'academic_year' => '2026 / 2027',
+                'category_logo' => 'child_protection',
+                'billing_type' => 'free',
+                'price' => 0.00,
             ]
         );
 
@@ -319,14 +460,18 @@ class CourseSeeder extends Seeder
         }
 
         // -------------------------------------------------------------
-        // 6. Child Safeguarding Policy Development (Draft)
+        // 7. Child Safeguarding Policy Development (Draft)
         // -------------------------------------------------------------
-        $safePolicy = Course::firstOrCreate(
+        $safePolicy = Course::updateOrCreate(
             ['title' => 'Child Safeguarding Policy Development'],
             [
                 'description' => 'How to develop and implement organizational child safeguarding policies. Risk assessment, code of conduct, and reporting mechanisms.',
-                'instructor_id' => $staffB ? $staffB->id : 1,
+                'instructor_id' => $staffBId,
                 'status' => 'draft',
+                'academic_year' => '2026 / 2027',
+                'category_logo' => 'child_protection',
+                'billing_type' => 'free',
+                'price' => 0.00,
             ]
         );
 
@@ -341,14 +486,18 @@ class CourseSeeder extends Seeder
         }
 
         // -------------------------------------------------------------
-        // 7. Legacy Course: Basic Hygiene Promotion (Archived)
+        // 8. Legacy Course: Basic Hygiene Promotion (Archived)
         // -------------------------------------------------------------
-        $legacyCourse = Course::firstOrCreate(
+        $legacyCourse = Course::updateOrCreate(
             ['title' => 'Legacy Course: Basic Hygiene Promotion'],
             [
                 'description' => 'Archived content. Superseded by WASH Integration module.',
-                'instructor_id' => $staffB ? $staffB->id : 1,
+                'instructor_id' => $staffBId,
                 'status' => 'archived',
+                'academic_year' => '2025 / 2026',
+                'category_logo' => 'general',
+                'billing_type' => 'free',
+                'price' => 0.00,
             ]
         );
 

@@ -35,7 +35,20 @@ class CourseController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:draft,published,archived'],
+            'academic_year' => ['nullable', 'string', 'max:100'],
+            'category_logo' => ['nullable', 'string', 'in:maritime,capm,ai,cybersecurity,child_protection,general'],
+            'billing_type' => ['nullable', 'string', 'in:free,one_time,subscription'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'cert_title' => ['nullable', 'string', 'max:255'],
+            'cert_url' => ['nullable', 'url', 'max:500'],
+            'bundle_title' => ['nullable', 'string', 'max:255'],
+            'bundle_url' => ['nullable', 'url', 'max:500'],
         ]);
+
+        $validated['academic_year'] = !empty($validated['academic_year']) ? $validated['academic_year'] : '2026 / 2027';
+        $validated['category_logo'] = !empty($validated['category_logo']) ? $validated['category_logo'] : 'general';
+        $validated['billing_type'] = !empty($validated['billing_type']) ? $validated['billing_type'] : 'free';
+        $validated['price'] = isset($validated['price']) && $validated['price'] !== '' ? $validated['price'] : 0.00;
 
         $course = new Course($validated);
         $course->instructor()->associate($request->user());
@@ -43,6 +56,11 @@ class CourseController extends Controller
             $course->organization()->associate($request->user()->organization);
         }
         $course->save();
+
+        if ($request->boolean('redirect_to_hub')) {
+            return redirect()->route('staff.courses.edit', $course->id)
+                ->with('success', 'Subject created! Choose an action below to build your curriculum.');
+        }
 
         return redirect()->route('staff.courses.index')
             ->with('success', 'Course created successfully.');
@@ -118,12 +136,42 @@ class CourseController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:draft,published,archived'],
+            'academic_year' => ['nullable', 'string', 'max:100'],
+            'category_logo' => ['nullable', 'string', 'in:maritime,capm,ai,cybersecurity,child_protection,general'],
+            'billing_type' => ['nullable', 'string', 'in:free,one_time,subscription'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'cert_title' => ['nullable', 'string', 'max:255'],
+            'cert_url' => ['nullable', 'url', 'max:500'],
+            'bundle_title' => ['nullable', 'string', 'max:255'],
+            'bundle_url' => ['nullable', 'url', 'max:500'],
         ]);
+
+        if (array_key_exists('academic_year', $validated)) {
+            $validated['academic_year'] = !empty($validated['academic_year']) ? $validated['academic_year'] : '2026 / 2027';
+        }
+        if (array_key_exists('category_logo', $validated)) {
+            $validated['category_logo'] = !empty($validated['category_logo']) ? $validated['category_logo'] : 'general';
+        }
+        if (array_key_exists('billing_type', $validated)) {
+            $validated['billing_type'] = !empty($validated['billing_type']) ? $validated['billing_type'] : 'free';
+        }
+        if (array_key_exists('price', $validated)) {
+            $validated['price'] = isset($validated['price']) && $validated['price'] !== '' ? $validated['price'] : 0.00;
+        }
 
         $course->update($validated);
 
         return redirect()->route('staff.courses.index')
             ->with('success', 'Course updated successfully.');
+    }
+
+    public function deploy(Course $course): RedirectResponse
+    {
+        $this->authorize('update', $course);
+
+        $course->update(['status' => 'published']);
+
+        return back()->with('success', 'Course deployed and live in the CoPED Catalog!');
     }
 
     public function destroy(Course $course): RedirectResponse

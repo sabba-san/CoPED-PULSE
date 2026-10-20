@@ -1,6 +1,7 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import StaffLayout from '@/Layouts/design_v1/StaffLayout';
 import StatCard, { ProgressBar } from './Partials/StatCard';
+import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
 
 export default function Dashboard({ stats = {}, courses = [], breakdown = [], recentActivity = [] }) {
     const s = {
@@ -72,8 +73,9 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                 <StatCard value={`${s.avg_completion}%`} label="Class Avg Progress" sub="across your curriculum" tone="bg-amber-50 text-amber-700 border-amber-200" />
             </div>
 
-            {/* 1. My Active Courses (Learner-Card Style) */}
-            <div className="mt-10 space-y-6">
+            {/* 1. My Active Courses (left) + 2. Recent Activity (right): side-by-side */}
+            <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-7 space-y-6 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-[#E5E7EB] pb-4">
                     <div>
                         <h2 className="text-2xl font-extrabold text-[#111827] font-display">
@@ -108,16 +110,12 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                                     className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden transition-transform duration-200 hover:scale-[1.005]"
                                 >
                                     <div className="flex flex-col md:flex-row items-stretch">
-                                        {/* Left Flat Graphic Block */}
-                                        <div className="bg-[#111827] text-white p-6 flex flex-col justify-center items-center w-full md:w-44 shrink-0 border-b-2 md:border-b-0 md:border-r-2 border-[#E5E7EB]">
-                                            <span className="text-[11px] font-extrabold uppercase tracking-widest text-gray-400 mb-1">
-                                                CURRICULUM
-                                            </span>
-                                            <p className="text-3xl font-black text-white">{course.modules_count ?? 0}</p>
-                                            <span className="text-[11px] text-gray-400 font-semibold mt-0.5">
-                                                {course.modules_count === 1 ? 'Module' : 'Modules'}
-                                            </span>
-                                        </div>
+                                        {/* Left Flat Graphic Block: CourseLogoBadge */}
+                                        <CourseLogoBadge
+                                            category={course.category_logo}
+                                            size="tile"
+                                            subtitle={`${course.modules_count ?? 0} ${course.modules_count === 1 ? 'Module' : 'Modules'}`}
+                                        />
 
                                         {/* Center Course Details */}
                                         <div className="flex-1 p-6 flex flex-col justify-between min-w-0 space-y-3">
@@ -129,6 +127,22 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border ${statusColor}`}>
                                                         {course.status ? course.status.toUpperCase() : 'DRAFT'}
                                                     </span>
+                                                    <span className="inline-flex items-center gap-1 bg-[#F3F4F6] border border-[#E5E7EB] text-[10px] font-bold text-gray-700 px-2 py-0.5 rounded">
+                                                        📅 {course.academic_year || '2026 / 2027'}
+                                                    </span>
+                                                    {course.billing_type === 'subscription' ? (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border bg-amber-50 text-amber-800 border-amber-300">
+                                                            RM {Number(course.price || 0).toFixed(2)}/mo · CoPED PASS
+                                                        </span>
+                                                    ) : course.billing_type === 'one_time' ? (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border bg-blue-50 text-blue-800 border-blue-300">
+                                                            RM {Number(course.price || 0).toFixed(2)} · ONE-TIME
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border bg-emerald-50 text-emerald-800 border-emerald-300">
+                                                            FREE ACCESS
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <h3 className="font-display text-xl font-bold text-[#111827] truncate">
                                                     <Link href={route('staff.courses.show', course.id)} className="hover:text-[#10B981] transition-colors">
@@ -138,6 +152,34 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                                                 <p className="text-sm text-gray-600 mt-1 line-clamp-1">
                                                     {course.description || 'No course description provided yet.'}
                                                 </p>
+
+                                                {/* Attached Cert & Material Badges */}
+                                                {(course.cert_title || course.bundle_url) && (
+                                                    <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                                                        {course.cert_title && (
+                                                            <a
+                                                                href={course.cert_url || '#'}
+                                                                target={course.cert_url ? '_blank' : undefined}
+                                                                rel="noreferrer"
+                                                                className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] px-2 py-0.5 rounded hover:bg-amber-200 transition-colors"
+                                                            >
+                                                                <span>🎓 Leads to: {course.cert_title}</span>
+                                                                {course.cert_url && <span className="text-[10px]">↗</span>}
+                                                            </a>
+                                                        )}
+                                                        {course.bundle_url && (
+                                                            <a
+                                                                href={course.bundle_url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#EEF2FF] text-[#4338CA] border border-[#C7D2FE] px-2 py-0.5 rounded hover:bg-indigo-100 transition-colors"
+                                                            >
+                                                                <span>📦 All-in-One Material Pack Attached</span>
+                                                                <span className="text-[10px]">↗</span>
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-500">
@@ -151,6 +193,16 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
 
                                         {/* Right Action Buttons */}
                                         <div className="p-6 flex flex-col sm:flex-row md:flex-col items-center justify-center gap-2.5 shrink-0 border-t-2 md:border-t-0 md:border-l-2 border-[#E5E7EB] bg-[#F9FAFB]">
+                                            {course.status === 'draft' && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => router.post(route('staff.courses.deploy', course.id), {}, { preserveScroll: true })}
+                                                    className="w-full inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold py-2.5 px-4 rounded text-xs transition-transform active:scale-[0.98]"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                    <span>🚀 Deploy Course Live</span>
+                                                </button>
+                                            )}
                                             <Link
                                                 href={route('staff.courses.edit', course.id)}
                                                 className="w-full inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-2.5 px-4 rounded text-xs transition-transform active:scale-[0.98]"
@@ -210,111 +262,91 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                 )}
             </div>
 
-            {/* 2. Recent Learner Activity & Submissions Feed */}
-            <div className="mt-12 bg-white rounded-md border-2 border-[#E5E7EB] overflow-hidden">
-                <div className="p-6 border-b-2 border-[#E5E7EB] bg-[#F9FAFB] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                        <h3 className="text-xl font-extrabold text-[#111827] font-display">
-                            Recent Learner Activity & Submissions Feed
+            {/* 2. Recent Learner Activity & Submissions Feed (side-by-side, scrollable) */}
+            <div className="lg:col-span-5 bg-white rounded-md border-2 border-[#E5E7EB] overflow-hidden min-w-0">
+                <div className="p-5 border-b-2 border-[#E5E7EB] bg-[#F9FAFB] flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <h3 className="text-lg font-extrabold text-[#111827] font-display">
+                            Recent Learner Activity &amp; Submissions Feed
                         </h3>
                         <p className="text-xs text-gray-600 mt-0.5">
-                            Live submissions, unit completions, and progress updates across all your students.
+                            {recentActivity.length} recent activities · Scroll for more
                         </p>
                     </div>
-                    <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded">
-                        {recentActivity.length} Active Records
+                    <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded shrink-0">
+                        {recentActivity.length}
                     </span>
                 </div>
 
                 {recentActivity.length > 0 ? (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b-2 border-[#E5E7EB] bg-white text-[11px] font-extrabold uppercase text-gray-500 tracking-wider">
-                                    <th className="py-3.5 px-6">Learner</th>
-                                    <th className="py-3.5 px-6">Course</th>
-                                    <th className="py-3.5 px-6">Modules Done</th>
-                                    <th className="py-3.5 px-6">Overall Progress</th>
-                                    <th className="py-3.5 px-6">Assessment Status</th>
-                                    <th className="py-3.5 px-6 text-right">Last Active</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y-2 divide-[#E5E7EB] text-sm">
-                                {recentActivity.map((activity) => {
-                                    const progressVal = Math.min(100, Math.max(0, Math.round(Number(activity.progress ?? 0))));
-                                    const isDone = Boolean(activity.completed_at) || progressVal >= 100;
-                                    const learnerName = activity.user?.name || 'Enrolled Learner';
-                                    const learnerEmail = activity.user?.email || '';
-                                    const completedMods = activity.completed_modules_count ?? 0;
-                                    const totalMods = activity.total_modules_count ?? 0;
+                    <ul className="max-h-[560px] overflow-y-auto divide-y-2 divide-[#E5E7EB]">
+                        {recentActivity.map((activity) => {
+                            const progressVal = Math.min(100, Math.max(0, Math.round(Number(activity.progress ?? 0))));
+                            const isDone = Boolean(activity.completed_at) || progressVal >= 100;
+                            const learnerName = activity.user?.name || 'Enrolled Learner';
+                            const learnerEmail = activity.user?.email || '';
+                            const completedMods = activity.completed_modules_count ?? 0;
+                            const totalMods = activity.total_modules_count ?? 0;
+                            const when = formatActivityTime(activity.updated_at || activity.created_at);
 
-                                    return (
-                                        <tr key={activity.id} className="hover:bg-[#F9FAFB] transition-colors">
-                                            <td className="py-4 px-6 font-semibold text-[#111827]">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="w-8 h-8 rounded-full bg-[#111827] text-white flex items-center justify-center text-xs font-extrabold shrink-0">
-                                                        {learnerName.charAt(0).toUpperCase()}
-                                                    </span>
-                                                    <div className="min-w-0">
-                                                        <p className="font-bold text-[#111827] truncate">
-                                                            {learnerName}
-                                                        </p>
-                                                        {activity.latest_module_title ? (
-                                                            <p className="text-[11px] text-gray-500 font-medium truncate">
-                                                                Latest: {activity.latest_module_title}
-                                                            </p>
-                                                        ) : (
-                                                            learnerEmail && <p className="text-xs text-gray-400 truncate">{learnerEmail}</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-6 font-semibold text-[#111827]">
-                                                <span className="line-clamp-1">{activity.course?.title || 'Course'}</span>
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#F3F4F6] text-[#111827] text-xs font-bold border border-[#E5E7EB]">
-                                                    <span className="text-emerald-600 font-extrabold">✓</span>
-                                                    <span>{completedMods} / {totalMods} Done</span>
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="w-20 bg-gray-200 h-2 rounded-full overflow-hidden">
-                                                        <div
-                                                            className={`h-full rounded-full ${isDone ? 'bg-[#10B981]' : 'bg-[#3B82F6]'}`}
-                                                            style={{ width: `${progressVal}%` }}
-                                                        />
-                                                    </div>
-                                                    <span className="font-bold text-xs text-[#111827]">{progressVal}%</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                {isDone ? (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                                        <span>✓</span> 100% Certified
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-extrabold bg-amber-50 text-amber-800 border border-amber-300">
-                                                        <span>⏳</span> Quiz Pending
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="py-4 px-6 text-right text-xs font-semibold whitespace-nowrap">
-                                                {formatActivityTime(activity.updated_at || activity.created_at) === 'Just Now' ? (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            return (
+                                <li key={activity.id} className="p-4 hover:bg-[#F9FAFB] transition-colors space-y-2.5">
+                                    <div className="flex items-start gap-3">
+                                        <span className="w-8 h-8 rounded-full bg-[#111827] text-white flex items-center justify-center text-xs font-extrabold shrink-0">
+                                            {learnerName.charAt(0).toUpperCase()}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <p className="font-bold text-sm text-[#111827] truncate">{learnerName}</p>
+                                                {when === 'Just Now' ? (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
                                                         ● Just Now
                                                     </span>
                                                 ) : (
-                                                    <span className="text-gray-500">{formatActivityTime(activity.updated_at || activity.created_at)}</span>
+                                                    <span className="text-[11px] font-semibold text-gray-500 shrink-0">{when}</span>
                                                 )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </div>
+                                            <p className="text-xs font-semibold text-gray-700 truncate">
+                                                {activity.course?.title || 'Course'}
+                                            </p>
+                                            {activity.latest_module_title ? (
+                                                <p className="text-[11px] text-gray-500 font-medium truncate">
+                                                    Latest: {activity.latest_module_title}
+                                                </p>
+                                            ) : (
+                                                learnerEmail && <p className="text-[11px] text-gray-400 truncate">{learnerEmail}</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-2 pl-11">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F3F4F6] text-[#111827] text-[11px] font-bold border border-[#E5E7EB]">
+                                            <span className="text-emerald-600 font-extrabold">✓</span>
+                                            <span>{completedMods} / {totalMods} Done</span>
+                                        </span>
+                                        {isDone ? (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                ✓ 100% Certified
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-50 text-amber-800 border border-amber-300">
+                                                Quiz Pending
+                                            </span>
+                                        )}
+                                        <div className="flex items-center gap-2 flex-1 min-w-[90px]">
+                                            <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full ${isDone ? 'bg-[#10B981]' : 'bg-[#3B82F6]'}`}
+                                                    style={{ width: `${progressVal}%` }}
+                                                />
+                                            </div>
+                                            <span className="font-bold text-[11px] text-[#111827]">{progressVal}%</span>
+                                        </div>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 ) : (
                     <div className="py-12 px-6 text-center">
                         <p className="text-sm font-semibold text-gray-500">
@@ -322,6 +354,7 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                         </p>
                     </div>
                 )}
+            </div>
             </div>
         </StaffLayout>
     );

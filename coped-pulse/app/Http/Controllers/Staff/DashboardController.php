@@ -40,12 +40,12 @@ class DashboardController extends Controller
             ->latest()
             ->get();
 
-        // Recent activity feed: 10 rows max with learner and course relationships + module telemetry
+        // Recent activity feed: 25 rows max with learner and course relationships + module telemetry
         $recentEnrollments = $courseIds->isNotEmpty()
             ? Enrollment::whereIn('course_id', $courseIds)
                 ->with(['user:id,name,email', 'course:id,title'])
                 ->latest('updated_at')
-                ->limit(10)
+                ->limit(25)
                 ->get()
             : collect();
 

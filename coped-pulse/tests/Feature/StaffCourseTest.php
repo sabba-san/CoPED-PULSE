@@ -59,6 +59,23 @@ class StaffCourseTest extends TestCase
         ]);
     }
 
+    public function test_wizard_store_redirects_to_action_hub(): void
+    {
+        $staff = $this->staff();
+
+        $response = $this->actingAs($staff)->post(route('staff.courses.store'), [
+            'title' => 'Wizard Created Subject',
+            'description' => 'Created through the 3-step wizard.',
+            'status' => 'draft',
+            'redirect_to_hub' => true,
+        ]);
+
+        $course = \App\Models\Course::where('title', 'Wizard Created Subject')->firstOrFail();
+
+        $response->assertRedirect(route('staff.courses.edit', $course->id));
+        $response->assertSessionHas('success', 'Subject created! Choose an action below to build your curriculum.');
+    }
+
     public function test_course_creation_requires_valid_data(): void
     {
         $staff = $this->staff();
@@ -156,6 +173,50 @@ class StaffCourseTest extends TestCase
 
         $response->assertForbidden();
         $this->assertDatabaseMissing('courses', ['title' => 'Hacked Title']);
+    }
+
+    public function test_staff_can_store_course_with_studio_metadata(): void
+    {
+        $staff = $this->staff();
+
+        $response = $this->actingAs($staff)->post(route('staff.courses.store'), [
+            'title' => 'Project Management Professional',
+            'description' => 'Comprehensive CAPM prep course.',
+            'status' => 'draft',
+            'academic_year' => '2026 / 2027 · Intake 1',
+            'category_logo' => 'capm',
+            'billing_type' => 'subscription',
+            'price' => 199.00,
+            'cert_title' => 'CAPM® · Certified Associate in Project Management',
+            'cert_url' => 'https://www.pmi.org/certifications/certified-associate-capm',
+            'bundle_title' => 'Complete PMBOK 7th Ed Study Bundle',
+            'bundle_url' => 'https://drive.google.com/drive/folders/test-bundle',
+        ]);
+
+        $response->assertRedirect(route('staff.courses.index'));
+        $this->assertDatabaseHas('courses', [
+            'title' => 'Project Management Professional',
+            'category_logo' => 'capm',
+            'billing_type' => 'subscription',
+            'academic_year' => '2026 / 2027 · Intake 1',
+            'price' => 199.00,
+            'cert_title' => 'CAPM® · Certified Associate in Project Management',
+            'bundle_title' => 'Complete PMBOK 7th Ed Study Bundle',
+        ]);
+    }
+
+    public function test_staff_can_deploy_draft_course_in_one_click(): void
+    {
+        $staff = $this->staff();
+        $course = Course::factory()->draft()->forInstructor($staff)->create();
+
+        $response = $this->actingAs($staff)->post(route('staff.courses.deploy', $course));
+
+        $response->assertSessionHas('success', 'Course deployed and live in the CoPED Catalog!');
+        $this->assertDatabaseHas('courses', [
+            'id' => $course->id,
+            'status' => 'published',
+        ]);
     }
 
     public function test_learner_cannot_access_staff_courses(): void

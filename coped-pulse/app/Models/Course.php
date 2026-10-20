@@ -17,11 +17,35 @@ class Course extends Model
         'title',
         'description',
         'status',
+        'academic_year',
+        'category_logo',
+        'billing_type',
+        'price',
+        'cert_title',
+        'cert_url',
+        'bundle_title',
+        'bundle_url',
     ];
 
     protected $casts = [
         'status' => 'string',
+        'price' => 'decimal:2',
     ];
+
+    public function isCommercial(): bool
+    {
+        return $this->billing_type !== 'free' && (float) $this->price > 0;
+    }
+
+    public function hasBulkMaterial(): bool
+    {
+        return !empty($this->bundle_url);
+    }
+
+    public function hasCertification(): bool
+    {
+        return !empty($this->cert_title);
+    }
 
     public function instructor(): BelongsTo
     {

@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import StaffLayout from '@/Layouts/design_v1/StaffLayout';
 import Can from '@/Components/Can';
+import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
 
 export default function Index({ courses }) {
     const destroy = (course) => {
@@ -72,6 +73,25 @@ export default function Index({ courses }) {
                                 {courses.data.map(course => (
                                     <tr key={course.id} className="hover:bg-[#F9FAFB] transition-colors">
                                         <td className="px-6 py-5">
+                                            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                                <CourseLogoBadge category={course.category_logo} size="badge" />
+                                                <span className="text-[10px] font-bold text-gray-600 bg-[#F3F4F6] border border-[#E5E7EB] px-2 py-0.5 rounded">
+                                                    📅 {course.academic_year || '2026 / 2027'}
+                                                </span>
+                                                {course.billing_type === 'subscription' ? (
+                                                    <span className="text-[10px] font-extrabold text-amber-800 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded">
+                                                        RM {Number(course.price || 0).toFixed(2)}/mo
+                                                    </span>
+                                                ) : course.billing_type === 'one_time' ? (
+                                                    <span className="text-[10px] font-extrabold text-blue-800 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded">
+                                                        RM {Number(course.price || 0).toFixed(2)}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded">
+                                                        FREE
+                                                    </span>
+                                                )}
+                                            </div>
                                             <Link href={route('staff.courses.show', course)} className="text-base font-bold text-[#111827] hover:text-[#10B981] transition-colors block mb-1">
                                                 {course.title}
                                             </Link>
@@ -92,7 +112,16 @@ export default function Index({ courses }) {
                                             {new Date(course.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-5 text-right text-sm font-medium">
-                                            <div className="flex items-center justify-end space-x-4">
+                                            <div className="flex items-center justify-end space-x-3">
+                                                {course.status === 'draft' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => router.post(route('staff.courses.deploy', course.id), {}, { preserveScroll: true })}
+                                                        className="text-xs font-bold bg-[#10B981] hover:bg-emerald-600 text-white px-2.5 py-1 rounded transition-colors"
+                                                    >
+                                                        Deploy Live
+                                                    </button>
+                                                )}
                                                 <Link href={route('staff.courses.edit', course)} className="text-[#3B82F6] hover:underline font-bold transition-colors">Edit</Link>
                                                 <button onClick={() => destroy(course)} className="text-red-600 hover:underline font-bold transition-colors">Delete</button>
                                             </div>

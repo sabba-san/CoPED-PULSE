@@ -1,10 +1,10 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import StaffLayout from '@/Layouts/design_v1/StaffLayout';
 import QuestionCard from '../Partials/QuestionCard';
 import QuestionEditForm from '../Partials/QuestionEditForm';
 import QuestionForm from '../Partials/QuestionForm';
 import { useEffect, useState } from 'react';
-import { formatEmbedUrl, getYouTubeId, isVideoUrl, safeUrl } from '@/Utils/mediaUtils';
+import { formatEmbedUrl, isVideoUrl, safeUrl } from '@/Utils/mediaUtils';
 
 const MAX_MODULE_FILE_SIZE = 15 * 1024 * 1024; // 15MB - must stay below PHP post_max_size
 const MAX_MODULE_FILE_LABEL = '15MB';
@@ -16,9 +16,17 @@ const formatBytes = (bytes) => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-export default function Edit({ course, module, assessments }) {
-    const { flash } = usePage().props;
+export default function Edit({ course, module, assessments, finalAssessments = [] }) {
     const quizzes = assessments || [];
+    const finals = finalAssessments?.length
+        ? finalAssessments
+        : (course.assessments || []).filter((q) => !q.module_id);
+
+    // Active Action Card: 'materials' | 'quizzes' | 'assessment'
+    const [activeTab, setActiveTab] = useState('materials');
+
+    // Materials Sub-Tab: 'info' | 'subtopics'
+    const [materialsSubTab, setMaterialsSubTab] = useState('info');
 
     const [details, setDetails] = useState({
         title: module.title || '',
@@ -33,6 +41,7 @@ export default function Edit({ course, module, assessments }) {
 
     const [showAddQuiz, setShowAddQuiz] = useState(false);
     const [showQuizSection, setShowQuizSection] = useState(quizzes.length > 0);
+    const [showAddFinalQuiz, setShowAddFinalQuiz] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [editErrors, setEditErrors] = useState({});
     const [editSaving, setEditSaving] = useState(false);
@@ -60,7 +69,7 @@ export default function Edit({ course, module, assessments }) {
         apply(file);
     };
 
-    const saveDetails = (e) => {
+    const saveDetails = (e, goToSubtopics = false) => {
         e?.preventDefault();
         setModSaving(true);
         setModErrors({});
@@ -82,6 +91,9 @@ export default function Edit({ course, module, assessments }) {
                     });
                 }
                 pop('Module details saved.');
+                if (goToSubtopics) {
+                    setMaterialsSubTab('subtopics');
+                }
             },
             onError: (errs) => setModErrors(errs),
             onFinish: () => setModSaving(false),
@@ -164,6 +176,7 @@ export default function Edit({ course, module, assessments }) {
         if (confirm(`Delete subtopic "${l.title}"?`)) {
             router.delete(route('staff.courses.modules.lessons.destroy', [course, module.id, l.id]), {
                 preserveScroll: true,
+                preserveState: true,
             });
         }
     };
@@ -172,7 +185,7 @@ export default function Edit({ course, module, assessments }) {
         setEditSaving(true);
         setEditErrors({});
         router.put(route('staff.courses.assessments.update', [course, q.id]), {
-            module_id: module.id,
+            module_id: q.module_id ?? null,
             ...data,
         }, {
             preserveScroll: true,
@@ -187,6 +200,7 @@ export default function Edit({ course, module, assessments }) {
         if (confirm('Delete this question?')) {
             router.delete(route('staff.courses.assessments.destroy', [course, q.id]), {
                 preserveScroll: true,
+                preserveState: true,
             });
         }
     };
@@ -196,162 +210,429 @@ export default function Edit({ course, module, assessments }) {
             <Head title={`Module: ${module.title}`} />
 
             <div className="max-w-4xl mx-auto space-y-8">
+                {/* Module Header Bar */}
                 <div>
                     <Link
                         href={route('staff.courses.edit', course)}
-                        className="inline-flex items-center text-sm font-semibold text-[#10B981] hover:text-emerald-700 mb-4 transition-colors"
+                        className="inline-flex items-center text-xs font-bold text-gray-500 hover:text-[#10B981] mb-2 transition-colors"
                     >
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                        Back to Course
+                        Back to Course Curriculum
                     </Link>
-                    <p className="text-xs font-bold text-[#10B981] uppercase tracking-wider">{course.title}</p>
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{course.title}</span>
+                        <span className="text-gray-300">·</span>
+                        <span className="text-xs font-bold bg-[#111827] text-white px-2 py-0.5 rounded">Unit {module.order || 1}</span>
+                    </div>
                     <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight font-display">
-                        {module.title}
+                        {details.title || module.title}
                     </h1>
                 </div>
 
-                {flash?.success && (
-                    <div className="bg-emerald-50 border-2 border-emerald-200 text-emerald-800 rounded-md px-6 py-4 text-sm font-medium">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="bg-red-50 border-2 border-red-200 text-red-700 rounded-md px-6 py-4 text-sm font-medium">
-                        {flash.error}
-                    </div>
-                )}
+                {/* Top 3-Card Action Hub */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('materials')}
+                        className={`text-left p-5 rounded-md border-2 transition-colors ${
+                            activeTab === 'materials'
+                                ? 'bg-[#111827] border-[#111827] text-white'
+                                : 'bg-white border-[#E5E7EB] text-[#111827] hover:border-[#10B981]'
+                        }`}
+                    >
+                        <span className="block text-3xl mb-2" aria-hidden="true">📚</span>
+                        <span className="block font-extrabold text-base font-display">Module & Learning Materials</span>
+                        <span className={`block text-xs mt-0.5 font-semibold ${activeTab === 'materials' ? 'text-gray-300' : 'text-gray-500'}`}>
+                            {lessons.length} subtopic{lessons.length === 1 ? '' : 's'} & materials
+                        </span>
+                    </button>
 
-                {/* Current Unit Main Video Preview if attached */}
-                {module.media_url && safeUrl(module.media_url) && isVideoUrl(module.media_url) && (
-                    <div className="bg-white rounded-md border-2 border-[#E5E7EB] overflow-hidden animate-fade-in">
-                        <div className="p-4 bg-[#F9FAFB] border-b-2 border-[#E5E7EB] flex items-center justify-between">
-                            <div className="inline-flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse-dot" />
-                                <span className="text-sm font-extrabold text-[#111827] font-display">Unit Main Media Stage</span>
-                            </div>
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Inline Playback Active</span>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('quizzes')}
+                        className={`text-left p-5 rounded-md border-2 transition-colors ${
+                            activeTab === 'quizzes'
+                                ? 'bg-[#111827] border-[#111827] text-white'
+                                : 'bg-white border-[#E5E7EB] text-[#111827] hover:border-[#10B981]'
+                        }`}
+                    >
+                        <span className="block text-3xl mb-2" aria-hidden="true">📝</span>
+                        <span className="block font-extrabold text-base font-display">Quizzes (Optional Mini-Quiz)</span>
+                        <span className={`block text-xs mt-0.5 font-semibold ${activeTab === 'quizzes' ? 'text-gray-300' : 'text-gray-500'}`}>
+                            {quizzes.length} practice question{quizzes.length === 1 ? '' : 's'} · Optional
+                        </span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('assessment')}
+                        className={`text-left p-5 rounded-md border-2 transition-colors ${
+                            activeTab === 'assessment'
+                                ? 'bg-[#111827] border-[#111827] text-white'
+                                : 'bg-white border-[#E5E7EB] text-[#111827] hover:border-[#10B981]'
+                        }`}
+                    >
+                        <span className="block text-3xl mb-2" aria-hidden="true">🎯</span>
+                        <span className="block font-extrabold text-base font-display">Final Assessment</span>
+                        <span className={`block text-xs mt-0.5 font-semibold ${activeTab === 'assessment' ? 'text-gray-300' : 'text-gray-500'}`}>
+                            {finals.length} course exam question{finals.length === 1 ? '' : 's'}
+                        </span>
+                    </button>
+                </div>
+
+                {/* CARD 1: MODULE & LEARNING MATERIALS */}
+                {activeTab === 'materials' && (
+                    <div className="space-y-6">
+                        {/* 2-Step Sub-Tab Pill Switcher */}
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setMaterialsSubTab('info')}
+                                className={`px-4 py-2 rounded-md text-xs font-extrabold border-2 transition-colors ${
+                                    materialsSubTab === 'info'
+                                        ? 'bg-[#10B981] border-[#10B981] text-white'
+                                        : 'bg-white border-[#E5E7EB] text-gray-700 hover:border-[#10B981]'
+                                }`}
+                            >
+                                1. Module Info
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setMaterialsSubTab('subtopics')}
+                                className={`px-4 py-2 rounded-md text-xs font-extrabold border-2 transition-colors ${
+                                    materialsSubTab === 'subtopics'
+                                        ? 'bg-[#10B981] border-[#10B981] text-white'
+                                        : 'bg-white border-[#E5E7EB] text-gray-700 hover:border-[#10B981]'
+                                }`}
+                            >
+                                2. Subtopics & Materials ({lessons.length})
+                            </button>
                         </div>
-                        <div className="aspect-video bg-[#111827]">
-                            <iframe
-                                src={formatEmbedUrl(module.media_url)}
-                                title={module.title}
-                                className="w-full h-full border-0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                allowFullScreen
-                            />
-                        </div>
-                    </div>
-                )}
 
-                {/* 1 - Module details (big title) */}
-                <form onSubmit={saveDetails} className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8 space-y-5">
-                    <h2 className="text-xl font-extrabold text-[#111827] font-display">Module Details</h2>
+                        {/* Sub-tab A: Module Info */}
+                        {materialsSubTab === 'info' && (
+                            <form onSubmit={(e) => saveDetails(e, false)} className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8 space-y-5">
+                                <div className="border-b-2 border-[#E5E7EB] pb-4 flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-xl font-extrabold text-[#111827] font-display">
+                                            1. Module Topic & Overview
+                                        </h2>
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                            Primary title, estimated completion duration, and learning goals for this chapter.
+                                        </p>
+                                    </div>
+                                    <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded">
+                                        Step 1 of 2
+                                    </span>
+                                </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-[#111827] mb-2">Topic / Module Title</label>
-                        <input
-                            type="text"
-                            value={details.title}
-                            onChange={(e) => set('title', e.target.value)}
-                            required
-                            className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
-                        />
-                        {modErrors.title && <p className="mt-2 text-red-600 text-sm font-medium">{modErrors.title}</p>}
-                    </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-[#111827] mb-2">Topic / Module Title <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        value={details.title}
+                                        onChange={(e) => set('title', e.target.value)}
+                                        required
+                                        className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
+                                    />
+                                    {modErrors.title && <p className="mt-2 text-red-600 text-sm font-medium">{modErrors.title}</p>}
+                                </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-[#111827] mb-2">Description</label>
-                        <textarea
-                            rows={4}
-                            value={details.description}
-                            onChange={(e) => set('description', e.target.value)}
-                            className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors resize-none"
-                        />
-                        {modErrors.description && <p className="mt-2 text-red-600 text-sm font-medium">{modErrors.description}</p>}
-                    </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-[#111827] mb-2">Description</label>
+                                    <textarea
+                                        rows={4}
+                                        value={details.description}
+                                        onChange={(e) => set('description', e.target.value)}
+                                        className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors resize-none"
+                                    />
+                                    {modErrors.description && <p className="mt-2 text-red-600 text-sm font-medium">{modErrors.description}</p>}
+                                </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-bold text-[#111827] mb-2">Duration (minutes, optional)</label>
-                            <input
-                                type="number"
-                                min={0}
-                                max={1440}
-                                value={details.duration_minutes}
-                                onChange={(e) => set('duration_minutes', e.target.value)}
-                                placeholder="e.g. 12"
-                                className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
-                            />
-                            {modErrors.duration_minutes && <p className="mt-2 text-red-600 text-sm font-medium">{modErrors.duration_minutes}</p>}
-                        </div>
-                    </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-[#111827] mb-2">Duration (minutes, optional)</label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={1440}
+                                            value={details.duration_minutes}
+                                            onChange={(e) => set('duration_minutes', e.target.value)}
+                                            placeholder="e.g. 12"
+                                            className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
+                                        />
+                                        {modErrors.duration_minutes && <p className="mt-2 text-red-600 text-sm font-medium">{modErrors.duration_minutes}</p>}
+                                    </div>
+                                </div>
 
-                    <div className="flex items-center justify-end pt-2">
-                        <button
-                            type="submit"
-                            disabled={modSaving}
-                            className="px-8 py-3 text-sm font-bold text-white bg-[#10B981] rounded-md hover:bg-emerald-600 transition-colors disabled:opacity-50"
-                        >
-                            {modSaving ? 'Saving...' : 'Save Details'}
-                        </button>
-                    </div>
-                </form>
+                                <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t-2 border-[#E5E7EB]">
+                                    <button
+                                        type="submit"
+                                        disabled={modSaving}
+                                        className="w-full sm:w-auto px-6 py-2.5 text-xs font-bold text-gray-700 bg-[#F3F4F6] hover:bg-gray-200 border border-[#E5E7EB] rounded-md transition-colors disabled:opacity-50"
+                                    >
+                                        {modSaving ? 'Saving...' : 'Save Details'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={modSaving}
+                                        onClick={(e) => saveDetails(e, true)}
+                                        className="w-full sm:w-auto px-6 py-2.5 text-xs font-bold text-white bg-[#10B981] hover:bg-emerald-600 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                                    >
+                                        <span>{modSaving ? 'Saving...' : 'Save Details & Next: Add Materials'}</span>
+                                        <span aria-hidden="true">→</span>
+                                    </button>
+                                </div>
+                            </form>
+                        )}
 
-                {/* 2 - Subtopics (small titles) */}
-                <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8">
-                    <h2 className="text-xl font-extrabold text-[#111827] font-display mb-1">Subtopics & Materials</h2>
-                    <p className="text-sm text-gray-500 mb-6">Small titles with their own video, files, links, and transcripts.</p>
+                        {/* Sub-tab B: Subtopics & Materials */}
+                        {materialsSubTab === 'subtopics' && (
+                            <div className="space-y-6">
+                                {/* Current Unit Main Video Preview if attached */}
+                                {module.media_url && safeUrl(module.media_url) && isVideoUrl(module.media_url) && (
+                                    <div className="bg-white rounded-md border-2 border-[#E5E7EB] overflow-hidden animate-fade-in">
+                                        <div className="p-4 bg-[#F9FAFB] border-b-2 border-[#E5E7EB] flex items-center justify-between">
+                                            <div className="inline-flex items-center gap-2">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse-dot" />
+                                                <span className="text-sm font-extrabold text-[#111827] font-display">Unit Main Media Stage</span>
+                                            </div>
+                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Inline Playback Active</span>
+                                        </div>
+                                        <div className="aspect-video bg-[#111827]">
+                                            <iframe
+                                                src={formatEmbedUrl(module.media_url)}
+                                                title={module.title}
+                                                className="w-full h-full border-0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                allowFullScreen
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
-                    <div className="space-y-3 mb-8">
-                        {lessons.length > 0 ? (
-                            lessons.map((l, li) => (
-                                editingLessonId === l.id ? (
-                                    <div key={l.id} className="bg-white p-4 rounded-md border-2 border-amber-400 space-y-3">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                                        <div>
+                                            <h2 className="text-xl font-extrabold text-[#111827] font-display">Subtopics & Materials</h2>
+                                            <p className="text-xs text-gray-500 mt-0.5">Lectures, videos, PDF slides, documents, and transcripts.</p>
+                                        </div>
+                                        <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded shrink-0">
+                                            {lessons.length} Item{lessons.length === 1 ? '' : 's'}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-3 mb-8">
+                                        {lessons.length > 0 ? (
+                                            lessons.map((l, li) => (
+                                                editingLessonId === l.id ? (
+                                                    <div key={l.id} className="bg-white p-4 rounded-md border-2 border-amber-400 space-y-3">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            <div className="sm:col-span-2">
+                                                                <label className="block text-xs font-bold text-[#111827] mb-1">Subtopic Title</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={lessonDraft.title}
+                                                                    onChange={(e) => setLessonDraft((p) => ({ ...p, title: e.target.value }))}
+                                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
+                                                                />
+                                                                {lessonEditErrors.title && <p className="mt-1 text-red-600 text-xs font-medium">{lessonEditErrors.title}</p>}
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-[#111827] mb-1">Material</label>
+                                                                <select
+                                                                    value={lessonDraft.content_type}
+                                                                    onChange={(e) => {
+                                                                        setLessonDraft((p) => ({ ...p, content_type: e.target.value, file: e.target.value === 'link' ? null : p.file }));
+                                                                        if (e.target.value === 'link') setFileAlert(null);
+                                                                    }}
+                                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
+                                                                >
+                                                                    <option value="link">External Link</option>
+                                                                    <option value="file">Upload Material</option>
+                                                                </select>
+                                                            </div>
+                                                            <div className="sm:col-span-2">
+                                                                <label className="block text-xs font-bold text-[#111827] mb-1">Subtopic Description</label>
+                                                                <textarea
+                                                                    rows={2}
+                                                                    value={lessonDraft.content}
+                                                                    onChange={(e) => setLessonDraft((p) => ({ ...p, content: e.target.value }))}
+                                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none resize-y"
+                                                                />
+                                                            </div>
+                                                            {lessonDraft.content_type === 'link' ? (
+                                                            <div className="sm:col-span-2 space-y-2">
+                                                                <label className="block text-xs font-bold text-[#111827] mb-1">Media URL (YouTube, Vimeo, or direct video)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={lessonDraft.content_url}
+                                                                    onChange={(e) => setLessonDraft((p) => ({ ...p, content_url: e.target.value }))}
+                                                                    placeholder="https://www.youtube.com/watch?v=..."
+                                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
+                                                                />
+                                                                {safeUrl(lessonDraft.content_url) && formatEmbedUrl(lessonDraft.content_url) && isVideoUrl(lessonDraft.content_url) && (
+                                                                    <div className="border-2 border-[#E5E7EB] rounded-md overflow-hidden bg-[#111827] animate-fade-in mt-2">
+                                                                        <div className="p-2 bg-[#1F2937] text-white flex items-center justify-between text-xs font-bold border-b border-gray-700">
+                                                                            <div className="inline-flex items-center gap-1.5">
+                                                                                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse-dot" />
+                                                                                <span>Live Subtopic Video Preview</span>
+                                                                            </div>
+                                                                            <span className="text-gray-400 text-[11px]">Inline playback</span>
+                                                                        </div>
+                                                                        <div className="aspect-video w-full">
+                                                                            <iframe
+                                                                                src={formatEmbedUrl(lessonDraft.content_url)}
+                                                                                title="Subtopic Preview"
+                                                                                className="w-full h-full border-0"
+                                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                                                allowFullScreen
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            ) : (
+                                                            <div className="sm:col-span-2">
+                                                                <label className="block text-xs font-bold text-[#111827] mb-1">Upload material (mp4, PDF, DOCX, PPTX up to 15MB)</label>
+                                                                <input
+                                                                    id="lesson-edit-file-input"
+                                                                    type="file"
+                                                                    className="hidden"
+                                                                    accept=".mp4,.mov,.webm,.m4v,.pdf,.doc,.docx,.ppt,.pptx"
+                                                                    onChange={(e) => {
+                                                                        if (e.target.files?.[0]) handleFile(e.target.files[0], (f) => setLessonDraft((p) => ({ ...p, file: f })), 'lesson-edit-file-input');
+                                                                    }}
+                                                                />
+                                                                <div
+                                                                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                                                    onDragLeave={() => setIsDragging(false)}
+                                                                    onDrop={(e) => {
+                                                                        e.preventDefault();
+                                                                        setIsDragging(false);
+                                                                        if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0], (f) => setLessonDraft((p) => ({ ...p, file: f })), 'lesson-edit-file-input');
+                                                                    }}
+                                                                    onClick={() => document.getElementById('lesson-edit-file-input').click()}
+                                                                    className={`border-2 border-dashed rounded-md p-4 text-center cursor-pointer transition-colors ${
+                                                                        isDragging ? 'border-[#10B981] bg-emerald-50' : 'border-[#E5E7EB] hover:border-[#10B981] bg-[#F9FAFB]'
+                                                                    }`}
+                                                                >
+                                                                    {lessonDraft.file ? (
+                                                                        <div className="text-xs text-emerald-700 font-bold">New file: {lessonDraft.file.name}</div>
+                                                                    ) : (
+                                                                        <p className="text-xs text-gray-600"><span className="font-bold text-[#10B981]">Click to upload</span> or drag and drop</p>
+                                                                    )}
+                                                                </div>
+                                                                {lessonEditErrors.file && <p className="mt-1 text-red-600 text-xs font-medium">{lessonEditErrors.file}</p>}
+                                                                {fileAlert && <p className="mt-1 text-xs font-bold text-red-600">{fileAlert}</p>}
+                                                            </div>
+                                                            )}
+                                                            <div className="sm:col-span-2">
+                                                                <label className="block text-xs font-bold text-[#111827] mb-1">Transcript (optional)</label>
+                                                                <textarea
+                                                                    rows={2}
+                                                                    value={lessonDraft.transcript}
+                                                                    onChange={(e) => setLessonDraft((p) => ({ ...p, transcript: e.target.value }))}
+                                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none resize-y"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex justify-end space-x-2 pt-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingLessonId(null)}
+                                                                disabled={lessonEditSaving}
+                                                                className="px-4 py-2 text-xs font-bold text-[#111827] bg-[#F3F4F6] hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => saveLessonEdit(l)}
+                                                                disabled={lessonEditSaving}
+                                                                className="px-4 py-2 text-xs font-bold text-[#111827] bg-amber-400 hover:bg-amber-500 rounded-md transition-colors disabled:opacity-50"
+                                                            >
+                                                                {lessonEditSaving ? 'Saving...' : 'Save Changes'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div key={l.id} className="bg-[#F9FAFB] p-4 rounded-md border-2 border-[#E5E7EB]">
+                                                        <div className="flex justify-between items-start gap-2">
+                                                            <p className="text-sm font-bold text-[#111827]">
+                                                                <span className="text-[#10B981] mr-1">{li + 1}.</span> {l.title}
+                                                            </p>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <button onClick={() => startLessonEdit(l)} className="text-amber-700 hover:text-amber-800 text-xs font-bold">Edit</button>
+                                                                <button onClick={() => deleteLesson(l)} className="text-red-600 hover:text-red-700 text-xs font-bold">Delete</button>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-1 flex flex-wrap gap-2 text-[11px] font-bold text-gray-500">
+                                                            {l.content_type && <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] uppercase">{l.content_type}</span>}
+                                                            {l.content_url && <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB]">has media</span>}
+                                                            {l.transcript && <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB]">has transcript</span>}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-10 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
+                                                <p className="text-gray-500 font-medium text-sm">No subtopics yet. Add the first one below.</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Add Subtopic Form */}
+                                    <form onSubmit={submitLesson} className="pt-6 border-t-2 border-[#E5E7EB] space-y-4">
+                                        <h3 className="text-lg font-bold text-[#111827] font-display">Add Subtopic with Materials</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="sm:col-span-2">
-                                                <label className="block text-xs font-bold text-[#111827] mb-1">Subtopic Title</label>
+                                                <label className="block text-sm font-bold text-[#111827] mb-2">Subtopic Title <span className="text-red-500">*</span></label>
                                                 <input
                                                     type="text"
-                                                    value={lessonDraft.title}
-                                                    onChange={(e) => setLessonDraft((p) => ({ ...p, title: e.target.value }))}
-                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
+                                                    value={newLesson.title}
+                                                    onChange={(e) => setNewLesson((p) => ({ ...p, title: e.target.value }))}
+                                                    required
+                                                    placeholder="e.g. What is phishing?"
+                                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
                                                 />
-                                                {lessonEditErrors.title && <p className="mt-1 text-red-600 text-xs font-medium">{lessonEditErrors.title}</p>}
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-[#111827] mb-1">Material</label>
-                                                <select
-                                                    value={lessonDraft.content_type}
-                                                    onChange={(e) => {
-                                                        setLessonDraft((p) => ({ ...p, content_type: e.target.value, file: e.target.value === 'link' ? null : p.file }));
-                                                        if (e.target.value === 'link') setFileAlert(null);
-                                                    }}
-                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
-                                                >
-                                                    <option value="link">External Link</option>
-                                                    <option value="file">Upload Material</option>
-                                                </select>
+                                                {lessonErrors.title && <p className="mt-2 text-red-600 text-sm font-medium">{lessonErrors.title}</p>}
                                             </div>
                                             <div className="sm:col-span-2">
-                                                <label className="block text-xs font-bold text-[#111827] mb-1">Subtopic Description</label>
+                                                <label className="block text-sm font-bold text-[#111827] mb-2">Subtopic Description</label>
                                                 <textarea
                                                     rows={2}
-                                                    value={lessonDraft.content}
-                                                    onChange={(e) => setLessonDraft((p) => ({ ...p, content: e.target.value }))}
-                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none resize-y"
+                                                    value={newLesson.content}
+                                                    onChange={(e) => setNewLesson((p) => ({ ...p, content: e.target.value }))}
+                                                    placeholder="What will learners learn here?"
+                                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] resize-y focus:bg-white focus:border-[#10B981] focus:outline-none"
                                                 />
                                             </div>
-                                            {lessonDraft.content_type === 'link' ? (
+                                            <div className="sm:col-span-2">
+                                                <label className="block text-sm font-bold text-[#111827] mb-2">Material Type</label>
+                                                <select
+                                                    value={newLesson.content_type}
+                                                    onChange={(e) => {
+                                                        setNewLesson((p) => ({ ...p, content_type: e.target.value, file: e.target.value === 'link' ? null : p.file }));
+                                                        if (e.target.value === 'link') setFileAlert(null);
+                                                    }}
+                                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
+                                                >
+                                                    <option value="link">External Link (YouTube, Vimeo, mp4)</option>
+                                                    <option value="file">Upload Material (PDF, DOCX, Video)</option>
+                                                </select>
+                                            </div>
+                                            {newLesson.content_type === 'link' ? (
                                             <div className="sm:col-span-2 space-y-2">
-                                                <label className="block text-xs font-bold text-[#111827] mb-1">Media URL (YouTube, Vimeo, or direct video)</label>
+                                                <label className="block text-sm font-bold text-[#111827] mb-2">Media URL (YouTube, Vimeo, or direct video)</label>
                                                 <input
                                                     type="text"
-                                                    value={lessonDraft.content_url}
-                                                    onChange={(e) => setLessonDraft((p) => ({ ...p, content_url: e.target.value }))}
-                                                    placeholder="https://www.youtube.com/watch?v=..."
-                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
+                                                    value={newLesson.content_url}
+                                                    onChange={(e) => setNewLesson((p) => ({ ...p, content_url: e.target.value }))}
+                                                    placeholder="https://... (YouTube, Vimeo, or direct mp4)"
+                                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
                                                 />
-                                                {safeUrl(lessonDraft.content_url) && formatEmbedUrl(lessonDraft.content_url) && isVideoUrl(lessonDraft.content_url) && (
+                                                {safeUrl(newLesson.content_url) && formatEmbedUrl(newLesson.content_url) && isVideoUrl(newLesson.content_url) && (
                                                     <div className="border-2 border-[#E5E7EB] rounded-md overflow-hidden bg-[#111827] animate-fade-in mt-2">
                                                         <div className="p-2 bg-[#1F2937] text-white flex items-center justify-between text-xs font-bold border-b border-gray-700">
                                                             <div className="inline-flex items-center gap-1.5">
@@ -362,8 +643,8 @@ export default function Edit({ course, module, assessments }) {
                                                         </div>
                                                         <div className="aspect-video w-full">
                                                             <iframe
-                                                                src={formatEmbedUrl(lessonDraft.content_url)}
-                                                                title="Subtopic Preview"
+                                                                src={formatEmbedUrl(newLesson.content_url)}
+                                                                title="New Subtopic Preview"
                                                                 className="w-full h-full border-0"
                                                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                                                 allowFullScreen
@@ -374,14 +655,14 @@ export default function Edit({ course, module, assessments }) {
                                             </div>
                                             ) : (
                                             <div className="sm:col-span-2">
-                                                <label className="block text-xs font-bold text-[#111827] mb-1">Upload material (mp4, PDF, DOCX, PPTX up to 15MB)</label>
+                                                <label className="block text-sm font-bold text-[#111827] mb-2">Upload material (mp4, PDF, DOCX, PPTX up to 15MB)</label>
                                                 <input
-                                                    id="lesson-edit-file-input"
+                                                    id="lesson-file-input"
                                                     type="file"
                                                     className="hidden"
                                                     accept=".mp4,.mov,.webm,.m4v,.pdf,.doc,.docx,.ppt,.pptx"
                                                     onChange={(e) => {
-                                                        if (e.target.files?.[0]) handleFile(e.target.files[0], (f) => setLessonDraft((p) => ({ ...p, file: f })), 'lesson-edit-file-input');
+                                                        if (e.target.files?.[0]) handleFile(e.target.files[0], (f) => setNewLesson((p) => ({ ...p, file: f })), 'lesson-file-input');
                                                     }}
                                                 />
                                                 <div
@@ -390,298 +671,229 @@ export default function Edit({ course, module, assessments }) {
                                                     onDrop={(e) => {
                                                         e.preventDefault();
                                                         setIsDragging(false);
-                                                        if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0], (f) => setLessonDraft((p) => ({ ...p, file: f })), 'lesson-edit-file-input');
+                                                        if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0], (f) => setNewLesson((p) => ({ ...p, file: f })), 'lesson-file-input');
                                                     }}
-                                                    onClick={() => document.getElementById('lesson-edit-file-input').click()}
-                                                    className={`border-2 border-dashed rounded-md p-4 text-center cursor-pointer transition-colors ${
+                                                    onClick={() => document.getElementById('lesson-file-input').click()}
+                                                    className={`border-2 border-dashed rounded-md p-6 text-center cursor-pointer transition-colors ${
                                                         isDragging ? 'border-[#10B981] bg-emerald-50' : 'border-[#E5E7EB] hover:border-[#10B981] bg-[#F9FAFB]'
                                                     }`}
                                                 >
-                                                    {lessonDraft.file ? (
-                                                        <div className="text-xs text-emerald-700 font-bold">New file: {lessonDraft.file.name}</div>
+                                                    {newLesson.file ? (
+                                                        <div className="text-sm text-emerald-700 font-bold">Selected: {newLesson.file.name}</div>
                                                     ) : (
-                                                        <p className="text-xs text-gray-600"><span className="font-bold text-[#10B981]">Click to upload</span> or drag and drop</p>
+                                                        <div className="space-y-1 text-sm text-gray-600">
+                                                            <p><span className="font-bold text-[#10B981]">Click to upload</span> or drag and drop</p>
+                                                            <p className="text-xs text-gray-500">mp4, PDF, DOC, DOCX, PPT, PPTX up to 15MB</p>
+                                                        </div>
                                                     )}
                                                 </div>
-                                                {lessonEditErrors.file && <p className="mt-1 text-red-600 text-xs font-medium">{lessonEditErrors.file}</p>}
-                                                {fileAlert && <p className="mt-1 text-xs font-bold text-red-600">{fileAlert}</p>}
+                                                {lessonErrors.file && <p className="mt-2 text-red-600 text-sm font-medium">{lessonErrors.file}</p>}
+                                                {fileAlert && <p className="mt-2 text-sm font-bold text-red-600">{fileAlert}</p>}
                                             </div>
                                             )}
                                             <div className="sm:col-span-2">
-                                                <label className="block text-xs font-bold text-[#111827] mb-1">Transcript (optional)</label>
+                                                <label className="block text-sm font-bold text-[#111827] mb-2">Transcript (optional)</label>
                                                 <textarea
                                                     rows={2}
-                                                    value={lessonDraft.transcript}
-                                                    onChange={(e) => setLessonDraft((p) => ({ ...p, transcript: e.target.value }))}
-                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none resize-y"
+                                                    value={newLesson.transcript}
+                                                    onChange={(e) => setNewLesson((p) => ({ ...p, transcript: e.target.value }))}
+                                                    placeholder="Video transcript for the Dive deeper panel..."
+                                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] resize-y focus:bg-white focus:border-[#10B981] focus:outline-none"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="flex justify-end space-x-2 pt-1">
+                                        <div className="flex justify-end pt-2">
                                             <button
-                                                type="button"
-                                                onClick={() => setEditingLessonId(null)}
-                                                disabled={lessonEditSaving}
-                                                className="px-4 py-2 text-xs font-bold text-[#111827] bg-[#F3F4F6] hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50"
+                                                type="submit"
+                                                disabled={lessonSaving}
+                                                className="px-6 py-3 text-sm font-bold text-white bg-[#111827] hover:bg-gray-800 rounded-md transition-colors disabled:opacity-50"
                                             >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => saveLessonEdit(l)}
-                                                disabled={lessonEditSaving}
-                                                className="px-4 py-2 text-xs font-bold text-[#111827] bg-amber-400 hover:bg-amber-500 rounded-md transition-colors disabled:opacity-50"
-                                            >
-                                                {lessonEditSaving ? 'Saving...' : 'Save Changes'}
+                                                {lessonSaving ? 'Adding...' : 'Add Subtopic'}
                                             </button>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div key={l.id} className="bg-[#F9FAFB] p-4 rounded-md border-2 border-[#E5E7EB]">
-                                        <div className="flex justify-between items-start gap-2">
-                                            <p className="text-sm font-bold text-[#111827]">
-                                                <span className="text-[#10B981] mr-1">{li + 1}.</span> {l.title}
-                                            </p>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <button onClick={() => startLessonEdit(l)} className="text-amber-700 hover:text-amber-800 text-xs font-bold">Edit</button>
-                                                <button onClick={() => deleteLesson(l)} className="text-red-600 hover:text-red-700 text-xs font-bold">Delete</button>
-                                            </div>
-                                        </div>
-                                        <div className="mt-1 flex flex-wrap gap-2 text-[11px] font-bold text-gray-500">
-                                            {l.content_type && <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] uppercase">{l.content_type}</span>}
-                                            {l.content_url && <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB]">has media</span>}
-                                            {l.transcript && <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB]">has transcript</span>}
-                                        </div>
-                                    </div>
-                                )
-                            ))
-                        ) : (
-                            <div className="text-center py-10 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
-                                <p className="text-gray-500 font-medium text-sm">No subtopics yet. Add the first one below.</p>
+                                    </form>
+                                </div>
                             </div>
                         )}
                     </div>
+                )}
 
-                    <form onSubmit={submitLesson} className="pt-6 border-t-2 border-[#E5E7EB] space-y-4">
-                        <h3 className="text-lg font-bold text-[#111827] font-display">Add Subtopic with Materials</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="sm:col-span-2">
-                                <label className="block text-sm font-bold text-[#111827] mb-2">Subtopic Title</label>
-                                <input
-                                    type="text"
-                                    value={newLesson.title}
-                                    onChange={(e) => setNewLesson((p) => ({ ...p, title: e.target.value }))}
-                                    required
-                                    placeholder="e.g. What is phishing?"
-                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
-                                />
-                                {lessonErrors.title && <p className="mt-2 text-red-600 text-sm font-medium">{lessonErrors.title}</p>}
+                {/* CARD 2: QUIZZES (OPTIONAL MINI-QUIZ) */}
+                {activeTab === 'quizzes' && (
+                    <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                            <div>
+                                <div className="flex items-center gap-2.5">
+                                    <h2 className="text-2xl font-extrabold text-[#111827] font-display">Module Practice Quiz</h2>
+                                    <span className="bg-[#F3F4F6] border border-[#E5E7EB] text-xs font-bold uppercase px-2 py-0.5 rounded text-gray-700">
+                                        OPTIONAL
+                                    </span>
+                                </div>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Optional · Leave empty for lecture-only or introductory modules. Questions provide instant self-test feedback to learners without blocking course progression.
+                                </p>
                             </div>
-                            <div className="sm:col-span-2">
-                                <label className="block text-sm font-bold text-[#111827] mb-2">Subtopic Description</label>
-                                <textarea
-                                    rows={2}
-                                    value={newLesson.content}
-                                    onChange={(e) => setNewLesson((p) => ({ ...p, content: e.target.value }))}
-                                    placeholder="What will learners learn here?"
-                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] resize-y focus:bg-white focus:border-[#10B981] focus:outline-none"
-                                />
-                            </div>
-                            <div className="sm:col-span-2">
-                                <label className="block text-sm font-bold text-[#111827] mb-2">Material</label>
-                                <select
-                                    value={newLesson.content_type}
-                                    onChange={(e) => {
-                                        setNewLesson((p) => ({ ...p, content_type: e.target.value, file: e.target.value === 'link' ? null : p.file }));
-                                        if (e.target.value === 'link') setFileAlert(null);
-                                    }}
-                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
+                            {(quizzes.length > 0 || showQuizSection) && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddQuiz((v) => !v)}
+                                    className="px-4 py-2 text-xs font-bold text-white bg-[#10B981] hover:bg-emerald-600 rounded-md transition-colors shrink-0"
                                 >
-                                    <option value="link">External Link</option>
-                                    <option value="file">Upload Material</option>
-                                </select>
-                            </div>
-                            {newLesson.content_type === 'link' ? (
-                            <div className="sm:col-span-2 space-y-2">
-                                <label className="block text-sm font-bold text-[#111827] mb-2">Media URL (YouTube, Vimeo, or direct video)</label>
-                                <input
-                                    type="text"
-                                    value={newLesson.content_url}
-                                    onChange={(e) => setNewLesson((p) => ({ ...p, content_url: e.target.value }))}
-                                    placeholder="https://... (YouTube, Vimeo, or direct mp4)"
-                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none"
-                                />
-                                {safeUrl(newLesson.content_url) && formatEmbedUrl(newLesson.content_url) && isVideoUrl(newLesson.content_url) && (
-                                    <div className="border-2 border-[#E5E7EB] rounded-md overflow-hidden bg-[#111827] animate-fade-in mt-2">
-                                        <div className="p-2 bg-[#1F2937] text-white flex items-center justify-between text-xs font-bold border-b border-gray-700">
-                                            <div className="inline-flex items-center gap-1.5">
-                                                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse-dot" />
-                                                <span>Live Subtopic Video Preview</span>
-                                            </div>
-                                            <span className="text-gray-400 text-[11px]">Inline playback</span>
-                                        </div>
-                                        <div className="aspect-video w-full">
-                                            <iframe
-                                                src={formatEmbedUrl(newLesson.content_url)}
-                                                title="New Subtopic Preview"
-                                                className="w-full h-full border-0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                                allowFullScreen
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            ) : (
-                            <div className="sm:col-span-2">
-                                <label className="block text-sm font-bold text-[#111827] mb-2">Upload material (mp4, PDF, DOCX, PPTX up to 15MB)</label>
-                                <input
-                                    id="lesson-file-input"
-                                    type="file"
-                                    className="hidden"
-                                    accept=".mp4,.mov,.webm,.m4v,.pdf,.doc,.docx,.ppt,.pptx"
-                                    onChange={(e) => {
-                                        if (e.target.files?.[0]) handleFile(e.target.files[0], (f) => setNewLesson((p) => ({ ...p, file: f })), 'lesson-file-input');
+                                    {showAddQuiz ? 'Close Form' : '+ Add Question'}
+                                </button>
+                            )}
+                        </div>
+
+                        {!showQuizSection && quizzes.length === 0 ? (
+                            <div className="text-center py-12 px-6 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
+                                <p className="text-[#111827] font-bold text-sm mb-1">No Practice Quiz For This Module</p>
+                                <p className="text-xs text-gray-500 max-w-md mx-auto mb-5">
+                                    Practice mini-quizzes are completely optional. If this unit is an introductory chapter or lecture without questions, you can leave this blank.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowQuizSection(true);
+                                        setShowAddQuiz(true);
                                     }}
-                                />
-                                <div
-                                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                                    onDragLeave={() => setIsDragging(false)}
-                                    onDrop={(e) => {
-                                        e.preventDefault();
-                                        setIsDragging(false);
-                                        if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0], (f) => setNewLesson((p) => ({ ...p, file: f })), 'lesson-file-input');
-                                    }}
-                                    onClick={() => document.getElementById('lesson-file-input').click()}
-                                    className={`border-2 border-dashed rounded-md p-6 text-center cursor-pointer transition-colors ${
-                                        isDragging ? 'border-[#10B981] bg-emerald-50' : 'border-[#E5E7EB] hover:border-[#10B981] bg-[#F9FAFB]'
-                                    }`}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-[#111827] bg-white border-2 border-[#E5E7EB] hover:border-[#10B981] rounded-md transition-colors"
                                 >
-                                    {newLesson.file ? (
-                                        <div className="text-sm text-emerald-700 font-bold">Selected: {newLesson.file.name}</div>
+                                    <span>+ Add Optional Practice Quiz for This Module</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="space-y-3 mb-8">
+                                    {quizzes.length > 0 ? (
+                                        quizzes.map((q, qIdx) => (
+                                            editingId === q.id ? (
+                                                <QuestionEditForm
+                                                    key={q.id}
+                                                    initial={q}
+                                                    saving={editSaving}
+                                                    errors={editErrors}
+                                                    onCancel={() => setEditingId(null)}
+                                                    onSave={(data) => saveEdit(q, data)}
+                                                />
+                                            ) : (
+                                                <QuestionCard
+                                                    key={q.id}
+                                                    q={q}
+                                                    index={qIdx}
+                                                    onEdit={() => { setEditingId(q.id); setEditErrors({}); }}
+                                                    onDelete={() => deleteQuiz(q)}
+                                                />
+                                            )
+                                        ))
                                     ) : (
-                                        <div className="space-y-1 text-sm text-gray-600">
-                                            <p><span className="font-bold text-[#10B981]">Click to upload</span> or drag and drop</p>
-                                            <p className="text-xs text-gray-500">mp4, PDF, DOC, DOCX, PPT, PPTX up to 15MB</p>
+                                        <div className="text-center py-8 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
+                                            <p className="text-gray-500 font-medium text-xs">
+                                                No questions created yet. Use the form below to add your first question, or collapse this section.
+                                            </p>
                                         </div>
                                     )}
                                 </div>
-                                {lessonErrors.file && <p className="mt-2 text-red-600 text-sm font-medium">{lessonErrors.file}</p>}
-                                {fileAlert && <p className="mt-2 text-sm font-bold text-red-600">{fileAlert}</p>}
-                            </div>
-                            )}
-                            <div>
-                                <label className="block text-sm font-bold text-[#111827] mb-2">Transcript (optional)</label>
-                                <textarea
-                                    rows={2}
-                                    value={newLesson.transcript}
-                                    onChange={(e) => setNewLesson((p) => ({ ...p, transcript: e.target.value }))}
-                                    placeholder="Video transcript for the Dive deeper panel..."
-                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] resize-y focus:bg-white focus:border-[#10B981] focus:outline-none"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex justify-end">
-                            <button
-                                type="submit"
-                                disabled={lessonSaving}
-                                className="px-6 py-3 text-sm font-bold text-white bg-[#111827] hover:bg-gray-800 rounded-md transition-colors disabled:opacity-50"
-                            >
-                                {lessonSaving ? 'Adding...' : 'Add Subtopic'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
 
-                {/* 3 - Mini-quiz (Explicitly Optional) */}
-                <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-                        <div>
-                            <div className="flex items-center gap-2.5">
-                                <h2 className="text-2xl font-extrabold text-[#111827] font-display">Module Practice Quiz</h2>
-                                <span className="bg-[#F3F4F6] border border-[#E5E7EB] text-xs font-bold uppercase px-2 py-0.5 rounded text-gray-700">
-                                    OPTIONAL
-                                </span>
-                            </div>
-                            <p className="text-sm text-gray-500 mt-1">
-                                Optional · Leave empty for lecture-only or introductory modules. Questions provide instant self-test feedback to learners without blocking course progression.
-                            </p>
-                        </div>
-                        {(quizzes.length > 0 || showQuizSection) && (
-                            <button
-                                type="button"
-                                onClick={() => setShowAddQuiz((v) => !v)}
-                                className="px-4 py-2 text-xs font-bold text-white bg-[#10B981] hover:bg-emerald-600 rounded-md transition-colors shrink-0"
-                            >
-                                {showAddQuiz ? 'Close Form' : '+ Add Question'}
-                            </button>
+                                {showAddQuiz && (
+                                    <QuestionForm
+                                        course={course}
+                                        moduleId={module.id}
+                                        allowAddAnother
+                                        onDone={() => setShowAddQuiz(false)}
+                                        onSaved={() => pop('Mini-quiz question saved.')}
+                                        title="Add Mini-Quiz Question (Optional)"
+                                    />
+                                )}
+                            </>
                         )}
                     </div>
+                )}
 
-                    {!showQuizSection && quizzes.length === 0 ? (
-                        <div className="text-center py-12 px-6 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
-                            <p className="text-[#111827] font-bold text-sm mb-1">No Practice Quiz For This Module</p>
-                            <p className="text-xs text-gray-500 max-w-md mx-auto mb-5">
-                                Practice mini-quizzes are completely optional. If this unit is an introductory chapter or lecture without questions, you can leave this blank.
-                            </p>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setShowQuizSection(true);
-                                    setShowAddQuiz(true);
-                                }}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-[#111827] bg-white border-2 border-[#E5E7EB] hover:border-[#10B981] rounded-md transition-colors"
-                            >
-                                <span>+ Add Optional Practice Quiz for This Module</span>
-                            </button>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="space-y-3 mb-8">
-                                {quizzes.length > 0 ? (
-                                    quizzes.map((q, qIdx) => (
-                                        editingId === q.id ? (
-                                            <QuestionEditForm
-                                                key={q.id}
-                                                initial={q}
-                                                saving={editSaving}
-                                                errors={editErrors}
-                                                onCancel={() => setEditingId(null)}
-                                                onSave={(data) => saveEdit(q, data)}
-                                            />
-                                        ) : (
-                                            <QuestionCard
-                                                key={q.id}
-                                                q={q}
-                                                index={qIdx}
-                                                onEdit={() => { setEditingId(q.id); setEditErrors({}); }}
-                                                onDelete={() => deleteQuiz(q)}
-                                            />
-                                        )
-                                    ))
-                                ) : (
-                                    <div className="text-center py-8 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
-                                        <p className="text-gray-500 font-medium text-xs">
-                                            No questions created yet. Use the form below to add your first question, or collapse this section.
-                                        </p>
-                                    </div>
-                                )}
+                {/* CARD 3: FINAL ASSESSMENT */}
+                {activeTab === 'assessment' && (
+                    <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                            <div>
+                                <div className="flex items-center gap-2.5">
+                                    <h2 className="text-2xl font-extrabold text-[#111827] font-display">Course Final Assessment / Exam</h2>
+                                    <span className="bg-[#10B981] text-white text-xs font-black uppercase px-2 py-0.5 rounded">
+                                        100% to pass
+                                    </span>
+                                </div>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Course-wide final exam. Learners must pass this comprehensive assessment to earn their verifiable certificate.
+                                </p>
                             </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <Link
+                                    href={route('staff.courses.assessments.index', course.id)}
+                                    className="px-3.5 py-2 text-xs font-bold text-[#111827] bg-[#F3F4F6] hover:bg-gray-200 border border-[#E5E7EB] rounded-md transition-colors"
+                                >
+                                    Full Screen Editor ↗
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddFinalQuiz((v) => !v)}
+                                    className="px-4 py-2 text-xs font-bold text-white bg-[#10B981] hover:bg-emerald-600 rounded-md transition-colors"
+                                >
+                                    {showAddFinalQuiz ? 'Close Form' : '+ Add Exam Question'}
+                                </button>
+                            </div>
+                        </div>
 
-                            {showAddQuiz && (
-                                <QuestionForm
-                                    course={course}
-                                    moduleId={module.id}
-                                    allowAddAnother
-                                    onDone={() => setShowAddQuiz(false)}
-                                    onSaved={() => pop('Mini-quiz question saved.')}
-                                    title="Add Mini-Quiz Question (Optional)"
-                                />
+                        <div className="space-y-3 mb-8">
+                            {finals.length > 0 ? (
+                                finals.map((q, qIdx) => (
+                                    editingId === q.id ? (
+                                        <QuestionEditForm
+                                            key={q.id}
+                                            initial={q}
+                                            saving={editSaving}
+                                            errors={editErrors}
+                                            onCancel={() => setEditingId(null)}
+                                            onSave={(data) => saveEdit(q, data)}
+                                        />
+                                    ) : (
+                                        <QuestionCard
+                                            key={q.id}
+                                            q={q}
+                                            index={qIdx}
+                                            onEdit={() => { setEditingId(q.id); setEditErrors({}); }}
+                                            onDelete={() => deleteQuiz(q)}
+                                        />
+                                    )
+                                ))
+                            ) : (
+                                <div className="text-center py-10 px-6 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
+                                    <p className="text-[#111827] font-bold text-sm mb-1">No Final Exam Questions Yet</p>
+                                    <p className="text-xs text-gray-500 max-w-md mx-auto mb-4">
+                                        Add multiple-choice questions for the final exam. Learners must score 100% on these questions to receive their certificate.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddFinalQuiz(true)}
+                                        className="px-4 py-2 text-xs font-bold text-white bg-[#111827] hover:bg-gray-800 rounded-md transition-colors"
+                                    >
+                                        + Add First Exam Question
+                                    </button>
+                                </div>
                             )}
-                        </>
-                    )}
-                </div>
+                        </div>
+
+                        {showAddFinalQuiz && (
+                            <QuestionForm
+                                course={course}
+                                moduleId={null}
+                                allowAddAnother
+                                onDone={() => setShowAddFinalQuiz(false)}
+                                onSaved={() => pop('Final exam question saved.')}
+                                title="Add Final Exam Question (Course-wide)"
+                            />
+                        )}
+                    </div>
+                )}
             </div>
+
             {toast && (
                 <div
                     key={toast.id}

@@ -121,17 +121,6 @@ export default function Module({
                     </p>
                 </div>
 
-                {flash?.success && (
-                    <div className="bg-blue-50 border-2 border-blue-200 text-blue-900 rounded-md px-6 py-4 text-sm font-medium">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="bg-red-50 border-2 border-red-200 text-red-700 rounded-md px-6 py-4 text-sm font-medium">
-                        {flash.error}
-                    </div>
-                )}
-
                 <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_320px]">
                     <CurriculumSidebar
                         course={course}

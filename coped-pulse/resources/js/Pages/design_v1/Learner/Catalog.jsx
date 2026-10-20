@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 import FlatButton from '@/Components/flat/FlatButton';
 import FlatInput from '@/Components/flat/FlatInput';
+import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
 import {
     MagnifyingGlassIcon,
     XMarkIcon,
@@ -15,6 +16,7 @@ import {
 export default function Catalog({ courses = [], enrolledCourseIds = [], filters = { q: '' } }) {
     const [searchQuery, setSearchQuery] = useState(filters.q || '');
     const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'available', 'enrolled'
+    const [selectedCheckoutCourse, setSelectedCheckoutCourse] = useState(null);
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
@@ -36,7 +38,9 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
             result = result.filter(
                 (course) =>
                     course.title?.toLowerCase().includes(q) ||
-                    course.description?.toLowerCase().includes(q)
+                    course.description?.toLowerCase().includes(q) ||
+                    course.cert_title?.toLowerCase().includes(q) ||
+                    course.academic_year?.toLowerCase().includes(q)
             );
         }
         if (activeFilter === 'enrolled') {
@@ -49,9 +53,31 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
 
     const isEnrolled = (courseId) => enrolledCourseIds.includes(courseId);
 
+    const handleEnrollClick = (course) => {
+        const isCommercial = course.billing_type !== 'free' && Number(course.price || 0) > 0;
+        if (isCommercial) {
+            setSelectedCheckoutCourse(course);
+        } else {
+            router.post(route('learner.catalog.enroll', course.id), {
+                redirect_to_learn: true,
+            });
+        }
+    };
+
+    const handleConfirmSubscription = () => {
+        if (!selectedCheckoutCourse) return;
+        router.post(
+            route('learner.catalog.enroll', selectedCheckoutCourse.id),
+            { redirect_to_learn: true },
+            {
+                onSuccess: () => setSelectedCheckoutCourse(null),
+            }
+        );
+    };
+
     return (
         <LearnerLayout>
-            <Head title="Course Catalog" />
+            <Head title="Course Catalog · CoPED PULSE" />
 
             <div className="space-y-8">
                 {/* Header Back Link & Title */}
@@ -63,11 +89,37 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                         ← Back to My Courses
                     </Link>
                     <h1 className="font-display font-extrabold text-3xl md:text-4xl text-[#111827] tracking-tight">
-                        Explore Courses
+                        Explore Courses & Professional Certifications
                     </h1>
                     <p className="text-sm md:text-base text-gray-600 max-w-2xl">
-                        Discover new skills and knowledge. Browse our curated selection of high-quality courses and enroll today.
+                        Discover industry-aligned curriculum, bulk downloadable kits, and professional certifications including Maritime JLM and PMI-CAPM®.
                     </p>
+                </div>
+
+                {/* 3-Step "How to Subscribe & Learn in CoPED PULSE" Flat Strip */}
+                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-5">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-bold text-[#111827]">
+                        <div className="flex items-center gap-3 w-full md:w-auto">
+                            <span className="w-6 h-6 rounded bg-[#111827] text-white flex items-center justify-center font-black text-xs shrink-0">
+                                1
+                            </span>
+                            <span>Choose Subject or CoPED Pass</span>
+                        </div>
+                        <span className="hidden md:inline text-gray-300 font-extrabold">→</span>
+                        <div className="flex items-center gap-3 w-full md:w-auto">
+                            <span className="w-6 h-6 rounded bg-[#10B981] text-white flex items-center justify-center font-black text-xs shrink-0">
+                                2
+                            </span>
+                            <span>Instant Subscription Checkout</span>
+                        </div>
+                        <span className="hidden md:inline text-gray-300 font-extrabold">→</span>
+                        <div className="flex items-center gap-3 w-full md:w-auto">
+                            <span className="w-6 h-6 rounded bg-[#3B82F6] text-white flex items-center justify-center font-black text-xs shrink-0">
+                                3
+                            </span>
+                            <span>Immediate Access to Materials & CAPM/JLM Certificate</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Top Search & Filter Bar */}
@@ -80,7 +132,7 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                             <FlatInput
                                 id="catalog-search"
                                 type="text"
-                                placeholder="Search for programs, courses, or topics..."
+                                placeholder="Search by subject, certification (e.g. CAPM, JLM), or year..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full"
@@ -133,7 +185,7 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                     </div>
                 </div>
 
-                {/* edX Professional Certificate Card Grid */}
+                {/* Course Grid */}
                 {filteredCourses.length === 0 ? (
                     <div className="bg-white border-2 border-dashed border-[#E5E7EB] rounded-lg py-16 px-6 text-center">
                         <BookOpenIcon className="w-14 h-14 text-gray-300 mx-auto mb-4" />
@@ -161,9 +213,9 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredCourses.map((course, index) => {
+                        {filteredCourses.map((course) => {
                             const enrolled = isEnrolled(course.id);
-                            const bannerBg = index % 2 === 0 ? 'bg-[#111827]' : 'bg-[#3B82F6]';
+                            const isCommercial = course.billing_type !== 'free' && Number(course.price || 0) > 0;
 
                             return (
                                 <div
@@ -171,19 +223,36 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                     className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden flex flex-col justify-between transition-transform duration-200 hover:scale-[1.01]"
                                 >
                                     <div>
-                                        {/* Top Eyebrow Strip */}
-                                        <div className="px-4 py-2 bg-[#F3F4F6] border-b-2 border-[#E5E7EB] text-xs font-bold uppercase tracking-wider text-[#111827]">
-                                            Professional Certificate
+                                        {/* Top Subject Emblem Banner */}
+                                        <div className="relative">
+                                            <CourseLogoBadge
+                                                category={course.category_logo}
+                                                size="tile"
+                                                className="!w-full !border-b-2 !border-r-0 !py-6"
+                                            />
+                                            <div className="absolute top-3 right-3 bg-white border border-[#111827] px-2.5 py-0.5 rounded text-[11px] font-black text-[#111827]">
+                                                {course.academic_year || '2026 / 2027'}
+                                            </div>
                                         </div>
 
-                                        {/* Color-Blocked Banner */}
-                                        <div className={`${bannerBg} p-6 relative min-h-[110px] flex items-end`}>
-                                            <div className="absolute top-4 right-4 bg-white border-2 border-[#111827] px-3 py-1 rounded text-xs font-extrabold text-[#111827]">
-                                                UUM · CoPED
-                                            </div>
-                                            <span className="text-xs uppercase tracking-widest font-extrabold text-white/80">
-                                                Self-Paced Course
+                                        {/* Eyebrow Pricing Strip */}
+                                        <div className="px-5 py-2 bg-[#F9FAFB] border-b-2 border-[#E5E7EB] flex items-center justify-between text-xs">
+                                            <span className="font-extrabold text-gray-600 uppercase tracking-wider text-[10px]">
+                                                {course.billing_type === 'subscription' ? 'CoPED Pass' : 'Course Admission'}
                                             </span>
+                                            {course.billing_type === 'subscription' ? (
+                                                <span className="font-black text-amber-800 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded text-[11px]">
+                                                    RM {Number(course.price || 0).toFixed(2)}/mo
+                                                </span>
+                                            ) : course.billing_type === 'one_time' ? (
+                                                <span className="font-black text-blue-800 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded text-[11px]">
+                                                    RM {Number(course.price || 0).toFixed(2)} ONE-TIME
+                                                </span>
+                                            ) : (
+                                                <span className="font-black text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded text-[11px]">
+                                                    FREE ACCESS
+                                                </span>
+                                            )}
                                         </div>
 
                                         {/* Body */}
@@ -201,7 +270,25 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                                 {course.description || 'Comprehensive curriculum designed for applied professional development.'}
                                             </p>
 
-                                            {/* edX Metadata List */}
+                                            {/* Certification & Bulk Material Badges */}
+                                            {(course.cert_title || course.bundle_url) && (
+                                                <div className="space-y-1.5 pt-1">
+                                                    {course.cert_title && (
+                                                        <div className="flex items-center gap-2 text-xs font-bold text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] p-2 rounded">
+                                                            <GraduationCapIcon className="w-4 h-4 text-[#F59E0B] shrink-0" />
+                                                            <span className="line-clamp-1">🎓 {course.cert_title}</span>
+                                                        </div>
+                                                    )}
+                                                    {course.bundle_url && (
+                                                        <div className="flex items-center gap-2 text-xs font-bold text-[#4338CA] bg-[#EEF2FF] border border-[#C7D2FE] p-2 rounded">
+                                                            <BookOpenIcon className="w-4 h-4 text-[#4F46E5] shrink-0" />
+                                                            <span className="line-clamp-1">📦 Complete Material Pack Included</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Metadata List */}
                                             <div className="border-t-2 border-[#E5E7EB] pt-4 space-y-2 text-xs font-semibold text-[#111827]">
                                                 <div className="flex items-center gap-2.5">
                                                     <BookOpenIcon className="w-4 h-4 text-[#3B82F6] shrink-0" />
@@ -209,11 +296,11 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                                 </div>
                                                 <div className="flex items-center gap-2.5">
                                                     <GraduationCapIcon className="w-4 h-4 text-[#10B981] shrink-0" />
-                                                    <span>Self-paced learning</span>
+                                                    <span>Self-paced learning · Direct to Learn</span>
                                                 </div>
                                                 <div className="flex items-center gap-2.5">
                                                     <CircleCheckIcon className="w-4 h-4 text-[#F59E0B] shrink-0" />
-                                                    <span>Verifiable completion</span>
+                                                    <span>Official Course Certificate</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -229,13 +316,24 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                                 <span>Enrolled ✓ · Continue Course</span>
                                                 <ArrowRightIcon className="w-4 h-4" />
                                             </Link>
+                                        ) : isCommercial ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleEnrollClick(course)}
+                                                className="w-full inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
+                                            >
+                                                <span>
+                                                    Subscribe & Unlock · RM {Number(course.price || 0).toFixed(2)}
+                                                </span>
+                                                <ArrowRightIcon className="w-4 h-4" />
+                                            </button>
                                         ) : (
                                             <button
                                                 type="button"
-                                                onClick={() => router.post(route('learner.catalog.enroll', course.id))}
+                                                onClick={() => handleEnrollClick(course)}
                                                 className="w-full inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
                                             >
-                                                <span>Enroll Now</span>
+                                                <span>Enroll Now (Free)</span>
                                                 <ArrowRightIcon className="w-4 h-4" />
                                             </button>
                                         )}
@@ -246,6 +344,103 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                     </div>
                 )}
             </div>
+
+            {/* Flat Subscription & Course Unlock Modal */}
+            {selectedCheckoutCourse && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+                    <div className="bg-white border-2 border-[#111827] rounded-lg max-w-lg w-full p-6 sm:p-8 space-y-6">
+                        <div className="flex items-start justify-between border-b-2 border-[#E5E7EB] pb-4">
+                            <div>
+                                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#10B981]">
+                                    Direct-to-Learn Checkout
+                                </span>
+                                <h3 className="text-xl font-black text-[#111827] font-display mt-0.5">
+                                    CoPED Pass Subscription
+                                </h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedCheckoutCourse(null)}
+                                className="text-gray-400 hover:text-[#111827] p-1"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Course Overview Card */}
+                        <div className="bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <CourseLogoBadge category={selectedCheckoutCourse.category_logo} size="badge" />
+                                <span className="text-xs font-bold text-gray-500">
+                                    Intake: {selectedCheckoutCourse.academic_year || '2026 / 2027'}
+                                </span>
+                            </div>
+                            <h4 className="font-bold text-base text-[#111827]">
+                                {selectedCheckoutCourse.title}
+                            </h4>
+                            <p className="text-xs text-gray-600 line-clamp-2">
+                                {selectedCheckoutCourse.description}
+                            </p>
+                        </div>
+
+                        {/* Plan Details & Pricing */}
+                        <div className="border-2 border-[#E5E7EB] rounded-md divide-y-2 divide-[#E5E7EB] text-xs">
+                            <div className="p-3.5 flex items-center justify-between">
+                                <span className="font-semibold text-gray-600">Plan Type</span>
+                                <span className="font-extrabold text-[#111827]">
+                                    {selectedCheckoutCourse.billing_type === 'subscription'
+                                        ? 'CoPED Monthly Pass (Full Access)'
+                                        : 'One-Time Lifetime Subject Purchase'}
+                                </span>
+                            </div>
+                            <div className="p-3.5 flex items-center justify-between bg-amber-50/50">
+                                <span className="font-semibold text-gray-700">Course Fee</span>
+                                <span className="text-base font-black text-[#111827]">
+                                    RM {Number(selectedCheckoutCourse.price || 0).toFixed(2)}
+                                </span>
+                            </div>
+                            {selectedCheckoutCourse.bundle_title && (
+                                <div className="p-3.5 flex items-start justify-between gap-3">
+                                    <span className="font-semibold text-gray-600">Material Kit</span>
+                                    <span className="font-bold text-[#111827] text-right">
+                                        📦 {selectedCheckoutCourse.bundle_title}
+                                    </span>
+                                </div>
+                            )}
+                            {selectedCheckoutCourse.cert_title && (
+                                <div className="p-3.5 flex items-start justify-between gap-3">
+                                    <span className="font-semibold text-gray-600">Certification</span>
+                                    <span className="font-bold text-[#92400E] text-right">
+                                        🎓 {selectedCheckoutCourse.cert_title}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="text-xs text-gray-500">
+                            By subscribing, you will be enrolled immediately and redirected straight to your interactive study dashboard.
+                        </div>
+
+                        {/* Modal Action Controls */}
+                        <div className="flex items-center justify-end gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedCheckoutCourse(null)}
+                                className="px-5 py-2.5 text-xs font-bold text-[#111827] bg-[#F3F4F6] hover:bg-gray-200 rounded transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmSubscription}
+                                className="px-6 py-2.5 text-xs font-bold text-white bg-[#10B981] hover:bg-emerald-600 rounded transition-transform active:scale-[0.98] flex items-center gap-1.5"
+                            >
+                                <span>Confirm Subscription & Start Learning →</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </LearnerLayout>
     );
 }

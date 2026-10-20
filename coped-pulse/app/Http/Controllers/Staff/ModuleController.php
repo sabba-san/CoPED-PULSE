@@ -143,13 +143,16 @@ class ModuleController extends Controller
         abort_if($module->course_id !== $course->id, 404);
         $this->authorize('update', $module);
 
-        $assessments = $course->assessments()->where('module_id', $module->id)->get();
+        $assessments = $course->assessments()->forModule($module->id)->get();
+        $finalAssessments = $course->assessments()->final()->get();
+        $course->load('assessments');
         $module->load('lessons');
 
         return Inertia::render('design_v1/Staff/Modules/Edit', [
             'course' => $course,
             'module' => $module,
             'assessments' => $assessments,
+            'finalAssessments' => $finalAssessments,
         ]);
     }
 }

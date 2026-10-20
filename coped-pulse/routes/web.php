@@ -133,6 +133,8 @@ Route::middleware('auth')->group(function () {
             ]);
         })->name('course.learn');
 
+        Route::get('courses/{course}/certificate', [\App\Http\Controllers\Learner\CertificateController::class, 'show'])->name('course.certificate');
+
         Route::get('courses/{course}/modules/{module}/learn', function (Course $course, Module $module) {
             abort_if($course->status !== 'published', 404);
             abort_if($module->course_id !== $course->id, 404);
@@ -228,6 +230,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:staff')->prefix('staff')->name('staff.')->group(function () {
         Route::get('organization', [\App\Http\Controllers\Staff\OrganizationController::class, 'show'])->name('organization.show');
         Route::resource('courses', \App\Http\Controllers\Staff\CourseController::class);
+        Route::post('courses/{course}/deploy', [\App\Http\Controllers\Staff\CourseController::class, 'deploy'])->name('courses.deploy');
         Route::resource('courses.modules', \App\Http\Controllers\Staff\ModuleController::class)
             ->only(['store', 'edit', 'update', 'destroy']);
         Route::resource('courses.modules.lessons', \App\Http\Controllers\Staff\LessonController::class)

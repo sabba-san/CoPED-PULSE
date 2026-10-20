@@ -66,6 +66,24 @@ class EnrollmentGuardTest extends TestCase
         ]);
     }
 
+    public function test_learner_enroll_with_redirect_to_learn(): void
+    {
+        $staff = $this->staff();
+        $learner = $this->learner();
+        $course = Course::factory()->published()->forInstructor($staff)->create();
+
+        $response = $this->actingAs($learner)->post(route('learner.catalog.enroll', $course), [
+            'redirect_to_learn' => true,
+        ]);
+
+        $response->assertRedirect(route('learner.course.learn', $course->id));
+        $response->assertSessionHas('success', 'Subscribed and enrolled! Welcome to your course.');
+        $this->assertDatabaseHas('enrollments', [
+            'user_id' => $learner->id,
+            'course_id' => $course->id,
+        ]);
+    }
+
     public function test_enroll_is_idempotent(): void
     {
         $staff = $this->staff();

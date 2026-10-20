@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assessment;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\Module;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class StaffLessonTest extends TestCase
@@ -152,5 +154,49 @@ class StaffLessonTest extends TestCase
 
         $this->assertTrue(in_array($response->getStatusCode(), [302, 403]));
         $this->assertDatabaseMissing('lessons', ['title' => 'Learner Lesson']);
+    }
+
+    public function test_staff_can_view_module_edit_with_action_cards_and_assessments(): void
+    {
+        $staff = $this->staff();
+        $course = Course::factory()->published()->forInstructor($staff)->create();
+        $module = $course->modules()->create(['title' => 'Unit 1: Foundations', 'order' => 1]);
+
+        // Module mini-quiz
+        Assessment::create([
+            'course_id' => $course->id,
+            'module_id' => $module->id,
+            'question' => 'Module question 1',
+            'option_a' => 'A',
+            'option_b' => 'B',
+            'option_c' => 'C',
+            'option_d' => 'D',
+            'correct_option' => 'a',
+        ]);
+
+        // Course final exam question
+        Assessment::create([
+            'course_id' => $course->id,
+            'module_id' => null,
+            'question' => 'Course final exam question 1',
+            'option_a' => 'A',
+            'option_b' => 'B',
+            'option_c' => 'C',
+            'option_d' => 'D',
+            'correct_option' => 'b',
+        ]);
+
+        $response = $this->actingAs($staff)->get(route('staff.courses.modules.edit', [$course, $module]));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('design_v1/Staff/Modules/Edit')
+            ->has('course')
+            ->where('course.id', $course->id)
+            ->has('module')
+            ->where('module.id', $module->id)
+            ->has('assessments', 1)
+            ->has('finalAssessments', 1)
+        );
     }
 }

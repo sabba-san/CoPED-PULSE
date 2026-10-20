@@ -10,6 +10,7 @@ import {
     isVideoUrl,
     safeUrl,
 } from '@/Utils/mediaUtils';
+import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
 
 export default function Show({ course, initialMode = 'preview', enrolledCount = 0 }) {
     const { flash } = usePage().props;
@@ -89,6 +90,7 @@ export default function Show({ course, initialMode = 'preview', enrolledCount = 
                             </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
+                            <CourseLogoBadge category={course.category_logo} size="badge" />
                             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight font-display">
                                 {course.title}
                             </h1>
@@ -101,35 +103,68 @@ export default function Show({ course, initialMode = 'preview', enrolledCount = 
                             }`}>
                                 {course.status ? course.status.toUpperCase() : 'DRAFT'}
                             </span>
+                            <span className="inline-flex items-center gap-1 bg-[#F3F4F6] border border-[#E5E7EB] text-xs font-bold text-gray-700 px-2.5 py-0.5 rounded">
+                                📅 {course.academic_year || '2026 / 2027'}
+                            </span>
+                            {course.billing_type === 'subscription' ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border bg-amber-50 text-amber-800 border-amber-300">
+                                    RM {Number(course.price || 0).toFixed(2)}/mo · CoPED PASS
+                                </span>
+                            ) : course.billing_type === 'one_time' ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border bg-blue-50 text-blue-800 border-blue-300">
+                                    RM {Number(course.price || 0).toFixed(2)} · ONE-TIME
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border bg-emerald-50 text-emerald-800 border-emerald-300">
+                                    FREE ACCESS
+                                </span>
+                            )}
                         </div>
                     </div>
 
-                    {/* Mode Toggle Controls */}
-                    <div className="flex items-center gap-2 bg-[#F3F4F6] p-1.5 rounded-lg border-2 border-[#E5E7EB] shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => setMode('preview')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-extrabold transition-colors ${
-                                mode === 'preview'
-                                    ? 'bg-[#111827] text-white'
-                                    : 'text-gray-700 hover:text-[#111827]'
-                            }`}
-                        >
-                            <svg className="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                            <span>Learner Preview Mode</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setMode('editor')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-extrabold transition-colors ${
-                                mode === 'editor'
-                                    ? 'bg-[#111827] text-white'
-                                    : 'text-gray-700 hover:text-[#111827]'
-                            }`}
-                        >
-                            <svg className="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                            <span>Curriculum & Studio Editor</span>
-                        </button>
+                    {/* Mode Toggle & Deploy Controls */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        {course.status === 'draft' ? (
+                            <button
+                                type="button"
+                                onClick={() => router.post(route('staff.courses.deploy', course.id), {}, { preserveScroll: true })}
+                                className="px-4 py-2 bg-[#10B981] hover:bg-emerald-600 text-white font-extrabold text-xs rounded-md flex items-center gap-1.5 transition-transform active:scale-[0.98] shrink-0"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                <span>🚀 Deploy & Publish Subject</span>
+                            </button>
+                        ) : (
+                            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-xs rounded-md flex items-center gap-1 shrink-0">
+                                <span>✓ Deployed · Live in Catalog</span>
+                            </span>
+                        )}
+
+                        <div className="flex items-center gap-2 bg-[#F3F4F6] p-1.5 rounded-lg border-2 border-[#E5E7EB] shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setMode('preview')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-extrabold transition-colors ${
+                                    mode === 'preview'
+                                        ? 'bg-[#111827] text-white'
+                                        : 'text-gray-700 hover:text-[#111827]'
+                                }`}
+                            >
+                                <svg className="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                <span>Learner Preview Mode</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setMode('editor')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-extrabold transition-colors ${
+                                    mode === 'editor'
+                                        ? 'bg-[#111827] text-white'
+                                        : 'text-gray-700 hover:text-[#111827]'
+                                }`}
+                            >
+                                <svg className="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                <span>Curriculum & Studio Editor</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -441,6 +476,26 @@ export default function Show({ course, initialMode = 'preview', enrolledCount = 
             {/* MODE 2: CURRICULUM & STUDIO EDITOR */}
             {mode === 'editor' && (
                 <div className="space-y-8">
+                    {/* Action Hub Shortcuts */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                            { icon: '📚', title: 'Modules', desc: `${modules.length} module${modules.length === 1 ? '' : 's'}` },
+                            { icon: '📝', title: 'Quizzes', desc: 'Optional mini-quizzes' },
+                            { icon: '🎯', title: 'Final Assessment', desc: 'Manage exam questions' },
+                            { icon: '⚙️', title: 'Settings', desc: 'Identity, pricing, cert' },
+                        ].map((card) => (
+                            <Link
+                                key={card.title}
+                                href={route('staff.courses.edit', course.id)}
+                                className="block p-5 rounded-md border-2 border-[#E5E7EB] bg-white text-[#111827] hover:border-[#10B981] transition-colors"
+                            >
+                                <span className="block text-3xl mb-2" aria-hidden="true">{card.icon}</span>
+                                <span className="block font-extrabold text-base font-display">{card.title}</span>
+                                <span className="block text-xs mt-0.5 font-semibold text-gray-500">{card.desc}</span>
+                            </Link>
+                        ))}
+                    </div>
+
                     {/* Course Details Collapsible Bar */}
                     <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8">
                         <div className="flex items-center justify-between mb-4">

@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { useState, useMemo, useEffect } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 import { ArrowRightIcon, TrophyIcon, TargetIcon, CircleCheckIcon } from '@/Components/flat/icons';
+import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
 
 export default function Portal({ enrollments, stats }) {
     const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'in-progress', 'not-started', 'completed'
@@ -199,16 +200,13 @@ export default function Portal({ enrollments, stats }) {
                                     >
                                         {/* Main Row */}
                                         <div className="flex flex-col sm:flex-row items-stretch">
-                                            {/* Left Flat Graphic Block */}
-                                            <div className="bg-[#111827] text-white p-6 flex flex-col justify-center items-center w-full sm:w-44 shrink-0 border-b-2 sm:border-b-0 sm:border-r-2 border-[#E5E7EB]">
-                                                <span className="text-[11px] font-extrabold uppercase tracking-widest text-gray-400 mb-1">
-                                                    CoPED
-                                                </span>
-                                                <p className="text-3xl font-black text-white">{pct}%</p>
-                                                <span className="text-[11px] text-gray-400 font-semibold mt-0.5">
-                                                    Progress
-                                                </span>
-                                            </div>
+                                            {/* Left Flat Graphic Block: CourseLogoBadge */}
+                                            <CourseLogoBadge
+                                                category={course?.category_logo}
+                                                size="tile"
+                                                subtitle={`${pct}% Completed`}
+                                                className="!w-full sm:!w-44 shrink-0"
+                                            />
 
                                             {/* Center Course Details */}
                                             <div className="flex-1 p-6 flex flex-col justify-between min-w-0 space-y-3">
@@ -222,6 +220,19 @@ export default function Portal({ enrollments, stats }) {
                                                         >
                                                             {status.label}
                                                         </span>
+                                                        <span className="inline-flex items-center gap-1 bg-[#F3F4F6] border border-[#E5E7EB] text-[10px] font-bold text-gray-700 px-2 py-0.5 rounded">
+                                                            📅 {course?.academic_year || '2026 / 2027'}
+                                                        </span>
+                                                        {course?.cert_title && (
+                                                            <span className="inline-flex items-center gap-1 bg-[#FFFBEB] border border-[#FDE68A] text-[10px] font-bold text-[#92400E] px-2 py-0.5 rounded">
+                                                                🎓 {course.cert_title}
+                                                            </span>
+                                                        )}
+                                                        {course?.bundle_url && (
+                                                            <span className="inline-flex items-center gap-1 bg-[#EEF2FF] border border-[#C7D2FE] text-[10px] font-bold text-[#4338CA] px-2 py-0.5 rounded">
+                                                                📦 Material Pack
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <h2 className="font-display text-xl font-bold text-[#111827] truncate">
                                                         {course?.title}
@@ -237,7 +248,7 @@ export default function Portal({ enrollments, stats }) {
                                             </div>
 
                                             {/* Right Primary CTA Button */}
-                                            <div className="p-6 flex items-center justify-center shrink-0 border-t-2 sm:border-t-0 sm:border-l-2 border-[#E5E7EB] bg-[#F9FAFB]">
+                                            <div className="p-6 flex flex-col items-stretch justify-center gap-2 shrink-0 border-t-2 sm:border-t-0 sm:border-l-2 border-[#E5E7EB] bg-[#F9FAFB]">
                                                 <Link
                                                     href={route('learner.course.learn', course.id)}
                                                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-5 rounded text-sm transition-transform active:scale-[0.98]"
@@ -245,6 +256,14 @@ export default function Portal({ enrollments, stats }) {
                                                     <span>{getCTAText(enrollment)}</span>
                                                     <ArrowRightIcon className="w-4 h-4" />
                                                 </Link>
+                                                {enrollment.completed_at && (
+                                                    <Link
+                                                        href={route('learner.course.certificate', course.id)}
+                                                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-white border-2 border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white font-bold py-2.5 px-4 rounded text-xs transition-colors duration-200"
+                                                    >
+                                                        <span>🎓 View Certificate PDF</span>
+                                                    </Link>
+                                                )}
                                             </div>
                                         </div>
 
@@ -403,14 +422,22 @@ export default function Portal({ enrollments, stats }) {
                                                     VERIFIED RECORD
                                                 </span>
                                             </div>
-                                            <div className="flex items-center justify-between text-xs text-gray-500">
+                                            <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
                                                 <span>Passed on {formatDate(item.completed_at)}</span>
-                                                <Link
-                                                    href={route('learner.course.learn', item.course?.id)}
-                                                    className="font-bold text-[#111827] hover:underline"
-                                                >
-                                                    Review
-                                                </Link>
+                                                <div className="flex items-center gap-3">
+                                                    <Link
+                                                        href={route('learner.course.learn', item.course?.id)}
+                                                        className="font-bold text-[#111827] hover:underline"
+                                                    >
+                                                        Review
+                                                    </Link>
+                                                    <Link
+                                                        href={route('learner.course.certificate', item.course?.id)}
+                                                        className="font-bold text-[#065F46] hover:underline"
+                                                    >
+                                                        🎓 Certificate
+                                                    </Link>
+                                                </div>
                                             </div>
                                         </li>
                                     ))}

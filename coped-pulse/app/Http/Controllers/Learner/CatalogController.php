@@ -49,6 +49,11 @@ class CatalogController extends Controller
             ]);
         }
 
+        if ($request->boolean('redirect_to_learn')) {
+            return redirect()->route('learner.course.learn', $course->id)
+                ->with('success', 'Subscribed and enrolled! Welcome to your course.');
+        }
+
         return redirect()->route('portal')->with('success', 'Successfully enrolled in course!');
     }
 }
