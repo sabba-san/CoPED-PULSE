@@ -1,11 +1,17 @@
-export default function StatCard({ value, label, sub = null, tone = 'bg-[#F3F4F6] text-[#111827]' }) {
+export default function StatCard({ value, label, sub = null, tone = 'bg-[#F3F4F6] text-[#111827]', icon = null }) {
     return (
-        <div className="bg-white rounded-lg border-2 border-[#E5E7EB] p-6 space-y-3">
-            <div className={`w-10 h-10 rounded-md flex items-center justify-center text-sm font-extrabold border-2 border-[#E5E7EB] ${tone}`}>
-                {value}
+        <div className="bg-white rounded-lg border-2 border-[#E5E7EB] p-5 space-y-3">
+            <div className={`w-10 h-10 rounded-md flex items-center justify-center border-2 border-[#E5E7EB] ${tone}`}>
+                {icon ? (
+                    icon
+                ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                )}
             </div>
             <div>
-                <p className="text-3xl font-display font-extrabold text-[#111827]">{value}</p>
+                <p className="text-2xl sm:text-3xl font-display font-extrabold text-[#111827] leading-tight">{value}</p>
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mt-1">{label}</p>
                 {sub && <p className="mt-1 text-xs text-gray-600">{sub}</p>}
             </div>

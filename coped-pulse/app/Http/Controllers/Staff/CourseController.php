@@ -16,6 +16,8 @@ class CourseController extends Controller
     {
         $courses = Course::with('instructor')
             ->where('instructor_id', auth()->id())
+            ->withCount(['modules', 'enrollments'])
+            ->withAvg('enrollments as avg_progress', 'progress')
             ->latest()
             ->paginate(10);
 
