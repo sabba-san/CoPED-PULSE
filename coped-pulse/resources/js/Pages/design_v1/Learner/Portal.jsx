@@ -228,11 +228,6 @@ export default function Portal({ enrollments, stats }) {
                                                                 🎓 {course.cert_title}
                                                             </span>
                                                         )}
-                                                        {course?.bundle_url && (
-                                                            <span className="inline-flex items-center gap-1 bg-[#EEF2FF] border border-[#C7D2FE] text-[10px] font-bold text-[#4338CA] px-2 py-0.5 rounded">
-                                                                📦 Material Pack
-                                                            </span>
-                                                        )}
                                                     </div>
                                                     <h2 className="font-display text-xl font-bold text-[#111827] truncate">
                                                         {course?.title}

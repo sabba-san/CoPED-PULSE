@@ -270,21 +270,13 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                                 {course.description || 'Comprehensive curriculum designed for applied professional development.'}
                                             </p>
 
-                                            {/* Certification & Bulk Material Badges */}
-                                            {(course.cert_title || course.bundle_url) && (
-                                                <div className="space-y-1.5 pt-1">
-                                                    {course.cert_title && (
-                                                        <div className="flex items-center gap-2 text-xs font-bold text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] p-2 rounded">
-                                                            <GraduationCapIcon className="w-4 h-4 text-[#F59E0B] shrink-0" />
-                                                            <span className="line-clamp-1">🎓 {course.cert_title}</span>
-                                                        </div>
-                                                    )}
-                                                    {course.bundle_url && (
-                                                        <div className="flex items-center gap-2 text-xs font-bold text-[#4338CA] bg-[#EEF2FF] border border-[#C7D2FE] p-2 rounded">
-                                                            <BookOpenIcon className="w-4 h-4 text-[#4F46E5] shrink-0" />
-                                                            <span className="line-clamp-1">📦 Complete Material Pack Included</span>
-                                                        </div>
-                                                    )}
+                                            {/* Certification Badge */}
+                                            {course.cert_title && (
+                                                <div className="pt-1">
+                                                    <div className="flex items-center gap-2 text-xs font-bold text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] p-2 rounded">
+                                                        <GraduationCapIcon className="w-4 h-4 text-[#F59E0B] shrink-0" />
+                                                        <span className="line-clamp-1">🎓 {course.cert_title}</span>
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -399,14 +391,7 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                     RM {Number(selectedCheckoutCourse.price || 0).toFixed(2)}
                                 </span>
                             </div>
-                            {selectedCheckoutCourse.bundle_title && (
-                                <div className="p-3.5 flex items-start justify-between gap-3">
-                                    <span className="font-semibold text-gray-600">Material Kit</span>
-                                    <span className="font-bold text-[#111827] text-right">
-                                        📦 {selectedCheckoutCourse.bundle_title}
-                                    </span>
-                                </div>
-                            )}
+
                             {selectedCheckoutCourse.cert_title && (
                                 <div className="p-3.5 flex items-start justify-between gap-3">
                                     <span className="font-semibold text-gray-600">Certification</span>

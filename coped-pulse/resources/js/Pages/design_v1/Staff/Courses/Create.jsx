@@ -1,14 +1,19 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import StaffLayout from '@/Layouts/design_v1/StaffLayout';
-import CourseLogoBadge, { LOGO_CONFIG } from '@/Components/flat/CourseLogoBadge';
+import CourseLogoBadge, {
+    LOGO_CONFIG,
+    COURSE_THEME_COLORS,
+    getRandomThemeKey,
+    RANDOM_THEME_KEYS,
+} from '@/Components/flat/CourseLogoBadge';
 
 const INPUT_CLASS =
     'block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors';
 
 const STEPS = [
-    { id: 1, label: 'Identity & Materials', short: 'Course Info' },
-    { id: 2, label: 'Business Model', short: 'Pricing' },
+    { id: 1, label: 'Course Identity', short: 'Course Info' },
+    { id: 2, label: 'Subscription Model', short: 'Pricing' },
     { id: 3, label: 'Industry Certification', short: 'Certification' },
 ];
 
@@ -19,8 +24,6 @@ const FIELD_STEP = {
     status: 1,
     academic_year: 1,
     category_logo: 1,
-    bundle_title: 1,
-    bundle_url: 1,
     billing_type: 2,
     price: 2,
     cert_title: 3,
@@ -35,22 +38,14 @@ const BILLING_TIERS = [
     },
     {
         id: 'one_time',
-        label: 'Commercial One-Time Purchase',
-        sub: 'Learners purchase lifetime access individually',
-    },
-    {
-        id: 'subscription',
-        label: 'CoPED Subscription Pass',
-        sub: 'Monthly access tier / agency sponsored seat',
+        label: 'Paid / Commercial Course',
+        sub: 'Learners pay a set price (RM) to unlock course access',
     },
 ];
 
 function billingSummary(data) {
-    if (data.billing_type === 'subscription') {
-        return `RM ${Number(data.price || 0).toFixed(2)}/mo · CoPED PASS`;
-    }
-    if (data.billing_type === 'one_time') {
-        return `RM ${Number(data.price || 0).toFixed(2)} · ONE-TIME`;
+    if (data.billing_type === 'one_time' || data.billing_type === 'subscription') {
+        return `RM ${Number(data.price || 0).toFixed(2)} · PAID COURSE`;
     }
     return 'FREE ACCESS';
 }
@@ -58,19 +53,19 @@ function billingSummary(data) {
 export default function Create() {
     const [currentStep, setCurrentStep] = useState(1);
     const [stepError, setStepError] = useState('');
+    // Auto-random theme color default so lazy instructors have a nice color pre-picked
+    const [initialTheme] = useState(() => getRandomThemeKey());
 
     const { data, setData, post, processing, errors } = useForm({
         title: '',
         description: '',
         status: 'draft',
         academic_year: '2026 / 2027',
-        category_logo: 'general',
+        category_logo: initialTheme,
         billing_type: 'free',
         price: '0.00',
         cert_title: '',
         cert_url: '',
-        bundle_title: '',
-        bundle_url: '',
         redirect_to_hub: true,
     });
 
@@ -113,33 +108,35 @@ export default function Create() {
         post(route('staff.courses.store'));
     };
 
+    const pickRandomColor = () => {
+        const others = RANDOM_THEME_KEYS.filter((k) => k !== data.category_logo);
+        const next = others[Math.floor(Math.random() * others.length)] || RANDOM_THEME_KEYS[0];
+        setData('category_logo', next);
+    };
+
     const prefillCapm = () => {
         setData((prev) => ({
             ...prev,
-            category_logo: 'capm',
+            category_logo: 'amber',
             cert_title: 'CAPM® · Certified Associate in Project Management',
             cert_url: 'https://www.pmi.org/certifications/certified-associate-capm',
-            billing_type: 'subscription',
+            billing_type: 'one_time',
             price: '199.00',
-            bundle_title: 'PMI-CAPM® Complete Study Kit & Practice Exam Simulation Pack',
-            bundle_url: 'https://drive.google.com/drive/folders/coped-capm-study-kit-demo',
         }));
     };
 
     const prefillMaritime = () => {
         setData((prev) => ({
             ...prev,
-            category_logo: 'maritime',
+            category_logo: 'navy',
             cert_title: 'JLM Pelaut & Pegawai Operasi Maritim Certified',
             cert_url: 'https://www.marine.gov.my',
-            billing_type: 'subscription',
+            billing_type: 'one_time',
             price: '150.00',
-            bundle_title: 'Complete Maritime Training & SOP Bundle (PDF + Slides + Logbook)',
-            bundle_url: 'https://drive.google.com/drive/folders/coped-maritime-bundle-demo',
         }));
     };
 
-    const logoLabel = (LOGO_CONFIG[data.category_logo] || LOGO_CONFIG.general).label;
+    const currentTheme = LOGO_CONFIG[data.category_logo] || LOGO_CONFIG.charcoal || LOGO_CONFIG.general;
 
     return (
         <StaffLayout>
@@ -161,7 +158,7 @@ export default function Create() {
                                 Create New Subject
                             </h1>
                             <p className="text-sm text-gray-600 mt-1">
-                                Three quick steps: course info, business model, and industry certification.
+                                Three quick steps: course info, subscription model, and industry certification.
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2 shrink-0">
@@ -250,17 +247,17 @@ export default function Create() {
                 )}
 
                 <form onSubmit={submit} className="space-y-8">
-                    {/* PAGE 1: Course Identity & Bulk Material Pack */}
+                    {/* PAGE 1: Course Identity */}
                     {currentStep === 1 && (
                         <div className="space-y-8">
                             <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8 space-y-6">
                                 <div className="border-b-2 border-[#E5E7EB] pb-4 flex items-center justify-between">
                                     <div>
                                         <h2 className="text-xl font-extrabold text-[#111827] font-display">
-                                            Course Identity, Intake & Branding Emblem
+                                            Course Identity & Intake Details
                                         </h2>
                                         <p className="text-xs text-gray-500 mt-0.5">
-                                            Select the subject-suited visual emblem for course catalog badges and certificates.
+                                            Specify course title, intake date, theme color, and curriculum description.
                                         </p>
                                     </div>
                                     <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded">
@@ -329,23 +326,50 @@ export default function Create() {
                                     </div>
                                 </div>
 
+                                {/* Simple Color Swatch Picker + Randomizer */}
                                 <div>
-                                    <label className="block text-sm font-bold text-[#111827] mb-2">
-                                        Course Subject Emblem
-                                    </label>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="block text-sm font-bold text-[#111827]">
+                                            Course Theme Color
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={pickRandomColor}
+                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-[#F3F4F6] hover:bg-gray-200 border border-[#E5E7EB] px-2.5 py-1 rounded transition-colors"
+                                        >
+                                            <span>🎲</span>
+                                            <span>Random Color</span>
+                                        </button>
+                                    </div>
                                     <p className="text-xs text-gray-500 mb-3">
-                                        Choose the industry-aligned emblem that appears on student certificates and course banners.
+                                        Choose a flat theme color for catalog cards, header banners, and student certificates.
                                     </p>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                                        {Object.keys(LOGO_CONFIG).map((catKey) => (
-                                            <CourseLogoBadge
-                                                key={catKey}
-                                                category={catKey}
-                                                size="selector"
-                                                selected={data.category_logo === catKey}
-                                                onClick={() => setData('category_logo', catKey)}
-                                            />
-                                        ))}
+                                        {COURSE_THEME_COLORS.map((color) => {
+                                            const isSelected = data.category_logo === color.key;
+                                            return (
+                                                <button
+                                                    key={color.key}
+                                                    type="button"
+                                                    onClick={() => setData('category_logo', color.key)}
+                                                    className={`flex items-center gap-2.5 p-3 rounded-md border-2 text-left transition-all ${
+                                                        isSelected
+                                                            ? 'border-[#111827] bg-[#F9FAFB] ring-2 ring-[#111827]'
+                                                            : 'border-[#E5E7EB] bg-white hover:border-gray-400'
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className="w-5 h-5 rounded-full shrink-0 border border-black/15 flex items-center justify-center text-[10px] text-white font-black"
+                                                        style={{ backgroundColor: color.hex }}
+                                                    >
+                                                        {isSelected && '✓'}
+                                                    </span>
+                                                    <span className="text-xs font-bold text-[#111827] truncate">
+                                                        {color.name}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -368,76 +392,6 @@ export default function Create() {
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8 space-y-6">
-                                <div className="border-b-2 border-[#E5E7EB] pb-4 flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-xl font-extrabold text-[#111827] font-display">
-                                            📦 Bulk Course Material Pack (All-in-One Upload for Students)
-                                        </h2>
-                                        <p className="text-xs text-gray-500 mt-0.5">
-                                            Attach an entire subject's kit (ZIP, Google Drive folder, or master PDF) so students can download everything in one click.
-                                        </p>
-                                    </div>
-                                    <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded shrink-0">
-                                        Segedebuk
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label htmlFor="bundle_title" className="block text-sm font-bold text-[#111827] mb-2">
-                                            Bundle Pack Title
-                                        </label>
-                                        <input
-                                            id="bundle_title"
-                                            name="bundle_title"
-                                            type="text"
-                                            value={data.bundle_title}
-                                            onChange={(e) => setData('bundle_title', e.target.value)}
-                                            placeholder="e.g. Complete Maritime Training & SOP Bundle"
-                                            className={INPUT_CLASS}
-                                        />
-                                        {errors.bundle_title && (
-                                            <p className="mt-2 text-red-600 text-sm font-medium">{errors.bundle_title}</p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="bundle_url" className="block text-sm font-bold text-[#111827] mb-2">
-                                            Direct Download / Storage URL
-                                        </label>
-                                        <input
-                                            id="bundle_url"
-                                            name="bundle_url"
-                                            type="url"
-                                            value={data.bundle_url}
-                                            onChange={(e) => setData('bundle_url', e.target.value)}
-                                            placeholder="https://drive.google.com/... or https://coped.org/files/bundle.zip"
-                                            className={INPUT_CLASS}
-                                        />
-                                        {errors.bundle_url && (
-                                            <p className="mt-2 text-red-600 text-sm font-medium">{errors.bundle_url}</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {data.bundle_url && (
-                                    <div className="p-3 bg-[#EFF6FF] border border-[#BFDBFE] rounded text-xs text-[#1E3A8A] flex items-center justify-between gap-3">
-                                        <span className="font-semibold">
-                                            📦 Students will see an instant download banner at the top of the course study screen.
-                                        </span>
-                                        <a
-                                            href={data.bundle_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="font-bold underline shrink-0"
-                                        >
-                                            Test Link ↗
-                                        </a>
-                                    </div>
-                                )}
-                            </div>
-
                             <div key="actions-step-1" className="bg-white rounded-md border-2 border-[#E5E7EB] p-5 flex items-center justify-between gap-3">
                                 <Link
                                     href={route('staff.courses.index')}
@@ -451,23 +405,23 @@ export default function Create() {
                                     onClick={() => goToStep(2)}
                                     className="px-6 py-3 text-sm font-bold text-white bg-[#111827] rounded-md hover:bg-[#10B981] transition-colors duration-200"
                                 >
-                                    Next: Business Model & Pricing →
+                                    Next: Subscription Model →
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    {/* PAGE 2: Business Model & Pricing */}
+                    {/* PAGE 2: Subscription Model */}
                     {currentStep === 2 && (
                         <div className="space-y-8">
                             <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8 space-y-6">
                                 <div className="border-b-2 border-[#E5E7EB] pb-4 flex items-center justify-between">
                                     <div>
                                         <h2 className="text-xl font-extrabold text-[#111827] font-display">
-                                            Commercialization & Subscription Model (Jual Course dalam CoPED)
+                                            Subscription Model
                                         </h2>
                                         <p className="text-xs text-gray-500 mt-0.5">
-                                            Configure institutional free access or commercial monetization through CoPED Pass.
+                                            Choose whether this course is free for all learners or requires a paid enrollment.
                                         </p>
                                     </div>
                                     <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded shrink-0">
@@ -475,29 +429,35 @@ export default function Create() {
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {BILLING_TIERS.map((tier) => (
                                         <div
                                             key={tier.id}
-                                            onClick={() => setData('billing_type', tier.id)}
-                                            className={`p-4 rounded-md border-2 cursor-pointer transition-all ${
+                                            onClick={() => {
+                                                setData('billing_type', tier.id);
+                                                if (tier.id === 'free') setData('price', '0.00');
+                                            }}
+                                            className={`p-5 rounded-md border-2 cursor-pointer transition-all ${
                                                 data.billing_type === tier.id
                                                     ? 'border-[#111827] bg-[#F9FAFB] ring-2 ring-[#111827]'
                                                     : 'border-[#E5E7EB] bg-white hover:border-gray-400'
                                             }`}
                                         >
-                                            <div className="flex items-center gap-2 mb-1">
+                                            <div className="flex items-center gap-2.5 mb-1.5">
                                                 <input
                                                     type="radio"
                                                     name="billing_type"
                                                     value={tier.id}
                                                     checked={data.billing_type === tier.id}
-                                                    onChange={() => setData('billing_type', tier.id)}
+                                                    onChange={() => {
+                                                        setData('billing_type', tier.id);
+                                                        if (tier.id === 'free') setData('price', '0.00');
+                                                    }}
                                                     className="text-[#111827] focus:ring-0"
                                                 />
-                                                <span className="text-xs font-extrabold text-[#111827]">{tier.label}</span>
+                                                <span className="text-sm font-extrabold text-[#111827]">{tier.label}</span>
                                             </div>
-                                            <p className="text-[11px] text-gray-500 ml-5">{tier.sub}</p>
+                                            <p className="text-xs text-gray-500 ml-6">{tier.sub}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -505,11 +465,11 @@ export default function Create() {
                                     <p className="text-red-600 text-sm font-medium">{errors.billing_type}</p>
                                 )}
 
-                                {data.billing_type !== 'free' && (
+                                {data.billing_type === 'one_time' && (
                                     <div className="p-4 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md space-y-3">
                                         <div>
                                             <label htmlFor="price" className="block text-sm font-bold text-[#111827] mb-1">
-                                                Price in Malaysian Ringgit (RM)
+                                                Course Price (RM)
                                             </label>
                                             <div className="relative max-w-xs">
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500">
@@ -535,7 +495,7 @@ export default function Create() {
                                             <span className="text-[#10B981] font-bold">✓ Catalog Display:</span>
                                             <span>
                                                 Learners will see{' '}
-                                                <span className="font-extrabold text-[#111827]">{billingSummary(data)}</span>{' '}
+                                                <span className="font-extrabold text-[#111827]">RM {Number(data.price || 0).toFixed(2)}</span>{' '}
                                                 in the catalog.
                                             </span>
                                         </div>
@@ -654,24 +614,24 @@ export default function Create() {
                                         <dd className="font-bold text-[#111827]">{data.academic_year || '2026 / 2027'}</dd>
                                     </div>
                                     <div>
-                                        <dt className="text-[10px] font-black uppercase tracking-wider text-gray-500">Emblem</dt>
-                                        <dd className="font-bold text-[#111827]">{logoLabel}</dd>
+                                        <dt className="text-[10px] font-black uppercase tracking-wider text-gray-500">Theme Color</dt>
+                                        <dd className="font-bold text-[#111827] flex items-center gap-1.5">
+                                            <span
+                                                className="w-3.5 h-3.5 rounded-full border border-black/15 shrink-0"
+                                                style={{ backgroundColor: currentTheme.hex || '#111827' }}
+                                            />
+                                            <span>{currentTheme.name || 'Classic Ink'}</span>
+                                        </dd>
                                     </div>
                                     <div>
                                         <dt className="text-[10px] font-black uppercase tracking-wider text-gray-500">Initial Status</dt>
                                         <dd className="font-bold text-[#111827] uppercase">{data.status}</dd>
                                     </div>
                                     <div>
-                                        <dt className="text-[10px] font-black uppercase tracking-wider text-gray-500">Business Model</dt>
+                                        <dt className="text-[10px] font-black uppercase tracking-wider text-gray-500">Subscription Model</dt>
                                         <dd className="font-bold text-[#111827]">{billingSummary(data)}</dd>
                                     </div>
                                     <div>
-                                        <dt className="text-[10px] font-black uppercase tracking-wider text-gray-500">Bulk Material Pack</dt>
-                                        <dd className="font-bold text-[#111827] break-words">
-                                            {data.bundle_url ? data.bundle_title || 'Attached' : 'None'}
-                                        </dd>
-                                    </div>
-                                    <div className="sm:col-span-2">
                                         <dt className="text-[10px] font-black uppercase tracking-wider text-gray-500">Industry Certification</dt>
                                         <dd className="font-bold text-[#111827] break-words">
                                             {data.cert_title || 'None linked'}
@@ -687,7 +647,7 @@ export default function Create() {
                                     onClick={() => goToStep(2)}
                                     className="px-6 py-3 text-sm font-bold text-[#111827] bg-[#F3F4F6] hover:bg-gray-200 rounded-md transition-colors"
                                 >
-                                    ← Back to Pricing
+                                    ← Back to Subscription Model
                                 </button>
                                 <button
                                     key="submit-3"

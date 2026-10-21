@@ -38,7 +38,7 @@ class CourseController extends Controller
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:draft,published,archived'],
             'academic_year' => ['nullable', 'string', 'max:100'],
-            'category_logo' => ['nullable', 'string', 'in:maritime,capm,ai,cybersecurity,child_protection,general'],
+            'category_logo' => ['nullable', 'string', 'max:50'],
             'billing_type' => ['nullable', 'string', 'in:free,one_time,subscription'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'cert_title' => ['nullable', 'string', 'max:255'],
@@ -47,8 +47,9 @@ class CourseController extends Controller
             'bundle_url' => ['nullable', 'url', 'max:500'],
         ]);
 
+        $themeColors = collect(['blue', 'emerald', 'amber', 'navy', 'rose', 'charcoal']);
         $validated['academic_year'] = !empty($validated['academic_year']) ? $validated['academic_year'] : '2026 / 2027';
-        $validated['category_logo'] = !empty($validated['category_logo']) ? $validated['category_logo'] : 'general';
+        $validated['category_logo'] = !empty($validated['category_logo']) ? $validated['category_logo'] : $themeColors->random();
         $validated['billing_type'] = !empty($validated['billing_type']) ? $validated['billing_type'] : 'free';
         $validated['price'] = isset($validated['price']) && $validated['price'] !== '' ? $validated['price'] : 0.00;
 
@@ -139,7 +140,7 @@ class CourseController extends Controller
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:draft,published,archived'],
             'academic_year' => ['nullable', 'string', 'max:100'],
-            'category_logo' => ['nullable', 'string', 'in:maritime,capm,ai,cybersecurity,child_protection,general'],
+            'category_logo' => ['nullable', 'string', 'max:50'],
             'billing_type' => ['nullable', 'string', 'in:free,one_time,subscription'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'cert_title' => ['nullable', 'string', 'max:255'],
@@ -152,7 +153,7 @@ class CourseController extends Controller
             $validated['academic_year'] = !empty($validated['academic_year']) ? $validated['academic_year'] : '2026 / 2027';
         }
         if (array_key_exists('category_logo', $validated)) {
-            $validated['category_logo'] = !empty($validated['category_logo']) ? $validated['category_logo'] : 'general';
+            $validated['category_logo'] = !empty($validated['category_logo']) ? $validated['category_logo'] : 'charcoal';
         }
         if (array_key_exists('billing_type', $validated)) {
             $validated['billing_type'] = !empty($validated['billing_type']) ? $validated['billing_type'] : 'free';

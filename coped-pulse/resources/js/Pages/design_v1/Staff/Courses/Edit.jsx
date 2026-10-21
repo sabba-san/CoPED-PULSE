@@ -10,7 +10,7 @@ import {
     isVideoUrl,
     safeUrl,
 } from '@/Utils/mediaUtils';
-import CourseLogoBadge, { LOGO_CONFIG } from '@/Components/flat/CourseLogoBadge';
+import CourseLogoBadge, { LOGO_CONFIG, COURSE_THEME_COLORS, RANDOM_THEME_KEYS } from '@/Components/flat/CourseLogoBadge';
 
 export default function Edit({ course, initialMode = 'editor', enrolledCount = 0 }) {
     const { flash } = usePage().props;
@@ -50,9 +50,13 @@ export default function Edit({ course, initialMode = 'editor', enrolledCount = 0
         price: course.price ? String(course.price) : '0.00',
         cert_title: course.cert_title || '',
         cert_url: course.cert_url || '',
-        bundle_title: course.bundle_title || '',
-        bundle_url: course.bundle_url || '',
     });
+
+    const pickRandomColor = () => {
+        const others = RANDOM_THEME_KEYS.filter((k) => k !== data.category_logo);
+        const next = others[Math.floor(Math.random() * others.length)] || RANDOM_THEME_KEYS[0];
+        setData('category_logo', next);
+    };
 
     const submitCourse = (e) => {
         e.preventDefault();
@@ -211,8 +215,8 @@ export default function Edit({ course, initialMode = 'editor', enrolledCount = 0
                         {/* Settings Sub-Tabs */}
                         <div className="flex flex-wrap gap-2">
                             {[
-                                { key: 'identity', label: '1. Identity & Bulk Pack' },
-                                { key: 'pricing', label: '2. Pricing' },
+                                { key: 'identity', label: '1. Course Identity' },
+                                { key: 'pricing', label: '2. Subscription Model' },
                                 { key: 'cert', label: '3. Certification' },
                             ].map((t) => (
                                 <button
@@ -234,10 +238,10 @@ export default function Edit({ course, initialMode = 'editor', enrolledCount = 0
                             <div className="border-b-2 border-[#E5E7EB] pb-4 flex items-center justify-between">
                                 <div>
                                     <h2 className="text-xl font-extrabold text-[#111827] font-display">
-                                        1. Course Identity, Intake & Branding Emblem
+                                        1. Course Identity & Intake Details
                                     </h2>
                                     <p className="text-xs text-gray-500 mt-0.5">
-                                        Subject branding emblems appear across student portals and verifiable certificates.
+                                        Specify course title, intake date, theme color, and curriculum description.
                                     </p>
                                 </div>
                                 <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded">
@@ -304,21 +308,50 @@ export default function Edit({ course, initialMode = 'editor', enrolledCount = 0
                                 </div>
                             </div>
 
-                            {/* Emblem Selector */}
+                            {/* Theme Color Swatches */}
                             <div>
-                                <label className="block text-sm font-bold text-[#111827] mb-2">
-                                    Subject Emblem (`category_logo`)
-                                </label>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-bold text-[#111827]">
+                                        Course Theme Color
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={pickRandomColor}
+                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-[#F3F4F6] hover:bg-gray-200 border border-[#E5E7EB] px-2.5 py-1 rounded transition-colors"
+                                    >
+                                        <span>🎲</span>
+                                        <span>Random Color</span>
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Choose a flat theme color for catalog cards, header banners, and student certificates.
+                                </p>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                                    {Object.keys(LOGO_CONFIG).map((catKey) => (
-                                        <CourseLogoBadge
-                                            key={catKey}
-                                            category={catKey}
-                                            size="selector"
-                                            selected={data.category_logo === catKey}
-                                            onClick={() => setData('category_logo', catKey)}
-                                        />
-                                    ))}
+                                    {COURSE_THEME_COLORS.map((color) => {
+                                        const isSelected = data.category_logo === color.key;
+                                        return (
+                                            <button
+                                                key={color.key}
+                                                type="button"
+                                                onClick={() => setData('category_logo', color.key)}
+                                                className={`flex items-center gap-2.5 p-3 rounded-md border-2 text-left transition-all ${
+                                                    isSelected
+                                                        ? 'border-[#111827] bg-[#F9FAFB] ring-2 ring-[#111827]'
+                                                        : 'border-[#E5E7EB] bg-white hover:border-gray-400'
+                                                }`}
+                                            >
+                                                <span
+                                                    className="w-5 h-5 rounded-full shrink-0 border border-black/15 flex items-center justify-center text-[10px] text-white font-black"
+                                                    style={{ backgroundColor: color.hex }}
+                                                >
+                                                    {isSelected && '✓'}
+                                                </span>
+                                                <span className="text-xs font-bold text-[#111827] truncate">
+                                                    {color.name}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -340,15 +373,15 @@ export default function Edit({ course, initialMode = 'editor', enrolledCount = 0
                             </div>
                         </div>
 
-                        {/* Section 2: Commercialization & Subscription Model */}
+                        {/* Section 2: Subscription Model */}
                         <div className={`bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8 space-y-6 ${settingsTab === 'pricing' ? '' : 'hidden'}`}>
                             <div className="border-b-2 border-[#E5E7EB] pb-4 flex items-center justify-between">
                                 <div>
                                     <h2 className="text-xl font-extrabold text-[#111827] font-display">
-                                        2. Commercialization & Subscription Model
+                                        2. Subscription Model
                                     </h2>
                                     <p className="text-xs text-gray-500 mt-0.5">
-                                        Institutional free delivery or monetized CoPED Subscription Pass.
+                                        Choose whether this course is free for all learners or requires a paid enrollment.
                                     </p>
                                 </div>
                                 <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded">
@@ -356,38 +389,43 @@ export default function Edit({ course, initialMode = 'editor', enrolledCount = 0
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {[
                                     { id: 'free', label: 'Free Institutional Course', sub: 'RM 0.00 · Free access for all registered learners' },
-                                    { id: 'one_time', label: 'Commercial One-Time Purchase', sub: 'Learners purchase lifetime access individually' },
-                                    { id: 'subscription', label: 'CoPED Subscription Pass', sub: 'Monthly access tier / agency sponsored seat' },
+                                    { id: 'one_time', label: 'Paid / Commercial Course', sub: 'Learners pay a set price (RM) to unlock course access' },
                                 ].map((tier) => (
                                     <div
                                         key={tier.id}
-                                        onClick={() => setData('billing_type', tier.id)}
-                                        className={`p-4 rounded-md border-2 cursor-pointer transition-all ${
+                                        onClick={() => {
+                                            setData('billing_type', tier.id);
+                                            if (tier.id === 'free') setData('price', '0.00');
+                                        }}
+                                        className={`p-5 rounded-md border-2 cursor-pointer transition-all ${
                                             data.billing_type === tier.id
                                                 ? 'border-[#111827] bg-[#F9FAFB] ring-2 ring-[#111827]'
                                                 : 'border-[#E5E7EB] bg-white hover:border-gray-400'
                                         }`}
                                     >
-                                        <div className="flex items-center gap-2 mb-1">
+                                        <div className="flex items-center gap-2.5 mb-1.5">
                                             <input
                                                 type="radio"
                                                 name="billing_type"
                                                 value={tier.id}
                                                 checked={data.billing_type === tier.id}
-                                                onChange={() => setData('billing_type', tier.id)}
+                                                onChange={() => {
+                                                    setData('billing_type', tier.id);
+                                                    if (tier.id === 'free') setData('price', '0.00');
+                                                }}
                                                 className="text-[#111827] focus:ring-0"
                                             />
-                                            <span className="text-xs font-extrabold text-[#111827]">{tier.label}</span>
+                                            <span className="text-sm font-extrabold text-[#111827]">{tier.label}</span>
                                         </div>
-                                        <p className="text-[11px] text-gray-500 ml-5">{tier.sub}</p>
+                                        <p className="text-xs text-gray-500 ml-6">{tier.sub}</p>
                                     </div>
                                 ))}
                             </div>
 
-                            {data.billing_type !== 'free' && (
+                            {data.billing_type === 'one_time' && (
                                 <div className="p-4 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md space-y-3">
                                     <div>
                                         <label htmlFor="price" className="block text-sm font-bold text-[#111827] mb-1">
@@ -415,9 +453,7 @@ export default function Edit({ course, initialMode = 'editor', enrolledCount = 0
                                         <span>
                                             Learners see{' '}
                                             <span className="font-extrabold text-[#111827]">
-                                                {data.billing_type === 'subscription'
-                                                    ? `RM ${Number(data.price || 0).toFixed(2)}/mo · CoPED PASS`
-                                                    : `RM ${Number(data.price || 0).toFixed(2)} · ONE-TIME`}
+                                                RM {Number(data.price || 0).toFixed(2)}
                                             </span>
                                         </span>
                                     </div>
@@ -425,61 +461,12 @@ export default function Edit({ course, initialMode = 'editor', enrolledCount = 0
                             )}
                         </div>
 
-                        {/* Section 3: Bulk Course Material Pack */}
-                        <div className={`bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8 space-y-6 ${settingsTab === 'identity' ? '' : 'hidden'}`}>
-                            <div className="border-b-2 border-[#E5E7EB] pb-4 flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-xl font-extrabold text-[#111827] font-display">
-                                        3. 📦 Bulk Course Material Pack (All-in-One Upload for Students)
-                                    </h2>
-                                    <p className="text-xs text-gray-500 mt-0.5">
-                                        Provide a master download link (Google Drive, ZIP, or PDF kit) for instant student access.
-                                    </p>
-                                </div>
-                                <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded">
-                                    Segedebuk
-                                </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="bundle_title" className="block text-sm font-bold text-[#111827] mb-2">
-                                        Bundle Pack Title
-                                    </label>
-                                    <input
-                                        id="bundle_title"
-                                        name="bundle_title"
-                                        type="text"
-                                        value={data.bundle_title}
-                                        onChange={(e) => setData('bundle_title', e.target.value)}
-                                        placeholder="e.g. Complete Maritime Training & SOP Bundle (PDF + Slides + Logbook)"
-                                        className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="bundle_url" className="block text-sm font-bold text-[#111827] mb-2">
-                                        Download / Storage URL
-                                    </label>
-                                    <input
-                                        id="bundle_url"
-                                        name="bundle_url"
-                                        type="url"
-                                        value={data.bundle_url}
-                                        onChange={(e) => setData('bundle_url', e.target.value)}
-                                        placeholder="https://drive.google.com/... or https://coped.org/files/bundle.zip"
-                                        className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section 4: Industry Certification Link */}
+                        {/* Section 3: Industry Certification Link */}
                         <div className={`bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8 space-y-6 ${settingsTab === 'cert' ? '' : 'hidden'}`}>
                             <div className="border-b-2 border-[#E5E7EB] pb-4 flex items-center justify-between">
                                 <div>
                                     <h2 className="text-xl font-extrabold text-[#111827] font-display">
-                                        4. Industry Certification Link (e.g. CAPM®, JLM)
+                                        3. Industry Certification Link (e.g. CAPM®, JLM)
                                     </h2>
                                     <p className="text-xs text-gray-500 mt-0.5">
                                         Link your course to an external certification body or regulatory license.

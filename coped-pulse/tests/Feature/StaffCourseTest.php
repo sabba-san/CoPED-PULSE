@@ -227,4 +227,43 @@ class StaffCourseTest extends TestCase
 
         $this->assertTrue(in_array($response->getStatusCode(), [302, 403]));
     }
+
+    public function test_course_store_auto_assigns_random_theme_color_when_omitted(): void
+    {
+        $staff = $this->staff();
+
+        $response = $this->actingAs($staff)->post(route('staff.courses.store'), [
+            'title' => 'Random Color Subject',
+            'status' => 'draft',
+            'academic_year' => '2026 / 2027',
+            'billing_type' => 'free',
+            'price' => 0.00,
+        ]);
+
+        $response->assertRedirect(route('staff.courses.index'));
+        $course = Course::where('title', 'Random Color Subject')->first();
+        $this->assertNotNull($course);
+        $this->assertContains($course->category_logo, ['blue', 'emerald', 'amber', 'navy', 'rose', 'charcoal']);
+    }
+
+    public function test_course_store_accepts_new_theme_colors(): void
+    {
+        $staff = $this->staff();
+
+        $response = $this->actingAs($staff)->post(route('staff.courses.store'), [
+            'title' => 'Emerald Subject',
+            'status' => 'draft',
+            'category_logo' => 'emerald',
+            'billing_type' => 'one_time',
+            'price' => 120.00,
+        ]);
+
+        $response->assertRedirect(route('staff.courses.index'));
+        $this->assertDatabaseHas('courses', [
+            'title' => 'Emerald Subject',
+            'category_logo' => 'emerald',
+            'billing_type' => 'one_time',
+            'price' => 120.00,
+        ]);
+    }
 }

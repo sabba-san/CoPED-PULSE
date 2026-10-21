@@ -323,34 +323,6 @@ export default function Learn({
                 {/* Tab 1: Course (Default Onboarding Banner + 3-Zone Theater Player) */}
                 {activeTab === 'course' && (
                     <div className="space-y-6">
-                        {/* Bulk Material Pack Download Banner */}
-                        {course.bundle_url && (
-                            <div className="bg-[#EFF6FF] border-2 border-[#3B82F6] p-5 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="flex items-start gap-3.5">
-                                    <span className="text-2xl shrink-0">📦</span>
-                                    <div>
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-[#1D4ED8]">
-                                            📦 BULK STUDY KIT · MUAT TURUN SEGEDEBUK
-                                        </span>
-                                        <h3 className="font-display font-extrabold text-base text-[#111827]">
-                                            {course.bundle_title || 'Complete Course Material Pack (PDF + Slides + Logbook)'}
-                                        </h3>
-                                        <p className="text-xs text-gray-600 mt-0.5">
-                                            All-in-one download pack prepared by your instructor for offline study and reference.
-                                        </p>
-                                    </div>
-                                </div>
-                                <a
-                                    href={course.bundle_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center justify-center gap-1.5 bg-[#111827] hover:bg-[#3B82F6] text-white font-bold text-xs px-5 py-2.5 rounded shrink-0 transition-colors duration-200"
-                                >
-                                    <span>Download All Course Materials</span>
-                                    <span>↗</span>
-                                </a>
-                            </div>
-                        )}
 
                         {/* Begin your course today Callout Card */}
                         <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">

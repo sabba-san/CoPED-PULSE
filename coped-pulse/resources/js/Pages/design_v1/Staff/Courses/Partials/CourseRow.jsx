@@ -78,7 +78,7 @@ export default function CourseRow({
     };
 
     // Category config
-    const config = LOGO_CONFIG[course.category_logo] || LOGO_CONFIG.general;
+    const config = LOGO_CONFIG[course.category_logo] || LOGO_CONFIG.charcoal || LOGO_CONFIG.general;
 
     // Price formatting
     const priceFormatted =
@@ -213,9 +213,6 @@ export default function CourseRow({
                             <span>{modulesCount} {modulesCount === 1 ? 'module' : 'modules'}</span>
                             {course.cert_title && (
                                 <span title={`Leads to: ${course.cert_title}`} className="cursor-help">🎓</span>
-                            )}
-                            {course.bundle_url && (
-                                <span title="Material pack attached" className="cursor-help">📦</span>
                             )}
                         </div>
                     </td>
@@ -373,9 +370,6 @@ export default function CourseRow({
                             <span>{modulesCount} {modulesCount === 1 ? 'module' : 'modules'}</span>
                             {course.cert_title && (
                                 <span title={`Leads to: ${course.cert_title}`} className="cursor-help">🎓</span>
-                            )}
-                            {course.bundle_url && (
-                                <span title="Material pack attached" className="cursor-help">📦</span>
                             )}
                         </div>
                     </div>
