@@ -125,29 +125,6 @@ export default function Edit({
         return () => clearInterval(interval);
     }, [courseTab, course.id]);
 
-    useEffect(() => {
-        if (courseTab !== 'chat') {
-            prevCourseTabRef.current = courseTab;
-            return;
-        }
-
-        const isTabJustSwitched = prevCourseTabRef.current !== 'chat';
-        const isThreadSwitched = prevThreadKeyRef.current !== selectedStudentId;
-        prevCourseTabRef.current = courseTab;
-        prevThreadKeyRef.current = selectedStudentId;
-
-        const lastMsg = activeThreadMessages[activeThreadMessages.length - 1];
-        const lastMsgId = lastMsg?.id;
-        const hasNewMessage = lastMsgId && lastMsgId !== prevLastMessageIdRef.current;
-        prevLastMessageIdRef.current = lastMsgId;
-
-        if (isTabJustSwitched || isThreadSwitched || hasNewMessage) {
-            if (chatContainerRef.current) {
-                chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-            }
-        }
-    }, [courseTab, selectedStudentId, activeThreadMessages]);
-
     const handleSaveWhatsappUrl = (e) => {
         e.preventDefault();
         setIsSavingWhatsapp(true);
@@ -269,6 +246,29 @@ export default function Edit({
         if (selectedStudentId === null) return null;
         return enrolledStudents.find((s) => Number(s.id) === Number(selectedStudentId)) || null;
     }, [enrolledStudents, selectedStudentId]);
+
+    useEffect(() => {
+        if (courseTab !== 'chat') {
+            prevCourseTabRef.current = courseTab;
+            return;
+        }
+
+        const isTabJustSwitched = prevCourseTabRef.current !== 'chat';
+        const isThreadSwitched = prevThreadKeyRef.current !== selectedStudentId;
+        prevCourseTabRef.current = courseTab;
+        prevThreadKeyRef.current = selectedStudentId;
+
+        const lastMsg = activeThreadMessages[activeThreadMessages.length - 1];
+        const lastMsgId = lastMsg?.id;
+        const hasNewMessage = lastMsgId && lastMsgId !== prevLastMessageIdRef.current;
+        prevLastMessageIdRef.current = lastMsgId;
+
+        if (isTabJustSwitched || isThreadSwitched || hasNewMessage) {
+            if (chatContainerRef.current) {
+                chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+            }
+        }
+    }, [courseTab, selectedStudentId, activeThreadMessages]);
 
     // Edit Mode Toggle: true (interactive builder) | false (read-only canvas)
     const [editMode, setEditMode] = useState(true);

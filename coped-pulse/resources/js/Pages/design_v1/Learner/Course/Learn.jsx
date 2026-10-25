@@ -82,6 +82,13 @@ export default function Learn({
     const prevChatModeRef = useRef(null);
     const prevTabRef = useRef(null);
 
+    const activeChatMessages = useMemo(() => {
+        if (chatMode === 'direct') {
+            return (messages || []).filter((m) => m.recipient_id !== null);
+        }
+        return (messages || []).filter((m) => m.recipient_id === null);
+    }, [messages, chatMode]);
+
     // Read ?tab=... from URL query on load
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -188,13 +195,6 @@ export default function Learn({
             },
         });
     };
-
-    const activeChatMessages = useMemo(() => {
-        if (chatMode === 'direct') {
-            return (messages || []).filter((m) => m.recipient_id !== null);
-        }
-        return (messages || []).filter((m) => m.recipient_id === null);
-    }, [messages, chatMode]);
 
     const toggleModuleCheck = (moduleId, e) => {
         if (e && e.stopPropagation) e.stopPropagation();
