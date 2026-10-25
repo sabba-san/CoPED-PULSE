@@ -29,7 +29,7 @@ export default function VideoPlayer({ module, mediaUrl, activeTitle = null, onEn
         if (!onEnded || !ytId) return;
 
         const handleMessage = (event) => {
-            if (!event.origin || !event.origin.includes('youtube.com')) return;
+            if (!event.origin || (!event.origin.includes('youtube.com') && !event.origin.includes('youtube-nocookie.com'))) return;
 
             try {
                 let data = event.data;

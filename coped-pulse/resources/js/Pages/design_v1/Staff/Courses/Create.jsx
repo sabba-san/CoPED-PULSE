@@ -17,13 +17,13 @@ const STEPS = [
     { id: 3, label: 'Industry Certification', short: 'Certification' },
 ];
 
-// Which wizard step owns each server-validated field (used to jump to the failing step).
 const FIELD_STEP = {
     title: 1,
     description: 1,
     status: 1,
     academic_year: 1,
     category_logo: 1,
+    instructor_id: 1,
     billing_type: 2,
     price: 2,
     cert_title: 3,
@@ -50,7 +50,7 @@ function billingSummary(data) {
     return 'FREE ACCESS';
 }
 
-export default function Create() {
+export default function Create({ instructors = [], isCoordinator = false }) {
     const [currentStep, setCurrentStep] = useState(1);
     const [stepError, setStepError] = useState('');
     // Auto-random theme color default so lazy instructors have a nice color pre-picked
@@ -66,6 +66,7 @@ export default function Create() {
         price: '0.00',
         cert_title: '',
         cert_url: '',
+        instructor_id: '',
         redirect_to_hub: true,
     });
 
@@ -325,6 +326,39 @@ export default function Create() {
                                         )}
                                     </div>
                                 </div>
+
+                                {isCoordinator && (
+                                    <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] rounded-md p-4 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label htmlFor="instructor_id" className="block text-sm font-extrabold text-[#111827]">
+                                                Assigned Subject Instructor
+                                            </label>
+                                            <span className="text-[10px] uppercase font-black px-2 py-0.5 bg-amber-600 text-white rounded">
+                                                Coordinator Control
+                                            </span>
+                                        </div>
+                                        <select
+                                            id="instructor_id"
+                                            name="instructor_id"
+                                            value={data.instructor_id}
+                                            onChange={(e) => setData('instructor_id', e.target.value)}
+                                            className="block w-full px-4 py-2.5 bg-white border-2 border-amber-300 rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#111827] focus:outline-none transition-colors"
+                                        >
+                                            <option value="">Assign to myself or leave unassigned</option>
+                                            {instructors.map((ins) => (
+                                                <option key={ins.id} value={ins.id}>
+                                                    {ins.name} ({ins.email})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-amber-900 font-medium">
+                                            As Subject Coordinator, you can assign any faculty lecturer to manage and teach this subject.
+                                        </p>
+                                        {errors.instructor_id && (
+                                            <p className="text-red-600 text-xs font-bold">{errors.instructor_id}</p>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Simple Color Swatch Picker + Randomizer */}
                                 <div>
@@ -637,6 +671,14 @@ export default function Create() {
                                             {data.cert_title || 'None linked'}
                                         </dd>
                                     </div>
+                                    {isCoordinator && (
+                                        <div>
+                                            <dt className="text-[10px] font-black uppercase tracking-wider text-gray-500">Assigned Instructor</dt>
+                                            <dd className="font-bold text-[#111827]">
+                                                {instructors.find((i) => String(i.id) === String(data.instructor_id))?.name || 'Self / Unassigned'}
+                                            </dd>
+                                        </div>
+                                    )}
                                 </dl>
                             </div>
 

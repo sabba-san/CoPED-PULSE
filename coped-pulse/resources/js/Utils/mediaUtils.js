@@ -86,7 +86,7 @@ export function formatEmbedUrl(url, origin = '') {
     const ytId = getYouTubeId(safe);
     if (ytId) {
         const originParam = origin ? `&origin=${encodeURIComponent(origin)}` : '';
-        return `https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1${originParam}`;
+        return `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1${originParam}`;
     }
 
     const vimeoId = getVimeoId(safe);

@@ -22,11 +22,16 @@ export default function Edit({ course, module, assessments, finalAssessments = [
         ? finalAssessments
         : (course.assessments || []).filter((q) => !q.module_id);
 
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+    const initialTab = searchParams.get('tab') || 'materials';
+    const initialSubtab = searchParams.get('subtab') || 'info';
+    const initialType = searchParams.get('type') === 'file' ? 'file' : 'link';
+
     // Active Action Card: 'materials' | 'quizzes' | 'assessment'
-    const [activeTab, setActiveTab] = useState('materials');
+    const [activeTab, setActiveTab] = useState(initialTab);
 
     // Materials Sub-Tab: 'info' | 'subtopics'
-    const [materialsSubTab, setMaterialsSubTab] = useState('info');
+    const [materialsSubTab, setMaterialsSubTab] = useState(initialSubtab);
 
     const [details, setDetails] = useState({
         title: module.title || '',
@@ -39,9 +44,9 @@ export default function Edit({ course, module, assessments, finalAssessments = [
     const [fileAlert, setFileAlert] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
 
-    const [showAddQuiz, setShowAddQuiz] = useState(false);
-    const [showQuizSection, setShowQuizSection] = useState(quizzes.length > 0);
-    const [showAddFinalQuiz, setShowAddFinalQuiz] = useState(false);
+    const [showAddQuiz, setShowAddQuiz] = useState(initialTab === 'quizzes');
+    const [showQuizSection, setShowQuizSection] = useState(quizzes.length > 0 || initialTab === 'quizzes');
+    const [showAddFinalQuiz, setShowAddFinalQuiz] = useState(initialTab === 'assessment');
     const [editingId, setEditingId] = useState(null);
     const [editErrors, setEditErrors] = useState({});
     const [editSaving, setEditSaving] = useState(false);
@@ -104,7 +109,7 @@ export default function Edit({ course, module, assessments, finalAssessments = [
     const [newLesson, setNewLesson] = useState({
         title: '',
         content: '',
-        content_type: 'link',
+        content_type: initialType,
         content_url: '',
         transcript: '',
         file: null,

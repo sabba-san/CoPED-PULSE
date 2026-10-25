@@ -6,17 +6,25 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Module;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(Request $request): Response
     {
-        $instructorId = auth()->id();
+        $user = auth()->user();
+        $isCoordinator = $user->isCoordinator();
+        $instructorId = $user->id;
 
-        // One pluck, reused - avoids repeated instructor joins.
-        $courseIds = Course::where('instructor_id', $instructorId)->pluck('id');
+        $coursesQuery = Course::query();
+        if (! $isCoordinator) {
+            $coursesQuery->where('instructor_id', $instructorId);
+        }
+
+        $courseIds = (clone $coursesQuery)->pluck('id');
 
         $enrollQuery = Enrollment::whereIn('course_id', $courseIds);
 
@@ -32,8 +40,9 @@ class DashboardController extends Controller
             'avg_completion' => round((clone $enrollQuery)->avg('progress') ?? 0, 1),
         ];
 
-        // Per-course list: all instructor courses with counts + avg progress
-        $courses = Course::where('instructor_id', $instructorId)
+        // Per-course list: all courses (or instructor's) with counts + avg progress + instructor
+        $courses = (clone $coursesQuery)
+            ->with('instructor:id,name,email')
             ->withCount(['modules', 'enrollments'])
             ->withAvg('enrollments as avg_progress', 'progress')
             ->withCount(['enrollments as completed_count' => fn ($q) => $q->whereNotNull('completed_at')])
@@ -76,11 +85,15 @@ class DashboardController extends Controller
             return $enrollment;
         });
 
+        $instructors = User::where('role', 'staff')->orderBy('name')->get(['id', 'name', 'email']);
+
         return Inertia::render('design_v1/Staff/Dashboard', [
             'stats' => $stats,
             'courses' => $courses,
             'breakdown' => $courses,
             'recentActivity' => $recentActivity,
+            'instructors' => $instructors,
+            'isCoordinator' => $isCoordinator,
         ]);
     }
 }

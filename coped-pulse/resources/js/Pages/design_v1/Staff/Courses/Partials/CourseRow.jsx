@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { LOGO_CONFIG } from '@/Components/flat/CourseLogoBadge';
 
 export default function CourseRow({
@@ -8,7 +8,12 @@ export default function CourseRow({
     variant = 'table', // 'table' | 'dashboard'
     activeMenuCourseId = null,
     setActiveMenuCourseId = null,
+    isCoordinator = false,
+    instructors = [],
 }) {
+    const { unreadChatSummary } = usePage().props;
+    const unreadCount = unreadChatSummary?.by_course?.[course.id] || 0;
+
     const isPublished = status === 'published';
     const isDraft = !isPublished;
     const modulesCount = Number(course.modules_count ?? 0);
@@ -19,6 +24,11 @@ export default function CourseRow({
     // Local state for delete confirmation dialog
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Local state for assign instructor modal
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [selectedInstructorId, setSelectedInstructorId] = useState(course.instructor_id || '');
+    const [isAssigning, setIsAssigning] = useState(false);
 
     // Overflow menu toggle
     const [localMenuOpen, setLocalMenuOpen] = useState(false);
@@ -72,6 +82,22 @@ export default function CourseRow({
             onFinish: () => {
                 setIsDeleting(false);
                 setShowDeleteModal(false);
+                closeMenu();
+            },
+        });
+    };
+
+    const handleAssign = (e) => {
+        e.preventDefault();
+        if (!selectedInstructorId) return;
+        setIsAssigning(true);
+        router.post(route('staff.courses.assign-instructor', course.id), {
+            instructor_id: selectedInstructorId,
+        }, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsAssigning(false);
+                setShowAssignModal(false);
                 closeMenu();
             },
         });
@@ -151,6 +177,84 @@ export default function CourseRow({
         </div>
     );
 
+    // Flat Assign Instructor Modal Component
+    const assignModal = showAssignModal && (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`assign-title-${course.id}`}
+        >
+            <div className="bg-white border-2 border-[#111827] rounded-lg p-6 max-w-md w-full space-y-4 text-left">
+                <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <span className="text-[10px] uppercase font-black px-2 py-0.5 bg-amber-500 text-white rounded">
+                            Coordinator Action
+                        </span>
+                        <h3
+                            id={`assign-title-${course.id}`}
+                            className="font-display text-lg font-extrabold text-[#111827] leading-snug mt-1"
+                        >
+                            Assign Subject Instructor
+                        </h3>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setShowAssignModal(false)}
+                        className="text-gray-400 hover:text-[#111827] font-bold text-lg leading-none"
+                        aria-label="Close dialog"
+                    >
+                        &times;
+                    </button>
+                </div>
+
+                <p className="text-xs text-gray-600">
+                    Subject: <span className="font-bold text-[#111827]">&ldquo;{course.title}&rdquo;</span>
+                </p>
+
+                <form onSubmit={handleAssign} className="space-y-4">
+                    <div>
+                        <label htmlFor={`instructor-select-${course.id}`} className="block text-xs font-bold text-[#111827] mb-1">
+                            Select Faculty Instructor
+                        </label>
+                        <select
+                            id={`instructor-select-${course.id}`}
+                            value={selectedInstructorId}
+                            onChange={(e) => setSelectedInstructorId(e.target.value)}
+                            required
+                            className="block w-full px-3 py-2 bg-white border-2 border-gray-300 rounded-md text-sm text-[#111827] focus:border-[#111827] focus:outline-none"
+                        >
+                            <option value="">-- Choose Instructor --</option>
+                            {instructors.map((ins) => (
+                                <option key={ins.id} value={ins.id}>
+                                    {ins.name} ({ins.email})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E5E7EB]">
+                        <button
+                            type="button"
+                            onClick={() => setShowAssignModal(false)}
+                            disabled={isAssigning}
+                            className="border-2 border-[#E5E7EB] hover:bg-[#F3F4F6] text-[#111827] font-bold text-xs px-4 py-2 rounded transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isAssigning || !selectedInstructorId}
+                            className="bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded transition-colors disabled:opacity-50"
+                        >
+                            {isAssigning ? 'Assigning...' : 'Confirm Assignment'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+
     // Overflow Dropdown Menu Content
     const overflowDropdown = isMenuOpen && (
         <div className="absolute right-0 top-full mt-1.5 bg-white border-2 border-[#E5E7EB] rounded-md py-1 z-30 min-w-[180px] divide-y divide-gray-100 text-left">
@@ -169,6 +273,18 @@ export default function CourseRow({
                 >
                     Manage Final Quiz
                 </Link>
+                {isCoordinator && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            closeMenu();
+                            setShowAssignModal(true);
+                        }}
+                        className="w-full text-left px-3.5 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-50 transition-colors"
+                    >
+                        Assign Instructor
+                    </button>
+                )}
             </div>
             <div className="py-0.5">
                 <button
@@ -191,16 +307,35 @@ export default function CourseRow({
     if (variant === 'table') {
         return (
             <>
-                <tr className="hover:bg-[#F9FAFB] transition-colors border-b-2 border-[#E5E7EB]">
+                <tr
+                    onClick={(e) => {
+                        if (e.target.closest('button, a, select, input, [data-dropdown-container]')) return;
+                        router.visit(route('staff.courses.edit', course.id));
+                    }}
+                    className="hover:bg-[#F9FAFB] transition-colors border-b-2 border-[#E5E7EB] cursor-pointer"
+                >
                     {/* 1. Course Details */}
                     <td className="px-5 py-4 min-w-0 max-w-sm">
-                        <Link
-                            href={route('staff.courses.edit', course.id)}
-                            className="font-display font-bold text-base text-[#111827] hover:text-[#3B82F6] transition-colors block truncate"
-                            title={course.title}
-                        >
-                            {course.title}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                            <Link
+                                href={route('staff.courses.edit', course.id)}
+                                className="font-display font-bold text-base text-[#111827] hover:text-[#3B82F6] transition-colors block truncate"
+                                title={course.title}
+                            >
+                                {course.title}
+                            </Link>
+                            {unreadCount > 0 && (
+                                <Link
+                                    href={route('staff.courses.edit', course.id) + '?tab=chat'}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white transition-colors text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1 shrink-0"
+                                    title={`${unreadCount} unread message(s)`}
+                                >
+                                    <span>💬</span>
+                                    <span>{unreadCount} new</span>
+                                </Link>
+                            )}
+                        </div>
                         <div className="text-xs text-gray-500 mt-1 flex items-center flex-wrap gap-1.5">
                             <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${config.badgeBg} ${config.badgeText} ${config.badgeBorder}`}>
                                 {config.label}
@@ -211,6 +346,14 @@ export default function CourseRow({
                             <span>{priceFormatted}</span>
                             <span>·</span>
                             <span>{modulesCount} {modulesCount === 1 ? 'module' : 'modules'}</span>
+                            {course.instructor?.name && (
+                                <>
+                                    <span>·</span>
+                                    <span className="font-semibold text-gray-700">
+                                        Instructor: {course.instructor.name}
+                                    </span>
+                                </>
+                            )}
                             {course.cert_title && (
                                 <span title={`Leads to: ${course.cert_title}`} className="cursor-help">🎓</span>
                             )}
@@ -326,6 +469,7 @@ export default function CourseRow({
                     </td>
                 </tr>
                 {deleteModal}
+                {assignModal}
             </>
         );
     }
@@ -335,7 +479,13 @@ export default function CourseRow({
     // ==========================================
     return (
         <>
-            <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-3.5 sm:p-4 hover:border-gray-400 transition-colors">
+            <div
+                onClick={(e) => {
+                    if (e.target.closest('button, a, select, input, [data-dropdown-container]')) return;
+                    router.visit(route('staff.courses.edit', course.id));
+                }}
+                className="bg-white border-2 border-[#E5E7EB] rounded-lg p-3.5 sm:p-4 hover:border-gray-400 transition-colors cursor-pointer"
+            >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     {/* Left: Course Identity */}
                     <div className="min-w-0 flex-1">
@@ -347,6 +497,17 @@ export default function CourseRow({
                             >
                                 {course.title}
                             </Link>
+                            {unreadCount > 0 && (
+                                <Link
+                                    href={route('staff.courses.edit', course.id) + '?tab=chat'}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white transition-colors text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1 shrink-0"
+                                    title={`${unreadCount} unread message(s)`}
+                                >
+                                    <span>💬</span>
+                                    <span>{unreadCount} new</span>
+                                </Link>
+                            )}
                             {isPublished ? (
                                 <span className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0">
                                     Published
@@ -368,6 +529,14 @@ export default function CourseRow({
                             <span>{priceFormatted}</span>
                             <span>·</span>
                             <span>{modulesCount} {modulesCount === 1 ? 'module' : 'modules'}</span>
+                            {course.instructor?.name && (
+                                <>
+                                    <span>·</span>
+                                    <span className="font-semibold text-gray-700">
+                                        Instructor: {course.instructor.name}
+                                    </span>
+                                </>
+                            )}
                             {course.cert_title && (
                                 <span title={`Leads to: ${course.cert_title}`} className="cursor-help">🎓</span>
                             )}
@@ -418,7 +587,7 @@ export default function CourseRow({
                                             disabled
                                             title="Add content to your curriculum first"
                                             aria-label="Deploy Live - Add content to your curriculum first"
-                                            className="bg-[#F3F4F6] border-2 border-[#E5E7EB] text-gray-400 cursor-not-allowed px-3 py-1.5 rounded text-xs font-bold"
+                                            className="bg-[#F3F4F6] border-2 border-[#E5E7EB] text-gray-400 cursor-not-allowed px-3 py-1.5 rounded text-xs font-bold min-h-[38px] sm:min-h-0 flex items-center justify-center"
                                         >
                                             Deploy Live
                                         </button>
@@ -426,7 +595,7 @@ export default function CourseRow({
                                         <button
                                             type="button"
                                             onClick={() => router.post(route('staff.courses.deploy', course.id), {}, { preserveScroll: true })}
-                                            className="bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-3 py-1.5 rounded transition-colors"
+                                            className="bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-3 py-1.5 rounded transition-colors min-h-[38px] sm:min-h-0 flex items-center justify-center"
                                         >
                                             Deploy Live
                                         </button>
@@ -434,7 +603,7 @@ export default function CourseRow({
 
                                     <Link
                                         href={route('staff.courses.edit', course.id)}
-                                        className="border-2 border-[#111827] text-[#111827] hover:bg-[#F3F4F6] px-3 py-1.5 rounded text-xs font-bold transition-colors"
+                                        className="border-2 border-[#111827] text-[#111827] hover:bg-[#F3F4F6] px-3 py-1.5 rounded text-xs font-bold transition-colors min-h-[38px] sm:min-h-0 flex items-center justify-center"
                                     >
                                         Edit
                                     </Link>
@@ -442,7 +611,7 @@ export default function CourseRow({
                             ) : (
                                 <Link
                                     href={route('staff.courses.edit', course.id)}
-                                    className="bg-[#111827] hover:bg-[#1F2937] text-white font-bold text-xs px-3.5 py-1.5 rounded transition-colors"
+                                    className="bg-[#111827] hover:bg-[#1F2937] text-white font-bold text-xs px-3.5 py-1.5 rounded transition-colors min-h-[38px] sm:min-h-0 flex items-center justify-center"
                                 >
                                     Edit
                                 </Link>
@@ -454,7 +623,7 @@ export default function CourseRow({
                                     onClick={toggleMenu}
                                     aria-label={`More actions for ${course.title}`}
                                     aria-expanded={isMenuOpen}
-                                    className={`w-8 h-8 rounded border-2 border-[#E5E7EB] hover:bg-[#F3F4F6] flex items-center justify-center font-bold text-sm transition-colors ${
+                                    className={`w-9 h-9 sm:w-8 sm:h-8 rounded border-2 border-[#E5E7EB] hover:bg-[#F3F4F6] flex items-center justify-center font-bold text-sm transition-colors ${
                                         isMenuOpen ? 'bg-gray-200 text-[#111827]' : 'text-gray-700'
                                     }`}
                                 >
@@ -467,6 +636,7 @@ export default function CourseRow({
                 </div>
             </div>
             {deleteModal}
+            {assignModal}
         </>
     );
 }

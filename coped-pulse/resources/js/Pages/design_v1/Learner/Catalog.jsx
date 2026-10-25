@@ -171,7 +171,7 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                         role="tab"
                                         aria-selected={active}
                                         onClick={() => setActiveFilter(filter.id)}
-                                        className={`px-4 py-2 text-xs font-bold rounded-md border-2 transition-colors ${
+                                        className={`px-4 py-2 text-xs font-bold rounded-md border-2 transition-colors min-h-[38px] flex items-center ${
                                             active
                                                 ? 'bg-[#111827] text-white border-[#111827]'
                                                 : 'bg-white text-[#111827] border-[#E5E7EB] hover:border-[#111827]'
@@ -220,7 +220,15 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                             return (
                                 <div
                                     key={course.id}
-                                    className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden flex flex-col justify-between transition-transform duration-200 hover:scale-[1.01]"
+                                    onClick={(e) => {
+                                        if (e.target.closest('button, a, input, select')) return;
+                                        if (enrolled) {
+                                            router.visit(route('learner.course.learn', course.id));
+                                        } else {
+                                            handleEnrollClick(course);
+                                        }
+                                    }}
+                                    className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden flex flex-col justify-between transition-all duration-200 hover:scale-[1.01] hover:border-black cursor-pointer"
                                 >
                                     <div>
                                         {/* Top Subject Emblem Banner */}
@@ -303,7 +311,7 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                         {enrolled ? (
                                             <Link
                                                 href={route('learner.course.learn', course.id)}
-                                                className="w-full inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
+                                                className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
                                             >
                                                 <span>Enrolled ✓ · Continue Course</span>
                                                 <ArrowRightIcon className="w-4 h-4" />
@@ -312,7 +320,7 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                             <button
                                                 type="button"
                                                 onClick={() => handleEnrollClick(course)}
-                                                className="w-full inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
+                                                className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
                                             >
                                                 <span>
                                                     Subscribe & Unlock · RM {Number(course.price || 0).toFixed(2)}
@@ -323,7 +331,7 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                             <button
                                                 type="button"
                                                 onClick={() => handleEnrollClick(course)}
-                                                className="w-full inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
+                                                className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
                                             >
                                                 <span>Enroll Now (Free)</span>
                                                 <ArrowRightIcon className="w-4 h-4" />

@@ -14,6 +14,8 @@ class Course extends Model
     use HasFactory;
 
     protected $fillable = [
+        'instructor_id',
+        'organization_id',
         'title',
         'description',
         'status',
@@ -25,6 +27,7 @@ class Course extends Model
         'cert_url',
         'bundle_title',
         'bundle_url',
+        'whatsapp_group_url',
     ];
 
     protected $casts = [
@@ -77,6 +80,11 @@ class Course extends Model
     public function moduleCompletions(): HasMany
     {
         return $this->hasMany(ModuleCompletion::class);
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(CourseMessage::class);
     }
 
     public function organization(): BelongsTo

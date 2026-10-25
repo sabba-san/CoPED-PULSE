@@ -1,5 +1,5 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 import {
     BookOpenIcon,
@@ -18,6 +18,21 @@ import VideoPlayer from './Partials/VideoPlayer';
 import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
 import { safeUrl, formatEmbedUrl, getYouTubeId, isVideoUrl } from '@/Utils/mediaUtils';
 
+const timeAgo = (dateStr) => {
+    if (!dateStr) return 'Never';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffSec = Math.floor((now - date) / 1000);
+    if (diffSec < 60) return 'Just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 30) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 export default function Learn({
     course,
     enrollment,
@@ -27,16 +42,18 @@ export default function Learn({
     dailyGoal = 3,
     notes = {},
     feedback = {},
+    chatMessages = [],
 }) {
     const modules = course.modules || [];
     const allAssessments = course.assessments || [];
     const assessments = allAssessments.filter((q) => !q.module_id);
-    const { flash } = usePage().props;
+    const { auth, flash } = usePage().props;
+    const currentUser = auth?.user;
 
     const isCompleted = Boolean(enrollment?.completed_at);
     const progressPct = Math.min(100, Math.max(0, Math.round(Number(enrollment?.progress ?? 0))));
 
-    // Active Tab State: 'course' | 'dates' | 'assessment' | 'notes'
+    // Active Tab State: 'course' | 'dates' | 'assessment' | 'notes' | 'chat'
     const [activeTab, setActiveTab] = useState('course');
     const [showQuizModal, setShowQuizModal] = useState(false);
 
@@ -51,6 +68,136 @@ export default function Learn({
 
     // State for instant automatic/manual completion banner
     const [autoCompletedNotice, setAutoCompletedNotice] = useState(null);
+
+    // Mobile curriculum accordion toggle state
+    const [mobileCurriculumOpen, setMobileCurriculumOpen] = useState(false);
+
+    // Chat State
+    const [messages, setMessages] = useState(chatMessages || []);
+    const [chatMode, setChatMode] = useState('direct'); // 'direct' | 'group'
+    const [newMessage, setNewMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const [isSimulatingWhatsapp, setIsSimulatingWhatsapp] = useState(false);
+    const messagesEndRef = useRef(null);
+
+    // Read ?tab=... from URL query on load
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam && ['course', 'dates', 'assessment', 'notes', 'chat'].includes(tabParam)) {
+            setActiveTab(tabParam);
+        }
+    }, []);
+
+    // Silent mark-read fetch when chat tab opens
+    useEffect(() => {
+        if (activeTab === 'chat') {
+            fetch(route('courses.chat.mark-read', course.id), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                    'Accept': 'application/json',
+                },
+            }).catch(() => {});
+        }
+    }, [activeTab, course.id]);
+
+    useEffect(() => {
+        if (chatMessages) {
+            setMessages(chatMessages);
+        }
+    }, [chatMessages]);
+
+    useEffect(() => {
+        if (activeTab !== 'chat') return;
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(route('courses.chat.messages.index', course.id), {
+                    headers: { Accept: 'application/json' },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setMessages(data);
+                }
+            } catch (err) {
+                // silent
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [activeTab, course.id]);
+
+    useEffect(() => {
+        if (activeTab === 'chat') {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages, chatMode, activeTab]);
+
+    const handleSimulateWhatsappReply = async () => {
+        setIsSimulatingWhatsapp(true);
+        const replyText = chatMode === 'direct'
+            ? 'Hello! This is an automatic WhatsApp Cloud API reply from your instructor.'
+            : 'Hello class! Instructor announcement synced from WhatsApp.';
+
+        try {
+            const res = await fetch(route('courses.chat.whatsapp-simulate', course.id), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    body: replyText,
+                    sender_id: course.instructor_id || course.instructor?.id || null,
+                    recipient_id: chatMode === 'direct' ? currentUser?.id : null,
+                }),
+            });
+            if (res.ok) {
+                const newMsg = await res.json();
+                setMessages((prev) => [...prev, newMsg]);
+            }
+        } catch (err) {
+            // ignore
+        } finally {
+            setIsSimulatingWhatsapp(false);
+        }
+    };
+
+    const handleSendMessage = (e) => {
+        e?.preventDefault();
+        if (!newMessage.trim() || isSending) return;
+
+        const bodyText = newMessage.trim();
+        setIsSending(true);
+
+        const recipientId = chatMode === 'direct' ? (course.instructor_id || course.instructor?.id || null) : null;
+
+        router.post(route('courses.chat.messages.store', course.id), {
+            body: bodyText,
+            recipient_id: recipientId,
+        }, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                setNewMessage('');
+                setIsSending(false);
+                if (page.props.chatMessages) {
+                    setMessages(page.props.chatMessages);
+                }
+            },
+            onError: () => {
+                setIsSending(false);
+            },
+        });
+    };
+
+    const activeChatMessages = useMemo(() => {
+        if (chatMode === 'direct') {
+            return (messages || []).filter((m) => m.recipient_id !== null);
+        }
+        return (messages || []).filter((m) => m.recipient_id === null);
+    }, [messages, chatMode]);
 
     const toggleModuleCheck = (moduleId, e) => {
         if (e && e.stopPropagation) e.stopPropagation();
@@ -188,23 +335,25 @@ export default function Learn({
 
             <div className="space-y-6">
                 {/* Course Top Header */}
-                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
+                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-4 sm:p-6 space-y-4 w-full min-w-0 overflow-hidden">
                     {/* Institutional Breadcrumb */}
-                    <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        <Link href={route('portal')} className="text-[#111827] hover:underline">
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider overflow-hidden">
+                        <Link href={route('portal')} className="text-[#111827] hover:underline shrink-0">
                             UUM CoPED
                         </Link>
                         <span>/</span>
-                        <span className="text-gray-400 truncate max-w-md">{course.title}</span>
+                        <span className="text-gray-400 truncate max-w-xs sm:max-w-md">{course.title}</span>
                     </div>
 
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex items-start gap-4">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full min-w-0">
+                        <div className="flex flex-col sm:flex-row items-start gap-4 w-full min-w-0 overflow-hidden">
                             {course.category_logo && (
-                                <CourseLogoBadge category={course.category_logo} size="tile" />
+                                <div className="w-full sm:w-auto shrink-0 flex justify-center sm:justify-start">
+                                    <CourseLogoBadge category={course.category_logo} size="tile" className="!w-full sm:!w-44 rounded-md" />
+                                </div>
                             )}
-                            <div>
-                                <h1 className="font-display text-2xl md:text-3xl font-extrabold text-[#111827]">
+                            <div className="min-w-0 flex-1 w-full space-y-1.5">
+                                <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-[#111827] break-words">
                                     {course.title}
                                 </h1>
                                 <div className="flex flex-wrap items-center gap-2 mt-1.5">
@@ -221,17 +370,17 @@ export default function Learn({
                                             href={course.cert_url || '#'}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-[#1D4ED8] bg-[#EFF6FF] border border-[#93C5FD] hover:bg-[#DBEAFE] px-2 py-0.5 rounded transition-colors"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-[#1D4ED8] bg-[#EFF6FF] border border-[#93C5FD] hover:bg-[#DBEAFE] px-2 py-0.5 rounded transition-colors max-w-full"
                                         >
-                                            <span>🎓 Leads to: {course.cert_title}</span>
-                                            <span className="text-[10px]">↗</span>
+                                            <span className="truncate">🎓 Leads to: {course.cert_title}</span>
+                                            <span className="text-[10px] shrink-0">↗</span>
                                         </a>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
                             <span
                                 className={`px-3 py-1 text-xs font-extrabold rounded border-2 ${
                                     isCompleted
@@ -245,7 +394,7 @@ export default function Learn({
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('assessment')}
-                                    className="bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-4 py-2 rounded transition-transform active:scale-[0.98]"
+                                    className="w-full sm:w-auto min-h-[44px] bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-4 py-2 rounded transition-transform active:scale-[0.98]"
                                 >
                                     Take Final Assessment
                                 </button>
@@ -293,12 +442,13 @@ export default function Learn({
                 </div>
 
                 {/* edX Horizontal Sub-Navigation Tabs */}
-                <div className="border-b-2 border-[#E5E7EB] bg-white px-6 flex gap-6 overflow-x-auto">
+                <div className="w-full max-w-full overflow-x-auto no-scrollbar flex items-center justify-start gap-1 sm:gap-4 border-b-2 border-[#E5E7EB] bg-white px-3 sm:px-6">
                     {[
                         { id: 'course', label: 'Course' },
                         { id: 'dates', label: 'Dates' },
                         { id: 'assessment', label: 'Progress & Assessment' },
                         { id: 'notes', label: 'Course Tools & Notes' },
+                        { id: 'chat', label: '💬 Chat with Instructor' },
                     ].map((tab) => {
                         const active = activeTab === tab.id;
                         return (
@@ -308,7 +458,7 @@ export default function Learn({
                                 role="tab"
                                 aria-selected={active}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`text-sm whitespace-nowrap transition-colors py-3 ${
+                                className={`text-xs sm:text-sm whitespace-nowrap transition-colors py-3 px-2 sm:px-3 min-h-[44px] flex items-center shrink-0 ${
                                     active
                                         ? 'border-b-4 border-[#111827] font-bold text-[#111827]'
                                         : 'text-gray-500 hover:text-[#111827] font-semibold border-b-4 border-transparent'
@@ -324,27 +474,6 @@ export default function Learn({
                 {activeTab === 'course' && (
                     <div className="space-y-6">
 
-                        {/* Begin your course today Callout Card */}
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div>
-                                <h2 className="font-display font-bold text-xl text-[#111827]">
-                                    Begin your course today
-                                </h2>
-                                <p className="text-sm text-gray-600 mt-0.5">
-                                    Work through each chapter module at your own pace and prepare for the final assessment.
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (resumeModule?.id) setActiveModuleId(resumeModule.id);
-                                }}
-                                className="bg-[#111827] hover:bg-gray-800 text-white font-bold text-sm px-6 py-3 rounded shrink-0 transition-transform active:scale-[0.98]"
-                            >
-                                {doneSet.has(activeModuleId) ? 'Next Module' : 'Start Course'}
-                            </button>
-                        </div>
-
                         {/* Warm flat amber notice box */}
                         <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] p-4 rounded-md text-sm text-[#111827] font-medium flex items-start gap-3">
                             <span className="text-[#F59E0B] text-lg font-black leading-none">ⓘ</span>
@@ -353,11 +482,26 @@ export default function Learn({
                             </p>
                         </div>
 
-                        {/* Theater Grid */}
+                        {/* Theater Grid (Video-First on Mobile: order-1 for Stage, order-2 for Curriculum) */}
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                            {/* Left Curriculum Outline (lg:col-span-4) */}
-                            <div className="lg:col-span-4 space-y-4">
-                                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-4">
+                            {/* Left Curriculum Outline (order-2 lg:order-1 lg:col-span-4) */}
+                            <div className="order-2 lg:order-1 lg:col-span-4 space-y-4">
+                                {/* Mobile Curriculum Accordion Toggle Button */}
+                                <div className="lg:hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileCurriculumOpen((v) => !v)}
+                                        className="w-full flex items-center justify-between px-4 py-2.5 bg-white border-2 border-[#E5E7EB] rounded-md text-xs font-extrabold text-[#111827] hover:border-[#111827] transition-colors min-h-[44px]"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <span>📑</span>
+                                            <span>Course Curriculum ({modules.length} Modules)</span>
+                                        </span>
+                                        <span className="text-gray-500 font-bold">{mobileCurriculumOpen ? '▲ Hide' : '▼ View Curriculum'}</span>
+                                    </button>
+                                </div>
+
+                                <div className={`${mobileCurriculumOpen ? 'block' : 'hidden'} lg:block bg-white border-2 border-[#E5E7EB] rounded-lg p-4`}>
                                     <div className="flex items-center justify-between pb-3 mb-3 border-b-2 border-[#E5E7EB]">
                                         <h3 className="font-display font-extrabold text-sm text-[#111827] uppercase tracking-wider">
                                             Curriculum ({modules.length} Modules)
@@ -450,11 +594,32 @@ export default function Learn({
                                             </button>
                                         </div>
                                     )}
+
+                                    {/* Official Certificate Tree Item */}
+                                    <div className="mt-3 pt-3 border-t-2 border-[#E5E7EB]">
+                                        {isCompleted ? (
+                                            <Link
+                                                href={route('learner.course.certificate', course.id)}
+                                                className="w-full p-2.5 rounded-md border-2 border-[#10B981] bg-emerald-50 hover:bg-emerald-100 text-[#10B981] font-bold text-xs flex items-center justify-between transition-colors"
+                                            >
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="text-sm">🎓</span>
+                                                    <span className="truncate">Official Certificate</span>
+                                                </div>
+                                                <span className="text-[10px] font-extrabold uppercase shrink-0">View & Download 1-Page PDF →</span>
+                                            </Link>
+                                        ) : (
+                                            <div className="w-full p-2.5 rounded-md border-2 border-dashed border-[#E5E7EB] bg-[#F9FAFB] text-gray-500 font-semibold text-xs flex items-center gap-2">
+                                                <span className="text-sm">🔒</span>
+                                                <span className="text-[11px] leading-tight">Pass Final Exam (100%) to unlock certificate</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Center/Right Learning Stage (lg:col-span-8) */}
-                            <div className="lg:col-span-8 space-y-6">
+                            {/* Center/Right Learning Stage (order-1 on Mobile, order-2 on Desktop) */}
+                            <div className="order-1 lg:order-2 lg:col-span-8 space-y-6">
                                 {activeModule ? (
                                     <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-6">
                                         {/* Module Header */}
@@ -538,28 +703,62 @@ export default function Learn({
                                             )}
                                         </div>
 
-                                        {/* Module Completion Action Bar */}
-                                        <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t-2 border-[#E5E7EB]">
-                                            <div className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
-                                                <span className={`w-2 h-2 rounded-full ${doneSet.has(activeModule.id) ? 'bg-[#10B981]' : 'bg-gray-400'}`} />
-                                                <span>Unit Completion Status: {doneSet.has(activeModule.id) ? 'Completed' : 'In Progress'}</span>
-                                            </div>
+                                        {/* Unified 3-Action Bottom Control Bar */}
+                                        <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t-2 border-[#E5E7EB]">
+                                            {prevModule ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveModuleId(prevModule.id)}
+                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-white border-2 border-[#E5E7EB] hover:border-[#111827] text-[#111827] font-bold text-xs px-4 py-2.5 rounded-md transition-colors"
+                                                >
+                                                    <span>← Previous Unit</span>
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    disabled
+                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-gray-100 border-2 border-[#E5E7EB] text-gray-400 font-bold text-xs px-4 py-2.5 rounded-md cursor-not-allowed"
+                                                >
+                                                    <span>← Previous Unit</span>
+                                                </button>
+                                            )}
+
                                             {doneSet.has(activeModule.id) ? (
                                                 <button
                                                     type="button"
                                                     disabled
-                                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#10B981] text-white font-bold text-xs px-5 py-2.5 rounded-md cursor-default transition-all duration-200"
+                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-emerald-50 border-2 border-[#10B981] text-[#10B981] font-bold text-xs px-5 py-2.5 rounded-md cursor-default"
                                                 >
-                                                    <span>✓ Completed</span>
+                                                    <span>✓ Module Completed</span>
                                                 </button>
                                             ) : (
                                                 <button
                                                     type="button"
                                                     onClick={() => handleMarkComplete(activeModule.id)}
-                                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98]"
+                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98]"
                                                 >
                                                     <span>✓ Mark Module as Complete</span>
                                                 </button>
+                                            )}
+
+                                            {nextModule ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveModuleId(nextModule.id)}
+                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-4 py-2.5 rounded-md transition-transform active:scale-[0.98]"
+                                                >
+                                                    <span>Next Module →</span>
+                                                </button>
+                                            ) : assessments.length > 0 ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('assessment')}
+                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98]"
+                                                >
+                                                    <span>🎯 Take Final Assessment →</span>
+                                                </button>
+                                            ) : (
+                                                <div className="hidden sm:block w-28" />
                                             )}
                                         </div>
 
@@ -605,39 +804,6 @@ export default function Learn({
                                                 </div>
                                             </div>
                                         )}
-
-                                        {/* Prev / Next Navigation Buttons */}
-                                        <div className="flex items-center justify-between pt-4 border-t-2 border-[#E5E7EB]">
-                                            {prevModule ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveModuleId(prevModule.id)}
-                                                    className="inline-flex items-center gap-2 bg-white border-2 border-[#E5E7EB] hover:border-[#111827] text-[#111827] font-bold text-xs px-4 py-2.5 rounded transition-colors"
-                                                >
-                                                    <span>← Previous Module</span>
-                                                </button>
-                                            ) : (
-                                                <div />
-                                            )}
-
-                                            {nextModule ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveModuleId(nextModule.id)}
-                                                    className="inline-flex items-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-4 py-2.5 rounded transition-transform active:scale-[0.98]"
-                                                >
-                                                    <span>Next Module →</span>
-                                                </button>
-                                            ) : assessments.length > 0 ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveTab('assessment')}
-                                                    className="inline-flex items-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold text-xs px-5 py-2.5 rounded transition-transform active:scale-[0.98]"
-                                                >
-                                                    <span>Proceed to Final Assessment →</span>
-                                                </button>
-                                            ) : null}
-                                        </div>
 
                                         {/* Quick Notes Scratchpad */}
                                         <div className="bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-lg p-5 space-y-2">
@@ -1017,6 +1183,197 @@ export default function Learn({
                                     <p className="text-gray-600 mt-0.5">Universiti Utara Malaysia · CoPED</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Tab 5: Chat with Instructor & Course Group */}
+                {activeTab === 'chat' && (
+                    <div className="max-w-4xl space-y-6">
+                        {/* In-Web WhatsApp Cloud API Status Bar & Simulation Trigger */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-8 h-8 rounded bg-[#25D366] text-white flex items-center justify-center font-bold text-base shrink-0">
+                                    💬
+                                </span>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-black uppercase text-[#111827]">Meta WhatsApp Cloud API</span>
+                                        <span className="bg-[#DCFCE7] text-[#166534] border border-[#86EFAC] text-[10px] font-black px-1.5 py-0.2 rounded">
+                                            Sync Active
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-gray-500">
+                                        Messages are bridged directly with faculty WhatsApp channels.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => handleSimulateWhatsappReply()}
+                                disabled={isSimulatingWhatsapp}
+                                className="px-3.5 py-1.5 text-xs font-black bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded border border-[#16A34A] transition-colors flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
+                                title="Simulate instructor sending a reply via WhatsApp Cloud API"
+                            >
+                                <span>⚡</span>
+                                <span>{isSimulatingWhatsapp ? 'Simulating...' : 'Simulate WhatsApp Reply'}</span>
+                            </button>
+                        </div>
+
+                        {/* Mode Selector: Direct Q&A vs Group Chat */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-2 flex flex-wrap sm:flex-nowrap gap-2 w-full min-w-0">
+                            <button
+                                type="button"
+                                onClick={() => setChatMode('direct')}
+                                className={`flex-1 min-w-0 px-3 sm:px-4 py-2.5 rounded-md text-xs font-extrabold border-2 transition-colors flex items-center justify-center gap-2 ${
+                                    chatMode === 'direct'
+                                        ? 'bg-[#111827] text-white border-[#111827]'
+                                        : 'bg-white text-gray-700 border-[#E5E7EB] hover:border-[#111827]'
+                                }`}
+                            >
+                                <span>💬</span>
+                                <span className="truncate">Direct Q&amp;A with Instructor</span>
+                                <span className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                                    chatMode === 'direct' ? 'bg-gray-800 text-gray-200' : 'bg-blue-50 text-blue-700'
+                                }`}>
+                                    Private
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setChatMode('group')}
+                                className={`flex-1 min-w-0 px-3 sm:px-4 py-2.5 rounded-md text-xs font-extrabold border-2 transition-colors flex items-center justify-center gap-2 ${
+                                    chatMode === 'group'
+                                        ? 'bg-[#111827] text-white border-[#111827]'
+                                        : 'bg-white text-gray-700 border-[#E5E7EB] hover:border-[#111827]'
+                                }`}
+                            >
+                                <span>📢</span>
+                                <span className="truncate">Course Class Group Chat</span>
+                                <span className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                                    chatMode === 'group' ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-700'
+                                }`}>
+                                    All Students
+                                </span>
+                            </button>
+                        </div>
+
+                        {/* Chat Feed Card */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden flex flex-col">
+                            {/* Feed Header */}
+                            <div className="p-4 border-b-2 border-[#E5E7EB] bg-[#F9FAFB] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div className="flex items-center gap-3">
+                                    <span className="w-9 h-9 rounded-full bg-[#111827] text-white flex items-center justify-center text-sm font-bold shrink-0">
+                                        {chatMode === 'direct' ? '👨‍🏫' : '📢'}
+                                    </span>
+                                    <div>
+                                        <h3 className="text-sm font-extrabold text-[#111827]">
+                                            {chatMode === 'direct'
+                                                ? `Direct Message with ${course.instructor?.name || 'Instructor'}`
+                                                : 'Course Class Group Chat'}
+                                        </h3>
+                                        <p className="text-xs text-gray-500">
+                                            {chatMode === 'direct'
+                                                ? 'Private 1-on-1 discussion between you and your instructor.'
+                                                : 'Classroom broadcast thread visible to all students and instructors.'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-bold text-gray-500 bg-white border border-[#E5E7EB] px-2.5 py-1 rounded-md self-start sm:self-auto">
+                                    {activeChatMessages.length} Messages
+                                </span>
+                            </div>
+
+                            {/* Scrollable Message History */}
+                            <div className="p-4 sm:p-5 overflow-y-auto space-y-3 bg-[#F9FAFB] min-h-[380px] max-h-[460px]">
+                                {activeChatMessages.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-2">
+                                        <span className="text-3xl">💬</span>
+                                        <h4 className="text-sm font-bold text-gray-700">
+                                            No messages here yet.
+                                        </h4>
+                                        <p className="text-xs text-gray-500 max-w-sm">
+                                            {chatMode === 'direct'
+                                                ? 'Have a question about a module or quiz? Send a message directly to your lecturer.'
+                                                : 'Say hello to your fellow classmates and start the discussion!'}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    activeChatMessages.map((msg) => {
+                                        const isMine = msg.sender_id === currentUser?.id;
+                                        const isStaff = msg.sender?.role === 'staff' || msg.sender?.role === 'coordinator';
+                                        const isWhatsapp = msg.body?.startsWith('[WhatsApp]');
+
+                                        return (
+                                            <div
+                                                key={msg.id}
+                                                className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
+                                            >
+                                                <div className="flex items-center gap-1.5 mb-1 px-1">
+                                                    <span className="text-[11px] font-extrabold text-gray-800">
+                                                        {isMine ? 'You' : msg.sender?.name || 'User'}
+                                                    </span>
+                                                    {isStaff && (
+                                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-100 text-purple-800 border border-purple-300">
+                                                            Lecturer
+                                                        </span>
+                                                    )}
+                                                    {isWhatsapp && (
+                                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-[#DCFCE7] text-[#166534] border border-[#86EFAC] flex items-center gap-0.5">
+                                                            ✓✓ WhatsApp API
+                                                        </span>
+                                                    )}
+                                                    <span className="text-[10px] text-gray-400">
+                                                        {timeAgo(msg.created_at)}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    className={`max-w-md sm:max-w-lg p-3 rounded-lg border-2 text-xs leading-relaxed ${
+                                                        isMine
+                                                            ? 'bg-[#111827] text-white border-[#111827]'
+                                                            : 'bg-white text-[#111827] border-[#E5E7EB]'
+                                                    }`}
+                                                >
+                                                    <p className="whitespace-pre-wrap break-words">{msg.body.replace('[WhatsApp] ', '')}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {/* Composer */}
+                            <form onSubmit={handleSendMessage} className="p-3.5 sm:p-4 border-t-2 border-[#E5E7EB] bg-white flex items-end gap-2.5">
+                                <div className="flex-1">
+                                    <textarea
+                                        rows={2}
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSendMessage();
+                                            }
+                                        }}
+                                        placeholder={
+                                            chatMode === 'direct'
+                                                ? `Ask a question to ${course.instructor?.name || 'your lecturer'} (Press Enter to send)...`
+                                                : 'Write a message to the class (Press Enter to send)...'
+                                        }
+                                        className="w-full p-2.5 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md text-xs text-[#111827] focus:bg-white focus:border-[#111827] focus:outline-none resize-none"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={!newMessage.trim() || isSending}
+                                    className="px-4 py-2.5 bg-[#111827] text-white text-xs font-extrabold rounded-md hover:bg-black transition-colors disabled:opacity-40 shrink-0 h-[46px] flex items-center gap-1.5"
+                                >
+                                    <span>{isSending ? 'Sending...' : 'Send Message'}</span>
+                                    <span>→</span>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 )}

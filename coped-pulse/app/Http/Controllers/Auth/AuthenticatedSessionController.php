@@ -36,7 +36,7 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
-        if ($user->isStaff()) {
+        if ($user->isStaffOrCoordinator()) {
             return redirect()->intended(route('dashboard'));
         }
 

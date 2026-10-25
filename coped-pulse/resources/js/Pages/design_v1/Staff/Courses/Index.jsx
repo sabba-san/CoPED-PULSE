@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import StaffLayout from '@/Layouts/design_v1/StaffLayout';
 import CourseRow from './Partials/CourseRow';
 
-export default function Index({ courses }) {
+export default function Index({
+    courses,
+    instructors = [],
+    isCoordinator = false,
+    selectedInstructorId = null,
+}) {
     const allCourses = courses.data || [];
     const liveCount = allCourses.filter((c) => c.status === 'published').length;
     const draftCount = allCourses.filter((c) => c.status !== 'published').length;
@@ -90,60 +95,99 @@ export default function Index({ courses }) {
             {/* Top Header */}
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight font-display">
-                        My Courses
-                    </h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight font-display">
+                            {isCoordinator ? 'All Subject Curricula' : 'My Courses'}
+                        </h1>
+                        {isCoordinator && (
+                            <span className="text-xs uppercase tracking-wider font-extrabold px-2.5 py-1 bg-amber-500 text-white rounded">
+                                Coordinator View
+                            </span>
+                        )}
+                    </div>
                     <p className="mt-1 text-sm sm:text-base text-gray-600">
-                        Manage your training curriculum
+                        {isCoordinator
+                            ? 'Global coordinator overview: monitor all institutional subjects and assign faculty instructors.'
+                            : 'Manage your training curriculum'}
                     </p>
                 </div>
                 <div>
                     <Link
                         href={route('staff.courses.create')}
-                        className="inline-flex items-center justify-center px-5 py-2.5 text-xs font-bold rounded-md text-white bg-[#10B981] hover:bg-emerald-600 transition-colors"
+                        className="inline-flex items-center justify-center w-full sm:w-auto min-h-[44px] px-5 py-2.5 text-xs font-bold rounded-md text-white bg-[#10B981] hover:bg-emerald-600 transition-colors"
                     >
                         <span>+ New Course</span>
                     </Link>
                 </div>
             </div>
 
-            {/* Control Bar: Filter Tabs + Search Input */}
+            {/* Control Bar: Filter Tabs + Instructor Filter + Search Input */}
             <div className="bg-white border-2 border-[#E5E7EB] rounded-t-lg p-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-0">
-                {/* Filter Tabs */}
-                <div className="flex items-center gap-1.5">
-                    <button
-                        type="button"
-                        onClick={() => setFilterTab('all')}
-                        className={`px-3 py-1.5 rounded text-xs font-bold transition-colors ${
-                            filterTab === 'all'
-                                ? 'bg-[#111827] text-white'
-                                : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
-                        }`}
-                    >
-                        All ({allCourses.length})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setFilterTab('live')}
-                        className={`px-3 py-1.5 rounded text-xs font-bold transition-colors ${
-                            filterTab === 'live'
-                                ? 'bg-[#111827] text-white'
-                                : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
-                        }`}
-                    >
-                        Live ({liveCount})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setFilterTab('draft')}
-                        className={`px-3 py-1.5 rounded text-xs font-bold transition-colors ${
-                            filterTab === 'draft'
-                                ? 'bg-[#111827] text-white'
-                                : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
-                        }`}
-                    >
-                        Drafts ({draftCount})
-                    </button>
+                {/* Filter Tabs & Instructor Filter */}
+                <div className="flex items-center flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                            type="button"
+                            onClick={() => setFilterTab('all')}
+                            className={`px-3 py-1.5 rounded text-xs font-bold transition-colors min-h-[38px] flex items-center ${
+                                filterTab === 'all'
+                                    ? 'bg-[#111827] text-white'
+                                    : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                            All ({allCourses.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFilterTab('live')}
+                            className={`px-3 py-1.5 rounded text-xs font-bold transition-colors min-h-[38px] flex items-center ${
+                                filterTab === 'live'
+                                    ? 'bg-[#111827] text-white'
+                                    : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                            Live ({liveCount})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFilterTab('draft')}
+                            className={`px-3 py-1.5 rounded text-xs font-bold transition-colors min-h-[38px] flex items-center ${
+                                filterTab === 'draft'
+                                    ? 'bg-[#111827] text-white'
+                                    : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                            Drafts ({draftCount})
+                        </button>
+                    </div>
+
+                    {isCoordinator && instructors.length > 0 && (
+                        <div className="flex items-center gap-1.5 pl-2 border-l-2 border-[#E5E7EB]">
+                            <label htmlFor="instructor-filter" className="text-xs font-bold text-gray-600 whitespace-nowrap">
+                                Lecturer:
+                            </label>
+                            <select
+                                id="instructor-filter"
+                                value={selectedInstructorId || ''}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    router.get(
+                                        route('staff.courses.index'),
+                                        val ? { instructor_id: val } : {},
+                                        { preserveState: true }
+                                    );
+                                }}
+                                className="text-xs font-bold bg-[#F3F4F6] border-2 border-[#E5E7EB] rounded px-2.5 py-1.5 min-h-[38px] text-[#111827] focus:outline-none focus:border-[#111827]"
+                            >
+                                <option value="">All Lecturers ({instructors.length})</option>
+                                {instructors.map((ins) => (
+                                    <option key={ins.id} value={ins.id}>
+                                        {ins.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                 </div>
 
                 {/* Search Box with Clear Button */}
@@ -153,7 +197,7 @@ export default function Index({ courses }) {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search courses by title..."
-                        className="w-full text-xs font-medium border-2 border-[#E5E7EB] rounded px-3 py-1.5 pr-8 text-[#111827] placeholder-gray-400 focus:outline-none focus:border-[#111827] transition-colors"
+                        className="w-full text-xs font-medium border-2 border-[#E5E7EB] rounded px-3 py-2 pr-8 min-h-[38px] text-[#111827] placeholder-gray-400 focus:outline-none focus:border-[#111827] transition-colors"
                     />
                     {searchQuery && (
                         <button
@@ -263,6 +307,8 @@ export default function Index({ courses }) {
                                         variant="table"
                                         activeMenuCourseId={activeMenuCourseId}
                                         setActiveMenuCourseId={setActiveMenuCourseId}
+                                        isCoordinator={isCoordinator}
+                                        instructors={instructors}
                                     />
                                 ))}
                             </tbody>

@@ -66,6 +66,9 @@ export default function Login() {
                                 Demo accounts
                             </p>
                             <p className="mt-2 text-sm">
+                                Coordinator: <span className="font-mono font-bold">coordinator@coped.org</span>
+                            </p>
+                            <p className="mt-1 text-sm">
                                 Instructor: <span className="font-mono font-bold">instruct@gmail.com</span>
                             </p>
                             <p className="mt-1 text-sm">

@@ -1,10 +1,11 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState, useMemo, useEffect } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 import { ArrowRightIcon, TrophyIcon, TargetIcon, CircleCheckIcon } from '@/Components/flat/icons';
 import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
 
 export default function Portal({ enrollments, stats }) {
+    const { unreadChatSummary } = usePage().props;
     const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'in-progress', 'not-started', 'completed'
     const [sortBy, setSortBy] = useState('recent'); // 'recent', 'title'
 
@@ -56,6 +57,13 @@ export default function Portal({ enrollments, stats }) {
 
         return result;
     }, [enrollments?.data, activeFilter, sortBy]);
+
+    const inProgressEnrollment = useMemo(() => {
+        const raw = enrollments?.data || [];
+        return raw
+            .filter((e) => !e.completed_at && Number(e.progress ?? 0) > 0)
+            .sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))[0] || null;
+    }, [enrollments?.data]);
 
     const completedEnrollments = useMemo(() => {
         return (enrollments?.data || []).filter((e) => Boolean(e.completed_at));
@@ -136,7 +144,7 @@ export default function Portal({ enrollments, stats }) {
                                         role="tab"
                                         aria-selected={active}
                                         onClick={() => setActiveFilter(filter.id)}
-                                        className={`px-3 py-1.5 text-xs font-bold rounded-md border-2 transition-colors ${
+                                        className={`px-3 py-1.5 text-xs font-bold rounded-md border-2 transition-colors min-h-[38px] flex items-center ${
                                             active
                                                 ? 'bg-[#111827] text-white border-[#111827]'
                                                 : 'bg-white text-[#111827] border-[#E5E7EB] hover:border-[#111827]'
@@ -153,7 +161,7 @@ export default function Portal({ enrollments, stats }) {
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
                             aria-label="Sort courses"
-                            className="px-3 py-1.5 text-xs font-bold rounded-md border-2 border-[#E5E7EB] bg-white text-[#111827] focus:outline-none focus:border-[#111827] cursor-pointer"
+                            className="px-3 py-1.5 text-xs font-bold rounded-md border-2 border-[#E5E7EB] bg-white text-[#111827] focus:outline-none focus:border-[#111827] cursor-pointer min-h-[38px]"
                         >
                             <option value="recent">Last enrolled</option>
                             <option value="title">Title (A-Z)</option>
@@ -165,6 +173,44 @@ export default function Portal({ enrollments, stats }) {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Left Column (Horizontal edX Course Cards) */}
                     <div className="lg:col-span-8 space-y-6">
+                        {/* Continue Where You Left Off Top Strip */}
+                        {inProgressEnrollment && inProgressEnrollment.course && (
+                            <div className="bg-[#111827] text-white rounded-lg p-5 border-2 border-[#111827] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4 min-w-0">
+                                    <CourseLogoBadge
+                                        category={inProgressEnrollment.course.category_logo}
+                                        size="badge"
+                                        className="shrink-0"
+                                    />
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded bg-[#10B981] text-white">
+                                                Continue Where You Left Off
+                                            </span>
+                                            <span className="text-xs text-gray-400 font-semibold truncate">
+                                                {progressPct(inProgressEnrollment)}% Completed
+                                            </span>
+                                        </div>
+                                        <h2 className="text-base sm:text-lg font-extrabold text-white truncate font-display">
+                                            {inProgressEnrollment.course.title}
+                                        </h2>
+                                        <div className="w-full max-w-xs bg-gray-700 h-2 rounded-full overflow-hidden mt-2">
+                                            <div
+                                                className="bg-[#10B981] h-full rounded-full transition-all duration-300"
+                                                style={{ width: `${progressPct(inProgressEnrollment)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <Link
+                                    href={route('learner.course.learn', inProgressEnrollment.course.id)}
+                                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#10B981] hover:bg-emerald-600 text-white font-extrabold text-xs rounded-md shrink-0 transition-transform active:scale-[0.98]"
+                                >
+                                    <span>▶ Resume Course →</span>
+                                </Link>
+                            </div>
+                        )}
+
                         {filteredEnrollments.length === 0 ? (
                             <div className="bg-white border-2 border-dashed border-[#E5E7EB] rounded-lg py-16 px-6 text-center">
                                 <TrophyIcon className="w-14 h-14 text-gray-300 mx-auto mb-4" />
@@ -192,11 +238,16 @@ export default function Portal({ enrollments, stats }) {
                                 const status = getStatusBadge(enrollment);
                                 const pct = progressPct(enrollment);
                                 const enrolledAt = formatDate(enrollment.created_at);
+                                const unreadCount = unreadChatSummary?.by_course?.[course?.id] || 0;
 
                                 return (
                                     <div
                                         key={enrollment.id}
-                                        className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden transition-transform duration-200 hover:scale-[1.005]"
+                                        onClick={(e) => {
+                                            if (e.target.closest('button, a, input, select')) return;
+                                            router.visit(route('learner.course.learn', course.id));
+                                        }}
+                                        className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden transition-all duration-200 hover:scale-[1.005] hover:border-black cursor-pointer"
                                     >
                                         {/* Main Row */}
                                         <div className="flex flex-col sm:flex-row items-stretch">
@@ -228,6 +279,17 @@ export default function Portal({ enrollments, stats }) {
                                                                 🎓 {course.cert_title}
                                                             </span>
                                                         )}
+                                                        {unreadCount > 0 && (
+                                                            <Link
+                                                                href={route('learner.course.learn', course.id) + '?tab=chat'}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white transition-colors text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1 shrink-0"
+                                                                title={`${unreadCount} unread message(s)`}
+                                                            >
+                                                                <span>💬</span>
+                                                                <span>{unreadCount} new</span>
+                                                            </Link>
+                                                        )}
                                                     </div>
                                                     <h2 className="font-display text-xl font-bold text-[#111827] truncate">
                                                         {course?.title}
@@ -246,7 +308,7 @@ export default function Portal({ enrollments, stats }) {
                                             <div className="p-6 flex flex-col items-stretch justify-center gap-2 shrink-0 border-t-2 sm:border-t-0 sm:border-l-2 border-[#E5E7EB] bg-[#F9FAFB]">
                                                 <Link
                                                     href={route('learner.course.learn', course.id)}
-                                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-5 rounded text-sm transition-transform active:scale-[0.98]"
+                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-5 rounded text-sm transition-transform active:scale-[0.98]"
                                                 >
                                                     <span>{getCTAText(enrollment)}</span>
                                                     <ArrowRightIcon className="w-4 h-4" />
@@ -254,7 +316,7 @@ export default function Portal({ enrollments, stats }) {
                                                 {enrollment.completed_at && (
                                                     <Link
                                                         href={route('learner.course.certificate', course.id)}
-                                                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-white border-2 border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white font-bold py-2.5 px-4 rounded text-xs transition-colors duration-200"
+                                                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-1.5 bg-white border-2 border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white font-bold py-2.5 px-4 rounded text-xs transition-colors duration-200"
                                                     >
                                                         <span>🎓 View Certificate PDF</span>
                                                     </Link>

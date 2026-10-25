@@ -15,88 +15,118 @@ class DatabaseSeeder extends Seeder
     {
         $defaultPassword = Hash::make('password');
 
+        // Subject Coordinator Account
+        $coordinator = User::firstOrCreate(
+            ['email' => 'coordinator@coped.org'],
+            [
+                'name' => 'Dr. Penyelaras Subjek',
+                'password' => $defaultPassword,
+                'role' => User::ROLE_COORDINATOR,
+                'phone' => '+60120000001',
+            ]
+        );
+        $coordinator->update(['phone' => $coordinator->phone ?? '+60120000001']);
+
         // Staff / Instructor Accounts
-        User::firstOrCreate(
+        $irdina = User::firstOrCreate(
             ['email' => 'instruct@gmail.com'],
             [
                 'name' => 'Irdina Athielia',
                 'password' => $defaultPassword,
                 'role' => User::ROLE_STAFF,
+                'phone' => '+60123456789',
             ]
         );
+        $irdina->update(['phone' => $irdina->phone ?? '+60123456789']);
 
-        User::firstOrCreate(
+        $staff = User::firstOrCreate(
             ['email' => 'instructor@coped.org'],
             [
                 'name' => 'Staff Instructor',
                 'password' => $defaultPassword,
                 'role' => User::ROLE_STAFF,
+                'phone' => '+60123456780',
             ]
         );
+        $staff->update(['phone' => $staff->phone ?? '+60123456780']);
 
-        User::firstOrCreate(
+        $rusdi = User::firstOrCreate(
             ['email' => 'rusdi@gmail.com'],
             [
                 'name' => 'Rusdi Ismail',
                 'password' => $defaultPassword,
                 'role' => User::ROLE_STAFF,
+                'phone' => '+60198765432',
             ]
         );
+        $rusdi->update(['phone' => $rusdi->phone ?? '+60198765432']);
 
         // Learner Accounts
-        User::firstOrCreate(
+        $learnerA = User::firstOrCreate(
             ['email' => 'learn@gmail.com'],
             [
                 'name' => 'Learner A',
                 'password' => $defaultPassword,
                 'role' => User::ROLE_LEARNER,
+                'phone' => '+60111234567',
             ]
         );
+        $learnerA->update(['phone' => $learnerA->phone ?? '+60111234567']);
 
-        User::firstOrCreate(
+        $abbas = User::firstOrCreate(
             ['email' => 'abbasabudzarr@gmail.com'],
             [
                 'name' => 'Abbas Abu Dzarr',
                 'password' => $defaultPassword,
                 'role' => User::ROLE_LEARNER,
+                'phone' => '+60112345678',
             ]
         );
+        $abbas->update(['phone' => $abbas->phone ?? '+60112345678']);
 
-        User::firstOrCreate(
+        $ameer = User::firstOrCreate(
             ['email' => 'ameer@gmail.com'],
             [
                 'name' => 'ameer zafran',
                 'password' => $defaultPassword,
                 'role' => User::ROLE_LEARNER,
+                'phone' => '+60113456789',
             ]
         );
+        $ameer->update(['phone' => $ameer->phone ?? '+60113456789']);
 
-        User::firstOrCreate(
+        $arman = User::firstOrCreate(
             ['email' => 'arman@gmail.com'],
             [
                 'name' => 'arman fansuri',
                 'password' => $defaultPassword,
                 'role' => User::ROLE_LEARNER,
+                'phone' => '+60114567890',
             ]
         );
+        $arman->update(['phone' => $arman->phone ?? '+60114567890']);
 
-        User::firstOrCreate(
+        $testLearner = User::firstOrCreate(
             ['email' => 'learner@coped.org'],
             [
                 'name' => 'Test Learner',
                 'password' => $defaultPassword,
                 'role' => User::ROLE_LEARNER,
+                'phone' => '+60115678901',
             ]
         );
+        $testLearner->update(['phone' => $testLearner->phone ?? '+60115678901']);
 
-        User::firstOrCreate(
+        $testUser = User::firstOrCreate(
             ['email' => 'test@example.com'],
             [
                 'name' => 'Test User',
                 'password' => $defaultPassword,
                 'role' => User::ROLE_LEARNER,
+                'phone' => '+60116789012',
             ]
         );
+        $testUser->update(['phone' => $testUser->phone ?? '+60116789012']);
 
         // Call course and enrollment seeders
         $this->call([

@@ -19,8 +19,12 @@ class RoleMiddleware
 
         $user = Auth::user();
 
-        if ($role === 'staff' && ! $user->isStaff()) {
+        if ($role === 'staff' && ! $user->isStaffOrCoordinator()) {
             abort(403, 'Staff access required.');
+        }
+
+        if ($role === 'coordinator' && ! $user->isCoordinator()) {
+            abort(403, 'Coordinator access required.');
         }
 
         if ($role === 'learner' && ! $user->isLearner()) {

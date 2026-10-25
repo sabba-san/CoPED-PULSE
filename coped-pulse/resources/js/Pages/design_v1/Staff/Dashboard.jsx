@@ -4,7 +4,14 @@ import StaffLayout from '@/Layouts/design_v1/StaffLayout';
 import StatCard, { ProgressBar } from './Partials/StatCard';
 import CourseRow from './Courses/Partials/CourseRow';
 
-export default function Dashboard({ stats = {}, courses = [], breakdown = [], recentActivity = [] }) {
+export default function Dashboard({
+    stats = {},
+    courses = [],
+    breakdown = [],
+    recentActivity = [],
+    instructors = [],
+    isCoordinator = false,
+}) {
     const s = {
         total_courses: stats.total_courses ?? 0,
         total_modules: stats.total_modules ?? 0,
@@ -112,11 +119,20 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
             {/* Header */}
             <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight font-display">
-                        Instructor Studio & Dashboard
-                    </h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight font-display">
+                            {isCoordinator ? 'Subject Coordinator Oversight' : 'Instructor Studio & Dashboard'}
+                        </h1>
+                        {isCoordinator && (
+                            <span className="text-xs uppercase tracking-wider font-extrabold px-2.5 py-1 bg-amber-500 text-white rounded">
+                                Coordinator
+                            </span>
+                        )}
+                    </div>
                     <p className="mt-2 text-base sm:text-lg text-gray-600">
-                        Active teaching workspace · Build your curriculum, preview courses, and track student submissions.
+                        {isCoordinator
+                            ? 'Global institutional curriculum oversight · Monitor subjects, track lecturer assignments, and audit learner completion.'
+                            : 'Active teaching workspace · Build your curriculum, preview courses, and track student submissions.'}
                     </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
@@ -232,6 +248,8 @@ export default function Dashboard({ stats = {}, courses = [], breakdown = [], re
                                     variant="dashboard"
                                     activeMenuCourseId={activeMenuCourseId}
                                     setActiveMenuCourseId={setActiveMenuCourseId}
+                                    isCoordinator={isCoordinator}
+                                    instructors={instructors}
                                 />
                             ))}
 

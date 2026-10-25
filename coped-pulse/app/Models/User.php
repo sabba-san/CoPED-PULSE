@@ -13,7 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role', 'daily_goal_items'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'role', 'daily_goal_items'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -22,6 +22,7 @@ class User extends Authenticatable
 
     const ROLE_STAFF = 'staff';
     const ROLE_LEARNER = 'learner';
+    const ROLE_COORDINATOR = 'coordinator';
 
     protected function casts(): array
     {
@@ -34,6 +35,16 @@ class User extends Authenticatable
     public function isStaff(): bool
     {
         return $this->role === self::ROLE_STAFF;
+    }
+
+    public function isCoordinator(): bool
+    {
+        return $this->role === self::ROLE_COORDINATOR;
+    }
+
+    public function isStaffOrCoordinator(): bool
+    {
+        return in_array($this->role, [self::ROLE_STAFF, self::ROLE_COORDINATOR], true);
     }
 
     public function isLearner(): bool
@@ -53,6 +64,11 @@ class User extends Authenticatable
     public function scopeStaff($query)
     {
         return $query->where('role', self::ROLE_STAFF);
+    }
+
+    public function scopeCoordinator($query)
+    {
+        return $query->where('role', self::ROLE_COORDINATOR);
     }
 
     public function scopeLearner($query)

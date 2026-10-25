@@ -9,17 +9,17 @@ class CoursePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isStaff();
+        return $user->isStaffOrCoordinator();
     }
 
     public function view(User $user, Course $course): bool
     {
-        if (! $user->isStaff()) {
+        if (! $user->isStaffOrCoordinator()) {
             return false;
         }
 
-        // Platform staff see everything.
-        if ($user->isPlatformStaff()) {
+        // Platform staff and coordinators see everything.
+        if ($user->isCoordinator() || $user->isPlatformStaff()) {
             return true;
         }
 
@@ -30,13 +30,17 @@ class CoursePolicy
 
     public function create(User $user): bool
     {
-        return $user->isStaff();
+        return $user->isStaffOrCoordinator();
     }
 
     public function update(User $user, Course $course): bool
     {
-        if (! $user->isStaff()) {
+        if (! $user->isStaffOrCoordinator()) {
             return false;
+        }
+
+        if ($user->isCoordinator()) {
+            return true;
         }
 
         return $course->instructor_id === $user->id
@@ -45,8 +49,12 @@ class CoursePolicy
 
     public function delete(User $user, Course $course): bool
     {
-        if (! $user->isStaff()) {
+        if (! $user->isStaffOrCoordinator()) {
             return false;
+        }
+
+        if ($user->isCoordinator()) {
+            return true;
         }
 
         return $course->instructor_id === $user->id

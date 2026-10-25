@@ -17,7 +17,7 @@ class RedirectIfAuthenticated
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
 
-                if ($user->isStaff()) {
+                if ($user->isStaffOrCoordinator()) {
                     return redirect()->intended(route('dashboard'));
                 }
 

@@ -2,17 +2,20 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\ProfileController;
 use App\Models\Course;
+use App\Models\CourseMessage;
 use App\Models\Enrollment;
 use App\Models\Module;
 use App\Models\ModuleCompletion;
 use App\Models\Note;
+use App\Http\Controllers\CourseChatController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
 Route::get('/', function () {
     if (auth()->check()) {
-        return auth()->user()->isStaff()
+        return auth()->user()->isStaffOrCoordinator()
             ? redirect()->route('dashboard')
             : redirect()->route('portal');
     }
@@ -29,6 +32,11 @@ Route::middleware('redirect.auth')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+    // User Profile & Account Management
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
     Route::get('/dashboard', \App\Http\Controllers\Staff\DashboardController::class)->middleware('role:staff')->name('dashboard');
 
@@ -112,6 +120,25 @@ Route::middleware('auth')->group(function () {
                 ? (auth()->user()->daily_goal_items ?? 3)
                 : 3;
 
+            $enrollmentDate = $enrollment?->created_at ?? $enrollment?->enrolled_at;
+            $chatMessages = Schema::hasTable('course_messages')
+                ? CourseMessage::where('course_id', $course->id)
+                    ->where(function ($q) use ($enrollmentDate) {
+                        $q->where(function ($sub) use ($enrollmentDate) {
+                            $sub->whereNull('recipient_id');
+                            if ($enrollmentDate) {
+                                $sub->where('created_at', '>=', $enrollmentDate);
+                            }
+                        })
+                        ->orWhere('sender_id', auth()->id())
+                        ->orWhere('recipient_id', auth()->id());
+                    })
+                    ->with(['sender:id,name,email,role,phone', 'recipient:id,name,email,role,phone'])
+                    ->orderBy('created_at', 'asc')
+                    ->limit(200)
+                    ->get()
+                : collect();
+
             return inertia('design_v1/Learner/Course/Learn', [
                 'course' => $course,
                 'enrollment' => $enrollment,
@@ -120,6 +147,7 @@ Route::middleware('auth')->group(function () {
                 'todayCount' => $todayCount,
                 'dailyGoal' => $dailyGoal,
                 'notes' => $notes,
+                'chatMessages' => $chatMessages,
                 'feedback' => Schema::hasTable('module_feedback')
                     ? \App\Models\ModuleFeedback::where('user_id', auth()->id())
                         ->where('course_id', $course->id)
@@ -231,11 +259,20 @@ Route::middleware('auth')->group(function () {
         Route::get('organization', [\App\Http\Controllers\Staff\OrganizationController::class, 'show'])->name('organization.show');
         Route::resource('courses', \App\Http\Controllers\Staff\CourseController::class);
         Route::post('courses/{course}/deploy', [\App\Http\Controllers\Staff\CourseController::class, 'deploy'])->name('courses.deploy');
+        Route::post('courses/{course}/assign-instructor', [\App\Http\Controllers\Staff\CourseController::class, 'assignInstructor'])->name('courses.assign-instructor');
         Route::resource('courses.modules', \App\Http\Controllers\Staff\ModuleController::class)
             ->only(['store', 'edit', 'update', 'destroy']);
         Route::resource('courses.modules.lessons', \App\Http\Controllers\Staff\LessonController::class)
             ->only(['store', 'update', 'destroy']);
         Route::resource('courses.assessments', \App\Http\Controllers\Staff\AssessmentController::class)
             ->only(['index', 'store', 'update', 'destroy']);
+        Route::post('courses/{course}/whatsapp-link', [CourseChatController::class, 'updateWhatsappLink'])->name('courses.whatsapp-link.update');
     });
+
+    // In-App Course Chat (Instructors, Staff, and Enrolled Learners)
+    Route::get('courses/{course}/chat/messages', [CourseChatController::class, 'index'])->name('courses.chat.messages.index');
+    Route::post('courses/{course}/chat/messages', [CourseChatController::class, 'store'])->name('courses.chat.messages.store');
+    Route::post('courses/{course}/chat/mark-read', [CourseChatController::class, 'markRead'])->name('courses.chat.mark-read');
+    Route::post('courses/{course}/chat/whatsapp-simulate', [CourseChatController::class, 'simulateWhatsapp'])->name('courses.chat.whatsapp-simulate');
+    Route::post('courses/{course}/whatsapp-link', [CourseChatController::class, 'updateWhatsappLink'])->name('courses.whatsapp-link.store');
 });

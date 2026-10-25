@@ -37,7 +37,7 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        if ($user->isStaff()) {
+        if ($user->isStaffOrCoordinator()) {
             return redirect()->route('dashboard');
         }
 
