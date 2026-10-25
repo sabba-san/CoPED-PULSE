@@ -172,6 +172,10 @@ class CourseChatController extends Controller
         $user = $request->user();
         $this->authorizeCourseAccess($user, $course);
 
+        if (! ($user->isStaffOrCoordinator() || $course->instructor_id === $user->id)) {
+            abort(403, 'WhatsApp simulation is reserved for faculty instructors and coordinators.');
+        }
+
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:5000'],
             'sender_id' => ['nullable', 'exists:users,id'],
@@ -182,14 +186,9 @@ class CourseChatController extends Controller
         $recipientId = $validated['recipient_id'] ?? null;
 
         if (! $senderId) {
-            if ($user->isLearner()) {
-                $senderId = $course->instructor_id ?? User::where('role', User::ROLE_STAFF)->first()?->id ?? $user->id;
-                $recipientId = $recipientId ?? $user->id;
-            } else {
-                $learnerEnrollment = Enrollment::where('course_id', $course->id)->first();
-                $senderId = $learnerEnrollment?->user_id ?? User::where('role', User::ROLE_LEARNER)->first()?->id ?? $user->id;
-                $recipientId = $recipientId ?? $user->id;
-            }
+            $learnerEnrollment = Enrollment::where('course_id', $course->id)->first();
+            $senderId = $learnerEnrollment?->user_id ?? User::where('role', User::ROLE_LEARNER)->first()?->id ?? $user->id;
+            $recipientId = $recipientId ?? $user->id;
         }
 
         $message = $whatsappService->simulateIncomingReply(

@@ -77,7 +77,6 @@ export default function Learn({
     const [chatMode, setChatMode] = useState('direct'); // 'direct' | 'group'
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const [isSimulatingWhatsapp, setIsSimulatingWhatsapp] = useState(false);
     const messagesEndRef = useRef(null);
 
     // Read ?tab=... from URL query on load
@@ -133,37 +132,6 @@ export default function Learn({
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages, chatMode, activeTab]);
-
-    const handleSimulateWhatsappReply = async () => {
-        setIsSimulatingWhatsapp(true);
-        const replyText = chatMode === 'direct'
-            ? 'Hello! This is an automatic WhatsApp Cloud API reply from your instructor.'
-            : 'Hello class! Instructor announcement synced from WhatsApp.';
-
-        try {
-            const res = await fetch(route('courses.chat.whatsapp-simulate', course.id), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    body: replyText,
-                    sender_id: course.instructor_id || course.instructor?.id || null,
-                    recipient_id: chatMode === 'direct' ? currentUser?.id : null,
-                }),
-            });
-            if (res.ok) {
-                const newMsg = await res.json();
-                setMessages((prev) => [...prev, newMsg]);
-            }
-        } catch (err) {
-            // ignore
-        } finally {
-            setIsSimulatingWhatsapp(false);
-        }
-    };
 
     const handleSendMessage = (e) => {
         e?.preventDefault();
@@ -1190,34 +1158,22 @@ export default function Learn({
                 {/* Tab 5: Chat with Instructor & Course Group */}
                 {activeTab === 'chat' && (
                     <div className="max-w-4xl space-y-6">
-                        {/* In-Web WhatsApp Cloud API Status Bar & Simulation Trigger */}
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex items-center gap-2.5">
-                                <span className="w-8 h-8 rounded bg-[#25D366] text-white flex items-center justify-center font-bold text-base shrink-0">
-                                    💬
-                                </span>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-black uppercase text-[#111827]">Meta WhatsApp Cloud API</span>
-                                        <span className="bg-[#DCFCE7] text-[#166534] border border-[#86EFAC] text-[10px] font-black px-1.5 py-0.2 rounded">
-                                            Sync Active
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] text-gray-500">
-                                        Messages are bridged directly with faculty WhatsApp channels.
-                                    </p>
-                                </div>
+                        {/* Course Discussion Header */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-sm font-black uppercase tracking-wider text-[#111827]">
+                                    Course Discussions &amp; Inquiries
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Ask questions directly to your instructor or collaborate with classmates in the course group chat.
+                                </p>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => handleSimulateWhatsappReply()}
-                                disabled={isSimulatingWhatsapp}
-                                className="px-3.5 py-1.5 text-xs font-black bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded border border-[#16A34A] transition-colors flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
-                                title="Simulate instructor sending a reply via WhatsApp Cloud API"
-                            >
-                                <span>⚡</span>
-                                <span>{isSimulatingWhatsapp ? 'Simulating...' : 'Simulate WhatsApp Reply'}</span>
-                            </button>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] text-xs font-bold">
+                                    <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse"></span>
+                                    Active Discussion
+                                </span>
+                            </div>
                         </div>
 
                         {/* Mode Selector: Direct Q&A vs Group Chat */}
@@ -1303,7 +1259,6 @@ export default function Learn({
                                     activeChatMessages.map((msg) => {
                                         const isMine = msg.sender_id === currentUser?.id;
                                         const isStaff = msg.sender?.role === 'staff' || msg.sender?.role === 'coordinator';
-                                        const isWhatsapp = msg.body?.startsWith('[WhatsApp]');
 
                                         return (
                                             <div
@@ -1317,11 +1272,6 @@ export default function Learn({
                                                     {isStaff && (
                                                         <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-100 text-purple-800 border border-purple-300">
                                                             Lecturer
-                                                        </span>
-                                                    )}
-                                                    {isWhatsapp && (
-                                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-[#DCFCE7] text-[#166534] border border-[#86EFAC] flex items-center gap-0.5">
-                                                            ✓✓ WhatsApp API
                                                         </span>
                                                     )}
                                                     <span className="text-[10px] text-gray-400">

@@ -197,9 +197,11 @@ export default function Edit({ user, stats = {} }) {
                                         <label htmlFor="phone" className="block text-xs font-bold text-[#111827]">
                                             Phone Number (Optional)
                                         </label>
-                                        <span className="text-[10px] text-gray-500 font-semibold">
-                                            WhatsApp Sync Enabled
-                                        </span>
+                                        {user?.role !== 'learner' && (
+                                            <span className="text-[10px] text-gray-500 font-semibold">
+                                                WhatsApp Sync Enabled
+                                            </span>
+                                        )}
                                     </div>
                                     <input
                                         id="phone"
@@ -210,7 +212,9 @@ export default function Edit({ user, stats = {} }) {
                                         placeholder="+60 12-345 6789"
                                     />
                                     <p className="mt-1 text-[11px] text-gray-500">
-                                        Used for official course cohort announcements and direct faculty WhatsApp sync.
+                                        {user?.role === 'learner'
+                                            ? 'Optional contact phone number for official CoPED program verification and certificate records.'
+                                            : 'Used for official course cohort announcements and direct faculty WhatsApp sync.'}
                                     </p>
                                     {profileErrors.phone && (
                                         <p className="mt-1 text-xs font-bold text-red-600">{profileErrors.phone}</p>

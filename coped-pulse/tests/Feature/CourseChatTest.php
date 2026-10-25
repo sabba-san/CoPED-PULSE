@@ -299,4 +299,27 @@ class CourseChatTest extends TestCase
             ->assertJsonPath('body', '[WhatsApp] Yes, let us schedule a consultation tomorrow.')
             ->assertJsonPath('sender.id', $learner->id);
     }
+
+    public function test_learner_cannot_simulate_whatsapp_reply(): void
+    {
+        $org = Organization::factory()->create();
+        $instructor = $this->staff(['organization_id' => $org->id]);
+        $course = Course::factory()->published()->forInstructor($instructor)->create([
+            'organization_id' => $org->id,
+        ]);
+        $learner = $this->learner();
+        Enrollment::create([
+            'user_id' => $learner->id,
+            'course_id' => $course->id,
+            'progress' => 0,
+            'enrolled_at' => now(),
+            'created_at' => now(),
+        ]);
+
+        $response = $this->actingAs($learner)->postJson(route('courses.chat.whatsapp-simulate', $course->id), [
+            'body' => 'Learner trying to simulate a WhatsApp reply.',
+        ]);
+
+        $response->assertForbidden();
+    }
 }

@@ -102,7 +102,7 @@ export default function ChatNotificationBell({ isStaff = false }) {
                                         <span className="font-extrabold text-[#111827] truncate max-w-[180px]">
                                             {item.course_title}
                                         </span>
-                                        {item.is_whatsapp && (
+                                        {isStaff && item.is_whatsapp && (
                                             <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-1.5 py-0.5 rounded border border-emerald-300">
                                                 WhatsApp
                                             </span>
