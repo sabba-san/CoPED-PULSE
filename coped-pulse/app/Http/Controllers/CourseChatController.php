@@ -177,7 +177,7 @@ class CourseChatController extends Controller
         }
 
         $validated = $request->validate([
-            'body' => ['required', 'string', 'max:5000'],
+            'body' => ['nullable', 'string', 'max:5000'],
             'sender_id' => ['nullable', 'exists:users,id'],
             'recipient_id' => ['nullable', 'exists:users,id'],
         ]);

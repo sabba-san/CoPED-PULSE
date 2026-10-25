@@ -77,7 +77,10 @@ export default function Learn({
     const [chatMode, setChatMode] = useState('direct'); // 'direct' | 'group'
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const messagesEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
+    const prevLastMessageIdRef = useRef(null);
+    const prevChatModeRef = useRef(null);
+    const prevTabRef = useRef(null);
 
     // Read ?tab=... from URL query on load
     useEffect(() => {
@@ -117,7 +120,16 @@ export default function Learn({
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    setMessages(data);
+                    setMessages((prev) => {
+                        if (
+                            Array.isArray(data) &&
+                            prev.length === data.length &&
+                            prev[prev.length - 1]?.id === data[data.length - 1]?.id
+                        ) {
+                            return prev;
+                        }
+                        return data;
+                    });
                 }
             } catch (err) {
                 // silent
@@ -128,10 +140,27 @@ export default function Learn({
     }, [activeTab, course.id]);
 
     useEffect(() => {
-        if (activeTab === 'chat') {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (activeTab !== 'chat') {
+            prevTabRef.current = activeTab;
+            return;
         }
-    }, [messages, chatMode, activeTab]);
+
+        const isTabJustSwitched = prevTabRef.current !== 'chat';
+        const isChatModeSwitched = prevChatModeRef.current !== chatMode;
+        prevTabRef.current = activeTab;
+        prevChatModeRef.current = chatMode;
+
+        const lastMsg = activeChatMessages[activeChatMessages.length - 1];
+        const lastMsgId = lastMsg?.id;
+        const hasNewMessage = lastMsgId && lastMsgId !== prevLastMessageIdRef.current;
+        prevLastMessageIdRef.current = lastMsgId;
+
+        if (isTabJustSwitched || isChatModeSwitched || hasNewMessage) {
+            if (chatContainerRef.current) {
+                chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+            }
+        }
+    }, [activeTab, chatMode, activeChatMessages]);
 
     const handleSendMessage = (e) => {
         e?.preventDefault();
@@ -438,18 +467,9 @@ export default function Learn({
                     })}
                 </div>
 
-                {/* Tab 1: Course (Default Onboarding Banner + 3-Zone Theater Player) */}
+                {/* Tab 1: Course (3-Zone Theater Player + Curriculum) */}
                 {activeTab === 'course' && (
                     <div className="space-y-6">
-
-                        {/* Warm flat amber notice box */}
-                        <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] p-4 rounded-md text-sm text-[#111827] font-medium flex items-start gap-3">
-                            <span className="text-[#F59E0B] text-lg font-black leading-none">ⓘ</span>
-                            <p>
-                                Welcome to this self-paced course! You can learn at your own pace, complete modules, and pass the final assessment when you are ready.
-                            </p>
-                        </div>
-
                         {/* Theater Grid (Video-First on Mobile: order-1 for Stage, order-2 for Curriculum) */}
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                             {/* Left Curriculum Outline (order-2 lg:order-1 lg:col-span-4) */}
@@ -1242,7 +1262,7 @@ export default function Learn({
                             </div>
 
                             {/* Scrollable Message History */}
-                            <div className="p-4 sm:p-5 overflow-y-auto space-y-3 bg-[#F9FAFB] min-h-[380px] max-h-[460px]">
+                            <div ref={chatContainerRef} className="p-4 sm:p-5 overflow-y-auto space-y-3 bg-[#F9FAFB] min-h-[380px] max-h-[460px]">
                                 {activeChatMessages.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-2">
                                         <span className="text-3xl">💬</span>
@@ -1259,6 +1279,7 @@ export default function Learn({
                                     activeChatMessages.map((msg) => {
                                         const isMine = msg.sender_id === currentUser?.id;
                                         const isStaff = msg.sender?.role === 'staff' || msg.sender?.role === 'coordinator';
+                                        const cleanBody = msg.body?.replace('[WhatsApp] ', '')?.replace('automatic WhatsApp Cloud API reply', 'reply')?.replace('WhatsApp Cloud API ', '') || '';
 
                                         return (
                                             <div
@@ -1285,13 +1306,12 @@ export default function Learn({
                                                             : 'bg-white text-[#111827] border-[#E5E7EB]'
                                                     }`}
                                                 >
-                                                    <p className="whitespace-pre-wrap break-words">{msg.body.replace('[WhatsApp] ', '')}</p>
+                                                    <p className="whitespace-pre-wrap break-words">{cleanBody}</p>
                                                 </div>
                                             </div>
                                         );
                                     })
                                 )}
-                                <div ref={messagesEndRef} />
                             </div>
 
                             {/* Composer */}

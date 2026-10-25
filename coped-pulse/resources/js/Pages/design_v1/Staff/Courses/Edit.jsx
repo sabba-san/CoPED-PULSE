@@ -59,7 +59,10 @@ export default function Edit({
     const [isSavingWhatsapp, setIsSavingWhatsapp] = useState(false);
     const [whatsappSaved, setWhatsappSaved] = useState(false);
     const [isSimulatingWhatsapp, setIsSimulatingWhatsapp] = useState(false);
-    const messagesEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
+    const prevLastMessageIdRef = useRef(null);
+    const prevThreadKeyRef = useRef(null);
+    const prevCourseTabRef = useRef(null);
 
     // Mobile Responsive Viewport States
     const [mobileIndexOpen, setMobileIndexOpen] = useState(false);
@@ -103,7 +106,16 @@ export default function Edit({
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    setMessages(data);
+                    setMessages((prev) => {
+                        if (
+                            Array.isArray(data) &&
+                            prev.length === data.length &&
+                            prev[prev.length - 1]?.id === data[data.length - 1]?.id
+                        ) {
+                            return prev;
+                        }
+                        return data;
+                    });
                 }
             } catch (err) {
                 // ignore
@@ -114,10 +126,27 @@ export default function Edit({
     }, [courseTab, course.id]);
 
     useEffect(() => {
-        if (courseTab === 'chat') {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (courseTab !== 'chat') {
+            prevCourseTabRef.current = courseTab;
+            return;
         }
-    }, [messages, selectedStudentId, courseTab]);
+
+        const isTabJustSwitched = prevCourseTabRef.current !== 'chat';
+        const isThreadSwitched = prevThreadKeyRef.current !== selectedStudentId;
+        prevCourseTabRef.current = courseTab;
+        prevThreadKeyRef.current = selectedStudentId;
+
+        const lastMsg = activeThreadMessages[activeThreadMessages.length - 1];
+        const lastMsgId = lastMsg?.id;
+        const hasNewMessage = lastMsgId && lastMsgId !== prevLastMessageIdRef.current;
+        prevLastMessageIdRef.current = lastMsgId;
+
+        if (isTabJustSwitched || isThreadSwitched || hasNewMessage) {
+            if (chatContainerRef.current) {
+                chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+            }
+        }
+    }, [courseTab, selectedStudentId, activeThreadMessages]);
 
     const handleSaveWhatsappUrl = (e) => {
         e.preventDefault();
@@ -140,8 +169,8 @@ export default function Edit({
     const handleSimulateWhatsappReply = async (customText = null) => {
         setIsSimulatingWhatsapp(true);
         const replyText = customText || (selectedStudentId
-            ? `Hello instructor! I saw your note on WhatsApp. Thank you for the guidance.`
-            : `Hello class and instructor! Replying via WhatsApp Cloud API sync.`);
+            ? 'Hello instructor! I saw your note. Thank you for the guidance.'
+            : 'Waalaikumsalam! Thank you for reaching out. Let me know which module topic you would like to review.');
 
         try {
             const res = await fetch(route('courses.chat.whatsapp-simulate', course.id), {
@@ -1784,7 +1813,7 @@ export default function Edit({
                                     </div>
 
                                     {/* Message History Feed */}
-                                    <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-3 bg-[#F9FAFB] min-h-[380px] max-h-[440px]">
+                                    <div ref={chatContainerRef} className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-3 bg-[#F9FAFB] min-h-[380px] max-h-[440px]">
                                         {activeThreadMessages.length === 0 ? (
                                             <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-2">
                                                 <span className="text-3xl">💬</span>
@@ -1839,7 +1868,6 @@ export default function Edit({
                                                 );
                                             })
                                         )}
-                                        <div ref={messagesEndRef} />
                                     </div>
 
                                     {/* Composer */}

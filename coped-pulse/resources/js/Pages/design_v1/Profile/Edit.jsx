@@ -432,7 +432,9 @@ export default function Edit({ user, stats = {} }) {
                                 <span>Security Advisory</span>
                             </div>
                             <p className="leading-relaxed">
-                                CoPED PULSE instructors and system coordinators will never request your password via email or WhatsApp. Always keep your credentials safe.
+                                {user?.role === 'learner'
+                                    ? 'CoPED PULSE instructors and system coordinators will never request your password via email or direct message. Always keep your credentials safe.'
+                                    : 'CoPED PULSE instructors and system coordinators will never request your password via email or WhatsApp. Always keep your credentials safe.'}
                             </p>
                         </div>
                     </div>

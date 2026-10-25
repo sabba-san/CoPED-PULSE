@@ -66,9 +66,13 @@ class WhatsAppApiService
     /**
      * Simulate an incoming WhatsApp reply from a user into a course chat.
      */
-    public function simulateIncomingReply(int $courseId, int $senderUserId, string $text, ?int $recipientId = null): CourseMessage
+    public function simulateIncomingReply(int $courseId, int $senderUserId, ?string $text = null, ?int $recipientId = null): CourseMessage
     {
-        $body = str_starts_with($text, '[WhatsApp] ') ? $text : '[WhatsApp] ' . $text;
+        $content = trim($text ?? '') !== ''
+            ? $text
+            : 'Waalaikumsalam! Thank you for reaching out. Let me know which module topic you would like to review.';
+
+        $body = str_starts_with($content, '[WhatsApp] ') ? $content : '[WhatsApp] ' . $content;
 
         return CourseMessage::create([
             'course_id' => $courseId,
