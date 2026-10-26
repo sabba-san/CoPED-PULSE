@@ -2,7 +2,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState, useMemo, useEffect } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 import { ArrowRightIcon, TrophyIcon, TargetIcon, CircleCheckIcon } from '@/Components/flat/icons';
-import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
+import CourseLogoBadge, { LOGO_CONFIG } from '@/Components/flat/CourseLogoBadge';
 
 export default function Portal({ enrollments, stats }) {
     const { unreadChatSummary } = usePage().props;
@@ -239,6 +239,8 @@ export default function Portal({ enrollments, stats }) {
                                 const pct = progressPct(enrollment);
                                 const enrolledAt = formatDate(enrollment.created_at);
                                 const unreadCount = unreadChatSummary?.by_course?.[course?.id] || 0;
+                                const themeConfig = LOGO_CONFIG[course?.category_logo] || LOGO_CONFIG.charcoal || LOGO_CONFIG.general;
+                                const EmblemIcon = themeConfig?.icon;
 
                                 return (
                                     <div
@@ -249,104 +251,188 @@ export default function Portal({ enrollments, stats }) {
                                         }}
                                         className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden transition-all duration-200 hover:scale-[1.005] hover:border-black cursor-pointer"
                                     >
-                                        {/* Main Row */}
-                                        <div className="flex flex-col sm:flex-row items-stretch">
-                                            {/* Left Flat Graphic Block: CourseLogoBadge */}
-                                            <CourseLogoBadge
-                                                category={course?.category_logo}
-                                                size="tile"
-                                                subtitle={`${pct}% Completed`}
-                                                className="!w-full sm:!w-44 shrink-0"
-                                            />
+                                        {/* Mobile View (< sm): Ultra-compact horizontal header + bottom progress row */}
+                                        <div className="block sm:hidden p-3.5 space-y-2.5">
+                                            <div className="flex items-start gap-3">
+                                                {/* 56x56px Compact Emblem Badge */}
+                                                <div className={`w-14 h-14 shrink-0 rounded-md ${themeConfig.bg} ${themeConfig.text} flex flex-col items-center justify-center border border-black/10`}>
+                                                    {EmblemIcon ? <EmblemIcon className="w-6 h-6" /> : <span className="text-sm font-black">🎓</span>}
+                                                    <span className="text-[8px] font-black uppercase tracking-wider opacity-85 leading-none mt-0.5">UUM</span>
+                                                </div>
 
-                                            {/* Center Course Details */}
-                                            <div className="flex-1 p-6 flex flex-col justify-between min-w-0 space-y-3">
-                                                <div>
-                                                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                                            UUM CoPED · Enrolled {enrolledAt}
-                                                        </span>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
                                                         <span
-                                                            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border ${status.border} ${status.bg} ${status.text}`}
+                                                            className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-black border ${status.border} ${status.bg} ${status.text}`}
                                                         >
                                                             {status.label}
                                                         </span>
-                                                        <span className="inline-flex items-center gap-1 bg-[#F3F4F6] border border-[#E5E7EB] text-[10px] font-bold text-gray-700 px-2 py-0.5 rounded">
-                                                            📅 {course?.academic_year || '2026 / 2027'}
+                                                        <span className="text-[10px] font-bold text-gray-500">
+                                                            {course?.academic_year || '2026/2027'}
                                                         </span>
-                                                        {course?.cert_title && (
-                                                            <span className="inline-flex items-center gap-1 bg-[#FFFBEB] border border-[#FDE68A] text-[10px] font-bold text-[#92400E] px-2 py-0.5 rounded">
-                                                                🎓 {course.cert_title}
-                                                            </span>
-                                                        )}
                                                         {unreadCount > 0 && (
                                                             <Link
                                                                 href={route('learner.course.learn', course.id) + '?tab=chat'}
                                                                 onClick={(e) => e.stopPropagation()}
-                                                                className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white transition-colors text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1 shrink-0"
-                                                                title={`${unreadCount} unread message(s)`}
+                                                                className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] text-[9px] font-black px-1.5 py-0.2 rounded flex items-center gap-1 shrink-0"
                                                             >
                                                                 <span>💬</span>
                                                                 <span>{unreadCount} new</span>
                                                             </Link>
                                                         )}
                                                     </div>
-                                                    <h2 className="font-display text-xl font-bold text-[#111827] truncate">
+                                                    <h2 className="font-display text-sm font-black text-[#111827] line-clamp-2 leading-snug">
                                                         {course?.title}
                                                     </h2>
-                                                    <p className="text-sm text-gray-600 mt-0.5">
+                                                    <p className="text-[11px] text-gray-500 truncate mt-0.5">
                                                         {course?.instructor?.name || 'Faculty Instructor'}
                                                     </p>
                                                 </div>
-
-                                                <div className="text-xs text-gray-500">
-                                                    Self-paced learning · 100% required to pass Final Assessment
-                                                </div>
                                             </div>
 
-                                            {/* Right Primary CTA Button */}
-                                            <div className="p-6 flex flex-col items-stretch justify-center gap-2 shrink-0 border-t-2 sm:border-t-0 sm:border-l-2 border-[#E5E7EB] bg-[#F9FAFB]">
-                                                <Link
-                                                    href={route('learner.course.learn', course.id)}
-                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-5 rounded text-sm transition-transform active:scale-[0.98]"
-                                                >
-                                                    <span>{getCTAText(enrollment)}</span>
-                                                    <ArrowRightIcon className="w-4 h-4" />
-                                                </Link>
-                                                {enrollment.completed_at && (
-                                                    <Link
-                                                        href={route('learner.course.certificate', course.id)}
-                                                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-1.5 bg-white border-2 border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white font-bold py-2.5 px-4 rounded text-xs transition-colors duration-200"
+                                            {/* Compact Bottom Action & Progress Row */}
+                                            <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <div
+                                                        className="w-20 bg-[#F3F4F6] border border-[#E5E7EB] h-2 rounded-full overflow-hidden shrink-0"
+                                                        role="progressbar"
+                                                        aria-valuenow={pct}
+                                                        aria-valuemin={0}
+                                                        aria-valuemax={100}
+                                                        aria-label={`Progress for ${course?.title}`}
                                                     >
-                                                        <span>🎓 View Certificate PDF</span>
+                                                        <div
+                                                            className="h-full bg-[#10B981] rounded-full transition-all"
+                                                            style={{ width: `${pct}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xs font-black text-[#111827] shrink-0">{pct}%</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <Link
+                                                        href={route('learner.course.learn', course.id)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs py-1.5 px-3 rounded inline-flex items-center gap-1 active:scale-95"
+                                                    >
+                                                        <span>{getCTAText(enrollment)}</span>
+                                                        <ArrowRightIcon className="w-3 h-3" />
                                                     </Link>
-                                                )}
+                                                    {enrollment.completed_at && (
+                                                        <Link
+                                                            href={route('learner.course.certificate', course.id)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="border border-[#10B981] text-[#065F46] hover:bg-emerald-50 font-bold text-xs py-1.5 px-2 rounded"
+                                                            title="Certificate PDF"
+                                                        >
+                                                            🎓
+                                                        </Link>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Bottom Passing-Grade Strip */}
-                                        <div className="bg-[#F3F4F6] border-t-2 border-[#E5E7EB] px-5 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs font-semibold text-[#111827]">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-gray-500">ⓘ</span>
-                                                <span>Grade required to pass Final Assessment: 100%</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div
-                                                    className="w-28 sm:w-40 bg-white border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden"
-                                                    role="progressbar"
-                                                    aria-valuenow={pct}
-                                                    aria-valuemin={0}
-                                                    aria-valuemax={100}
-                                                    aria-label={`Progress for ${course?.title}`}
-                                                >
-                                                    <div
-                                                        className="h-full bg-[#10B981] rounded-full transition-all"
-                                                        style={{ width: `${pct}%` }}
-                                                    />
+                                        {/* Desktop View (sm:): Full Poster Row & Passing Grade Strip */}
+                                        <div className="hidden sm:block">
+                                            <div className="flex flex-row items-stretch">
+                                                {/* Left Flat Graphic Block: CourseLogoBadge */}
+                                                <CourseLogoBadge
+                                                    category={course?.category_logo}
+                                                    size="tile"
+                                                    subtitle={`${pct}% Completed`}
+                                                    className="!w-44 shrink-0"
+                                                />
+
+                                                {/* Center Course Details */}
+                                                <div className="flex-1 p-6 flex flex-col justify-between min-w-0 space-y-3">
+                                                    <div>
+                                                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                                UUM CoPED · Enrolled {enrolledAt}
+                                                            </span>
+                                                            <span
+                                                                className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold border ${status.border} ${status.bg} ${status.text}`}
+                                                            >
+                                                                {status.label}
+                                                            </span>
+                                                            <span className="inline-flex items-center gap-1 bg-[#F3F4F6] border border-[#E5E7EB] text-[10px] font-bold text-gray-700 px-2 py-0.5 rounded">
+                                                                📅 {course?.academic_year || '2026 / 2027'}
+                                                            </span>
+                                                            {course?.cert_title && (
+                                                                <span className="inline-flex items-center gap-1 bg-[#FFFBEB] border border-[#FDE68A] text-[10px] font-bold text-[#92400E] px-2 py-0.5 rounded">
+                                                                    🎓 {course.cert_title}
+                                                                </span>
+                                                            )}
+                                                            {unreadCount > 0 && (
+                                                                <Link
+                                                                    href={route('learner.course.learn', course.id) + '?tab=chat'}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white transition-colors text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1 shrink-0"
+                                                                    title={`${unreadCount} unread message(s)`}
+                                                                >
+                                                                    <span>💬</span>
+                                                                    <span>{unreadCount} new</span>
+                                                                </Link>
+                                                            )}
+                                                        </div>
+                                                        <h2 className="font-display text-xl font-bold text-[#111827] truncate">
+                                                            {course?.title}
+                                                        </h2>
+                                                        <p className="text-sm text-gray-600 mt-0.5">
+                                                            {course?.instructor?.name || 'Faculty Instructor'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="text-xs text-gray-500">
+                                                        Self-paced learning · 100% required to pass Final Assessment
+                                                    </div>
                                                 </div>
-                                                <span className="font-bold text-[#111827] min-w-[3ch] text-right">
-                                                    {pct}%
-                                                </span>
+
+                                                {/* Right Primary CTA Button */}
+                                                <div className="p-6 flex flex-col items-stretch justify-center gap-2 shrink-0 border-l-2 border-[#E5E7EB] bg-[#F9FAFB]">
+                                                    <Link
+                                                        href={route('learner.course.learn', course.id)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-5 rounded text-sm transition-transform active:scale-[0.98]"
+                                                    >
+                                                        <span>{getCTAText(enrollment)}</span>
+                                                        <ArrowRightIcon className="w-4 h-4" />
+                                                    </Link>
+                                                    {enrollment.completed_at && (
+                                                        <Link
+                                                            href={route('learner.course.certificate', course.id)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="w-auto min-h-[44px] inline-flex items-center justify-center gap-1.5 bg-white border-2 border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white font-bold py-2.5 px-4 rounded text-xs transition-colors duration-200"
+                                                        >
+                                                            <span>🎓 View Certificate PDF</span>
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Bottom Passing-Grade Strip */}
+                                            <div className="bg-[#F3F4F6] border-t-2 border-[#E5E7EB] px-5 py-2.5 flex items-center justify-between gap-2 text-xs font-semibold text-[#111827]">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-gray-500">ⓘ</span>
+                                                    <span>Grade required to pass Final Assessment: 100%</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div
+                                                        className="w-40 bg-white border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden"
+                                                        role="progressbar"
+                                                        aria-valuenow={pct}
+                                                        aria-valuemin={0}
+                                                        aria-valuemax={100}
+                                                        aria-label={`Progress for ${course?.title}`}
+                                                    >
+                                                        <div
+                                                            className="h-full bg-[#10B981] rounded-full transition-all"
+                                                            style={{ width: `${pct}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="font-bold text-[#111827] min-w-[3ch] text-right">
+                                                        {pct}%
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

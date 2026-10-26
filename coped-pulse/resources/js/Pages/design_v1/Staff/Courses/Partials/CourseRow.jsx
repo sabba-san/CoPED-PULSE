@@ -488,72 +488,79 @@ export default function CourseRow({
             >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     {/* Left: Course Identity */}
-                    <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <Link
-                                href={route('staff.courses.edit', course.id)}
-                                className="font-display font-bold text-base text-[#111827] hover:text-[#3B82F6] transition-colors truncate max-w-[220px] sm:max-w-[320px]"
-                                title={course.title}
-                            >
-                                {course.title}
-                            </Link>
-                            {unreadCount > 0 && (
-                                <Link
-                                    href={route('staff.courses.edit', course.id) + '?tab=chat'}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white transition-colors text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1 shrink-0"
-                                    title={`${unreadCount} unread message(s)`}
-                                >
-                                    <span>💬</span>
-                                    <span>{unreadCount} new</span>
-                                </Link>
-                            )}
-                            {isPublished ? (
-                                <span className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0">
-                                    Published
-                                </span>
-                            ) : (
-                                <span className="bg-[#FEF3C7] border border-[#F59E0B] text-[#92400E] text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0">
-                                    Draft
-                                </span>
-                            )}
+                    <div className="min-w-0 flex-1 flex items-start gap-3">
+                        {/* Compact 44x44px Theme Emblem on Mobile */}
+                        <div className={`sm:hidden w-11 h-11 shrink-0 rounded border-2 border-[#111827] flex items-center justify-center font-black text-xs ${config.bg} ${config.text}`}>
+                            {(config.title || 'CP').split(' ').map((w) => w[0]).slice(0, 2).join('')}
                         </div>
 
-                        <div className="text-xs text-gray-500 mt-1 flex items-center flex-wrap gap-1.5">
-                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${config.badgeBg} ${config.badgeText} ${config.badgeBorder}`}>
-                                {config.label}
-                            </span>
-                            <span>·</span>
-                            <span>{course.academic_year || '2026/2027'}</span>
-                            <span>·</span>
-                            <span>{priceFormatted}</span>
-                            <span>·</span>
-                            <span>{modulesCount} {modulesCount === 1 ? 'module' : 'modules'}</span>
-                            {course.instructor?.name && (
-                                <>
-                                    <span>·</span>
-                                    <span className="font-semibold text-gray-700">
-                                        Instructor: {course.instructor.name}
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <Link
+                                    href={route('staff.courses.edit', course.id)}
+                                    className="font-display font-bold text-base text-[#111827] hover:text-[#3B82F6] transition-colors truncate max-w-[220px] sm:max-w-[320px]"
+                                    title={course.title}
+                                >
+                                    {course.title}
+                                </Link>
+                                {unreadCount > 0 && (
+                                    <Link
+                                        href={route('staff.courses.edit', course.id) + '?tab=chat'}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] hover:bg-[#10B981] hover:text-white transition-colors text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1 shrink-0"
+                                        title={`${unreadCount} unread message(s)`}
+                                    >
+                                        <span>💬</span>
+                                        <span>{unreadCount} new</span>
+                                    </Link>
+                                )}
+                                {isPublished ? (
+                                    <span className="bg-[#D1FAE5] border border-[#10B981] text-[#065F46] text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0">
+                                        Published
                                     </span>
-                                </>
-                            )}
-                            {course.cert_title && (
-                                <span title={`Leads to: ${course.cert_title}`} className="cursor-help">🎓</span>
-                            )}
+                                ) : (
+                                    <span className="bg-[#FEF3C7] border border-[#F59E0B] text-[#92400E] text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0">
+                                        Draft
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="text-xs text-gray-500 mt-1 flex items-center flex-wrap gap-1.5">
+                                <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${config.badgeBg} ${config.badgeText} ${config.badgeBorder}`}>
+                                    {config.label}
+                                </span>
+                                <span>·</span>
+                                <span>{course.academic_year || '2026/2027'}</span>
+                                <span>·</span>
+                                <span>{priceFormatted}</span>
+                                <span>·</span>
+                                <span>{modulesCount} {modulesCount === 1 ? 'module' : 'modules'}</span>
+                                {course.instructor?.name && (
+                                    <>
+                                        <span>·</span>
+                                        <span className="font-semibold text-gray-700">
+                                            Instructor: {course.instructor.name}
+                                        </span>
+                                    </>
+                                )}
+                                {course.cert_title && (
+                                    <span title={`Leads to: ${course.cert_title}`} className="cursor-help">🎓</span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
                     {/* Right: Enrolled/Progress Stats + Action Buttons */}
-                    <div className="flex items-center justify-between sm:justify-end gap-3.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]">
+                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]">
                         {/* Stats */}
-                        <div className="text-right shrink-0 min-w-[110px]">
+                        <div className="text-left sm:text-right shrink-0 min-w-0 sm:min-w-[110px]">
                             {isPublished ? (
                                 hasStudents ? (
                                     <>
                                         <p className="text-xs font-semibold text-gray-700">
                                             {enrollmentsCount} {enrollmentsCount === 1 ? 'student' : 'students'}
                                         </p>
-                                        <div className="flex items-center justify-end gap-2 mt-1">
+                                        <div className="flex items-center sm:justify-end gap-2 mt-1">
                                             <div
                                                 className="w-16 sm:w-20 bg-[#E5E7EB] h-1.5 rounded overflow-hidden"
                                                 role="progressbar"
@@ -587,7 +594,7 @@ export default function CourseRow({
                                             disabled
                                             title="Add content to your curriculum first"
                                             aria-label="Deploy Live - Add content to your curriculum first"
-                                            className="bg-[#F3F4F6] border-2 border-[#E5E7EB] text-gray-400 cursor-not-allowed px-3 py-1.5 rounded text-xs font-bold min-h-[38px] sm:min-h-0 flex items-center justify-center"
+                                            className="bg-[#F3F4F6] border-2 border-[#E5E7EB] text-gray-400 cursor-not-allowed px-2.5 sm:px-3 py-1.5 rounded text-xs font-bold min-h-[36px] sm:min-h-0 flex items-center justify-center"
                                         >
                                             Deploy Live
                                         </button>
@@ -595,7 +602,7 @@ export default function CourseRow({
                                         <button
                                             type="button"
                                             onClick={() => router.post(route('staff.courses.deploy', course.id), {}, { preserveScroll: true })}
-                                            className="bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-3 py-1.5 rounded transition-colors min-h-[38px] sm:min-h-0 flex items-center justify-center"
+                                            className="bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-2.5 sm:px-3 py-1.5 rounded transition-colors min-h-[36px] sm:min-h-0 flex items-center justify-center"
                                         >
                                             Deploy Live
                                         </button>
@@ -603,7 +610,7 @@ export default function CourseRow({
 
                                     <Link
                                         href={route('staff.courses.edit', course.id)}
-                                        className="border-2 border-[#111827] text-[#111827] hover:bg-[#F3F4F6] px-3 py-1.5 rounded text-xs font-bold transition-colors min-h-[38px] sm:min-h-0 flex items-center justify-center"
+                                        className="border-2 border-[#111827] text-[#111827] hover:bg-[#F3F4F6] px-2.5 sm:px-3 py-1.5 rounded text-xs font-bold transition-colors min-h-[36px] sm:min-h-0 flex items-center justify-center"
                                     >
                                         Edit
                                     </Link>
@@ -611,7 +618,7 @@ export default function CourseRow({
                             ) : (
                                 <Link
                                     href={route('staff.courses.edit', course.id)}
-                                    className="bg-[#111827] hover:bg-[#1F2937] text-white font-bold text-xs px-3.5 py-1.5 rounded transition-colors min-h-[38px] sm:min-h-0 flex items-center justify-center"
+                                    className="bg-[#111827] hover:bg-[#1F2937] text-white font-bold text-xs px-3 sm:px-3.5 py-1.5 rounded transition-colors min-h-[36px] sm:min-h-0 flex items-center justify-center"
                                 >
                                     Edit
                                 </Link>
@@ -623,7 +630,7 @@ export default function CourseRow({
                                     onClick={toggleMenu}
                                     aria-label={`More actions for ${course.title}`}
                                     aria-expanded={isMenuOpen}
-                                    className={`w-9 h-9 sm:w-8 sm:h-8 rounded border-2 border-[#E5E7EB] hover:bg-[#F3F4F6] flex items-center justify-center font-bold text-sm transition-colors ${
+                                    className={`w-8 h-8 rounded border-2 border-[#E5E7EB] hover:bg-[#F3F4F6] flex items-center justify-center font-bold text-sm transition-colors ${
                                         isMenuOpen ? 'bg-gray-200 text-[#111827]' : 'text-gray-700'
                                     }`}
                                 >

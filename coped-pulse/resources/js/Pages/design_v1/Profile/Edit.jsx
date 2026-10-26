@@ -2,8 +2,13 @@ import { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 import StaffLayout from '@/Layouts/design_v1/StaffLayout';
+import { EyeIcon, EyeOffIcon } from '@/Components/flat/icons';
 
 export default function Edit({ user, stats = {} }) {
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
     // Select layout based on role
     const isStaffOrCoord = user?.role === 'staff' || user?.role === 'coordinator';
     const Layout = isStaffOrCoord ? StaffLayout : LearnerLayout;
@@ -262,15 +267,26 @@ export default function Edit({ user, stats = {} }) {
                                     <label htmlFor="current_password" className="block text-xs font-bold text-[#111827] mb-1">
                                         Current Password
                                     </label>
-                                    <input
-                                        id="current_password"
-                                        type="password"
-                                        required
-                                        value={passwordData.current_password}
-                                        onChange={(e) => setPasswordData('current_password', e.target.value)}
-                                        className="w-full text-xs font-medium border-2 border-[#E5E7EB] rounded-md px-3.5 py-2.5 min-h-[44px] text-[#111827] placeholder-gray-400 focus:outline-none focus:border-[#111827] bg-[#F9FAFB] focus:bg-white transition-colors"
-                                        placeholder="••••••••"
-                                    />
+                                    <div className="relative w-full">
+                                        <input
+                                            id="current_password"
+                                            type={showCurrentPassword ? 'text' : 'password'}
+                                            required
+                                            value={passwordData.current_password}
+                                            onChange={(e) => setPasswordData('current_password', e.target.value)}
+                                            className="w-full text-xs font-medium border-2 border-[#E5E7EB] rounded-md pl-3.5 pr-11 py-2.5 min-h-[44px] text-[#111827] placeholder-gray-400 focus:outline-none focus:border-[#111827] bg-[#F9FAFB] focus:bg-white transition-colors"
+                                            placeholder="••••••••"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] p-1 rounded transition-colors"
+                                            aria-label={showCurrentPassword ? 'Hide password' : 'Show password'}
+                                            tabIndex={-1}
+                                        >
+                                            {showCurrentPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                                        </button>
+                                    </div>
                                     {passwordErrors.current_password && (
                                         <p className="mt-1 text-xs font-bold text-red-600">{passwordErrors.current_password}</p>
                                     )}
@@ -280,15 +296,26 @@ export default function Edit({ user, stats = {} }) {
                                     <label htmlFor="password_new" className="block text-xs font-bold text-[#111827] mb-1">
                                         New Password
                                     </label>
-                                    <input
-                                        id="password_new"
-                                        type="password"
-                                        required
-                                        value={passwordData.password}
-                                        onChange={(e) => setPasswordData('password', e.target.value)}
-                                        className="w-full text-xs font-medium border-2 border-[#E5E7EB] rounded-md px-3.5 py-2.5 min-h-[44px] text-[#111827] placeholder-gray-400 focus:outline-none focus:border-[#111827] bg-[#F9FAFB] focus:bg-white transition-colors"
-                                        placeholder="Minimum 8 characters"
-                                    />
+                                    <div className="relative w-full">
+                                        <input
+                                            id="password_new"
+                                            type={showNewPassword ? 'text' : 'password'}
+                                            required
+                                            value={passwordData.password}
+                                            onChange={(e) => setPasswordData('password', e.target.value)}
+                                            className="w-full text-xs font-medium border-2 border-[#E5E7EB] rounded-md pl-3.5 pr-11 py-2.5 min-h-[44px] text-[#111827] placeholder-gray-400 focus:outline-none focus:border-[#111827] bg-[#F9FAFB] focus:bg-white transition-colors"
+                                            placeholder="Minimum 8 characters"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNewPassword(!showNewPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] p-1 rounded transition-colors"
+                                            aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                                            tabIndex={-1}
+                                        >
+                                            {showNewPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                                        </button>
+                                    </div>
                                     {passwordErrors.password && (
                                         <p className="mt-1 text-xs font-bold text-red-600">{passwordErrors.password}</p>
                                     )}
@@ -298,15 +325,26 @@ export default function Edit({ user, stats = {} }) {
                                     <label htmlFor="password_confirmation" className="block text-xs font-bold text-[#111827] mb-1">
                                         Confirm New Password
                                     </label>
-                                    <input
-                                        id="password_confirmation"
-                                        type="password"
-                                        required
-                                        value={passwordData.password_confirmation}
-                                        onChange={(e) => setPasswordData('password_confirmation', e.target.value)}
-                                        className="w-full text-xs font-medium border-2 border-[#E5E7EB] rounded-md px-3.5 py-2.5 min-h-[44px] text-[#111827] placeholder-gray-400 focus:outline-none focus:border-[#111827] bg-[#F9FAFB] focus:bg-white transition-colors"
-                                        placeholder="Re-type new password"
-                                    />
+                                    <div className="relative w-full">
+                                        <input
+                                            id="password_confirmation"
+                                            type={showConfirmPassword ? 'text' : 'password'}
+                                            required
+                                            value={passwordData.password_confirmation}
+                                            onChange={(e) => setPasswordData('password_confirmation', e.target.value)}
+                                            className="w-full text-xs font-medium border-2 border-[#E5E7EB] rounded-md pl-3.5 pr-11 py-2.5 min-h-[44px] text-[#111827] placeholder-gray-400 focus:outline-none focus:border-[#111827] bg-[#F9FAFB] focus:bg-white transition-colors"
+                                            placeholder="Re-type new password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] p-1 rounded transition-colors"
+                                            aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                            tabIndex={-1}
+                                        >
+                                            {showConfirmPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                                        </button>
+                                    </div>
                                     {passwordErrors.password_confirmation && (
                                         <p className="mt-1 text-xs font-bold text-red-600">{passwordErrors.password_confirmation}</p>
                                     )}

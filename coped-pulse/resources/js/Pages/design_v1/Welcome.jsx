@@ -22,23 +22,23 @@ export default function Welcome() {
             <div className="min-h-[100dvh] bg-white font-sans text-[#111827] antialiased">
                 {/* Navigation: solid white, single line, max 80px */}
                 <header className="sticky top-0 z-40 border-b-2 border-[#E5E7EB] bg-white">
-                    <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-                        <Link href={route('home')} className="flex shrink-0 items-center gap-2">
-                            <img src={logo} alt="CoPED PULSE Logo" className="h-8 w-auto" />
-                            <span className="hidden font-display text-2xl font-extrabold tracking-tight text-[#111827] sm:block">
+                    <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6 lg:px-8">
+                        <Link href={route('home')} className="flex shrink-0 items-center gap-2" aria-label="CoPED PULSE Home">
+                            <img src={logo} alt="CoPED PULSE Logo" className="h-7 sm:h-8 w-auto" />
+                            <span className="font-display text-base sm:text-2xl font-extrabold tracking-tight text-[#111827]">
                                 CoPED PULSE
                             </span>
                         </Link>
-                        <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex items-center gap-1.5 sm:gap-3">
                             <Link
                                 href={route('login')}
-                                className="rounded-md px-4 py-2 text-sm font-semibold text-[#111827] transition-all duration-200 hover:bg-[#F3F4F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:px-5"
+                                className="rounded-md px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-[#111827] transition-all duration-200 hover:bg-[#F3F4F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                             >
                                 Log in
                             </Link>
                             <Link
                                 href={route('register')}
-                                className="rounded-md bg-[#3B82F6] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:px-5"
+                                className="rounded-md bg-[#3B82F6] px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white transition-all duration-200 hover:scale-105 hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                             >
                                 Start free
                             </Link>
@@ -53,12 +53,12 @@ export default function Welcome() {
                     <div className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-white/10" aria-hidden="true" />
                     <div className="pointer-events-none absolute right-1/3 top-16 hidden h-24 w-24 rotate-12 rounded-lg bg-[#F59E0B] lg:block" aria-hidden="true" />
 
-                    <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 pb-16 pt-16 sm:px-6 lg:grid-cols-2 lg:px-8 lg:pt-24">
-                        <div>
-                            <h1 className="font-display text-4xl font-extrabold leading-none tracking-tight md:text-5xl lg:text-6xl">
+                    <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 pb-16 pt-12 sm:px-6 lg:grid-cols-2 lg:px-8 lg:pt-24">
+                        <div className="overflow-hidden break-words">
+                            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight sm:leading-none tracking-tight break-words">
                                 Publish courses. Enroll in seconds. Prove completion.
                             </h1>
-                            <p className="mt-5 max-w-[65ch] text-base leading-relaxed text-blue-50">
+                            <p className="mt-4 sm:mt-5 max-w-[65ch] text-sm sm:text-base leading-relaxed text-blue-50 break-words">
                                 Instructors publish modules and quizzes. Learners enroll, learn, and complete at 100%.
                             </p>
                             <div className="mt-8 flex flex-wrap gap-3">
@@ -273,25 +273,25 @@ export default function Welcome() {
                 </section>
 
                 {/* Footer: dark ink */}
-                <footer className="bg-[#111827] text-white">
-                    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-12 sm:px-6 md:grid-cols-2 lg:px-8">
-                        <div>
+                <footer className="bg-[#111827] text-white overflow-hidden">
+                    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-12 sm:px-6 md:grid-cols-2 lg:px-8 overflow-hidden">
+                        <div className="min-w-0 break-words">
                             <span className="flex items-center gap-2 font-display text-xl font-extrabold tracking-tight">
                                 <img src={logo} alt="CoPED PULSE Logo" className="h-7 w-auto" />
                                 CoPED PULSE
                             </span>
-                            <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-gray-300">
+                            <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-gray-300 break-words">
                                 A lightweight LMS where instructors publish courses and learners prove completion.
                             </p>
                         </div>
-                        <div className="rounded-lg bg-[#F3F4F6] p-5 text-[#111827]">
+                        <div className="rounded-lg bg-[#F3F4F6] p-5 text-[#111827] min-w-0 break-words overflow-hidden">
                             <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                                 For Local Dev Demo
                             </p>
-                            <p className="mt-2 text-sm">
+                            <p className="mt-2 text-sm break-all">
                                 Instructor: <span className="font-mono font-bold">instruct@gmail.com</span>
                             </p>
-                            <p className="mt-1 text-sm">
+                            <p className="mt-1 text-sm break-all">
                                 Learner: <span className="font-mono font-bold">learn@gmail.com</span>
                             </p>
                             <p className="mt-1 text-sm text-gray-600">

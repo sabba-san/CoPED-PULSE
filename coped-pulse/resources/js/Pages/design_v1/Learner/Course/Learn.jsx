@@ -332,33 +332,33 @@ export default function Learn({
 
             <div className="space-y-6">
                 {/* Course Top Header */}
-                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-4 sm:p-6 space-y-4 w-full min-w-0 overflow-hidden">
+                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-3.5 sm:p-6 space-y-3 sm:space-y-4 w-full min-w-0 overflow-hidden">
                     {/* Institutional Breadcrumb */}
-                    <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider overflow-hidden">
+                    <div className="flex items-center gap-2 text-[11px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider overflow-hidden">
                         <Link href={route('portal')} className="text-[#111827] hover:underline shrink-0">
-                            UUM CoPED
+                            ← My Portal
                         </Link>
                         <span>/</span>
-                        <span className="text-gray-400 truncate max-w-xs sm:max-w-md">{course.title}</span>
+                        <span className="text-gray-400 truncate max-w-[200px] sm:max-w-md">{course.title}</span>
                     </div>
 
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full min-w-0">
-                        <div className="flex flex-col sm:flex-row items-start gap-4 w-full min-w-0 overflow-hidden">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 w-full min-w-0">
+                        <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 w-full min-w-0 overflow-hidden">
                             {course.category_logo && (
-                                <div className="w-full sm:w-auto shrink-0 flex justify-center sm:justify-start">
-                                    <CourseLogoBadge category={course.category_logo} size="tile" className="!w-full sm:!w-44 rounded-md" />
+                                <div className="hidden sm:block shrink-0">
+                                    <CourseLogoBadge category={course.category_logo} size="tile" className="!w-44 rounded-md" />
                                 </div>
                             )}
-                            <div className="min-w-0 flex-1 w-full space-y-1.5">
-                                <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-[#111827] break-words">
+                            <div className="min-w-0 flex-1 w-full space-y-1">
+                                <h1 className="font-display text-lg sm:text-2xl md:text-3xl font-extrabold text-[#111827] break-words">
                                     {course.title}
                                 </h1>
-                                <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                                    <p className="text-sm text-gray-600">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
+                                    <p className="text-xs sm:text-sm text-gray-600">
                                         Instructed by {course.instructor?.name || 'Faculty Instructor'}
                                     </p>
                                     {course.academic_year && (
-                                        <span className="text-xs font-bold text-gray-600 bg-[#F3F4F6] border border-[#E5E7EB] px-2 py-0.5 rounded">
+                                        <span className="text-[10px] sm:text-xs font-bold text-gray-600 bg-[#F3F4F6] border border-[#E5E7EB] px-1.5 sm:px-2 py-0.5 rounded">
                                             📅 {course.academic_year}
                                         </span>
                                     )}
@@ -367,7 +367,7 @@ export default function Learn({
                                             href={course.cert_url || '#'}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-[#1D4ED8] bg-[#EFF6FF] border border-[#93C5FD] hover:bg-[#DBEAFE] px-2 py-0.5 rounded transition-colors max-w-full"
+                                            className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold text-[#1D4ED8] bg-[#EFF6FF] border border-[#93C5FD] hover:bg-[#DBEAFE] px-1.5 sm:px-2 py-0.5 rounded transition-colors max-w-full"
                                         >
                                             <span className="truncate">🎓 Leads to: {course.cert_title}</span>
                                             <span className="text-[10px] shrink-0">↗</span>
@@ -379,7 +379,7 @@ export default function Learn({
 
                         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
                             <span
-                                className={`px-3 py-1 text-xs font-extrabold rounded border-2 ${
+                                className={`px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-extrabold rounded border-2 ${
                                     isCompleted
                                         ? 'bg-emerald-50 text-[#10B981] border-[#10B981]'
                                         : 'bg-blue-50 text-[#3B82F6] border-[#3B82F6]'
@@ -391,7 +391,7 @@ export default function Learn({
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('assessment')}
-                                    className="w-full sm:w-auto min-h-[44px] bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-4 py-2 rounded transition-transform active:scale-[0.98]"
+                                    className="w-full sm:w-auto min-h-[36px] sm:min-h-[44px] bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded transition-transform active:scale-[0.98]"
                                 >
                                     Take Final Assessment
                                 </button>
@@ -400,13 +400,13 @@ export default function Learn({
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="space-y-1.5 pt-2 border-t-2 border-[#E5E7EB]">
+                    <div className="space-y-1 pt-2 border-t-2 border-[#E5E7EB]">
                         <div className="flex items-center justify-between text-xs font-bold text-[#111827]">
                             <span>Overall Course Progress</span>
                             <span>{progressPct}%</span>
                         </div>
                         <div
-                            className="w-full bg-[#F3F4F6] border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden"
+                            className="w-full bg-[#F3F4F6] border border-[#E5E7EB] h-2 rounded-full overflow-hidden"
                             role="progressbar"
                             aria-valuenow={progressPct}
                             aria-valuemin={0}
@@ -421,7 +421,7 @@ export default function Learn({
 
                     {/* Celebration Banner */}
                     {isCompleted && (
-                        <div className="bg-[#10B981] text-white p-4 rounded-md font-bold text-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div className="bg-[#10B981] text-white p-3.5 sm:p-4 rounded-md font-bold text-xs sm:text-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
                                 <CircleCheckIcon className="w-5 h-5 text-white shrink-0" />
                                 <span>
@@ -430,7 +430,7 @@ export default function Learn({
                             </div>
                             <Link
                                 href={route('learner.course.certificate', course.id)}
-                                className="inline-flex items-center justify-center gap-1.5 bg-[#111827] hover:bg-white hover:text-[#111827] text-white font-bold text-xs px-4 py-2 rounded shrink-0 transition-colors duration-200"
+                                className="inline-flex items-center justify-center gap-1.5 bg-[#111827] hover:bg-white hover:text-[#111827] text-white font-bold text-xs px-3.5 sm:px-4 py-1.5 sm:py-2 rounded shrink-0 transition-colors duration-200"
                             >
                                 <span>🎓 View &amp; Download Certificate PDF</span>
                             </Link>
@@ -439,13 +439,13 @@ export default function Learn({
                 </div>
 
                 {/* edX Horizontal Sub-Navigation Tabs */}
-                <div className="w-full max-w-full overflow-x-auto no-scrollbar flex items-center justify-start gap-1 sm:gap-4 border-b-2 border-[#E5E7EB] bg-white px-3 sm:px-6">
+                <div className="w-full max-w-full overflow-x-auto no-scrollbar flex items-center justify-start gap-1 sm:gap-4 border-b-2 border-[#E5E7EB] bg-white px-2.5 sm:px-6">
                     {[
-                        { id: 'course', label: 'Course' },
-                        { id: 'dates', label: 'Dates' },
-                        { id: 'assessment', label: 'Progress & Assessment' },
-                        { id: 'notes', label: 'Course Tools & Notes' },
-                        { id: 'chat', label: '💬 Chat with Instructor' },
+                        { id: 'course', shortLabel: 'Course', label: 'Course' },
+                        { id: 'dates', shortLabel: 'Dates', label: 'Dates' },
+                        { id: 'assessment', shortLabel: 'Progress & Quiz', label: 'Progress & Assessment' },
+                        { id: 'notes', shortLabel: 'Notes', label: 'Course Tools & Notes' },
+                        { id: 'chat', shortLabel: '💬 Chat', label: '💬 Chat with Instructor' },
                     ].map((tab) => {
                         const active = activeTab === tab.id;
                         return (
@@ -455,13 +455,14 @@ export default function Learn({
                                 role="tab"
                                 aria-selected={active}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`text-xs sm:text-sm whitespace-nowrap transition-colors py-3 px-2 sm:px-3 min-h-[44px] flex items-center shrink-0 ${
+                                className={`text-xs sm:text-sm whitespace-nowrap transition-colors py-2.5 sm:py-3 px-2 sm:px-3 min-h-[40px] sm:min-h-[44px] flex items-center shrink-0 ${
                                     active
                                         ? 'border-b-4 border-[#111827] font-bold text-[#111827]'
                                         : 'text-gray-500 hover:text-[#111827] font-semibold border-b-4 border-transparent'
                                 }`}
                             >
-                                {tab.label}
+                                <span className="sm:hidden">{tab.shortLabel}</span>
+                                <span className="hidden sm:inline">{tab.label}</span>
                             </button>
                         );
                     })}
@@ -1197,19 +1198,21 @@ export default function Learn({
                         </div>
 
                         {/* Mode Selector: Direct Q&A vs Group Chat */}
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-2 flex flex-wrap sm:flex-nowrap gap-2 w-full min-w-0">
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-1.5 sm:p-2 grid grid-cols-2 gap-2 w-full min-w-0">
                             <button
                                 type="button"
                                 onClick={() => setChatMode('direct')}
-                                className={`flex-1 min-w-0 px-3 sm:px-4 py-2.5 rounded-md text-xs font-extrabold border-2 transition-colors flex items-center justify-center gap-2 ${
+                                className={`w-full min-w-0 px-2 sm:px-4 py-2 sm:py-2.5 rounded-md text-xs font-extrabold border-2 transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 ${
                                     chatMode === 'direct'
                                         ? 'bg-[#111827] text-white border-[#111827]'
                                         : 'bg-white text-gray-700 border-[#E5E7EB] hover:border-[#111827]'
                                 }`}
                             >
-                                <span>💬</span>
-                                <span className="truncate">Direct Q&amp;A with Instructor</span>
-                                <span className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <span>💬</span>
+                                    <span className="truncate">Instructor Q&amp;A</span>
+                                </div>
+                                <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
                                     chatMode === 'direct' ? 'bg-gray-800 text-gray-200' : 'bg-blue-50 text-blue-700'
                                 }`}>
                                     Private
@@ -1219,15 +1222,17 @@ export default function Learn({
                             <button
                                 type="button"
                                 onClick={() => setChatMode('group')}
-                                className={`flex-1 min-w-0 px-3 sm:px-4 py-2.5 rounded-md text-xs font-extrabold border-2 transition-colors flex items-center justify-center gap-2 ${
+                                className={`w-full min-w-0 px-2 sm:px-4 py-2 sm:py-2.5 rounded-md text-xs font-extrabold border-2 transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 ${
                                     chatMode === 'group'
                                         ? 'bg-[#111827] text-white border-[#111827]'
                                         : 'bg-white text-gray-700 border-[#E5E7EB] hover:border-[#111827]'
                                 }`}
                             >
-                                <span>📢</span>
-                                <span className="truncate">Course Class Group Chat</span>
-                                <span className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <span>📢</span>
+                                    <span className="truncate">Class Group</span>
+                                </div>
+                                <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
                                     chatMode === 'group' ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-700'
                                 }`}>
                                     All Students

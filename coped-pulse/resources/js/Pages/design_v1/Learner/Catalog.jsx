@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 import FlatButton from '@/Components/flat/FlatButton';
 import FlatInput from '@/Components/flat/FlatInput';
-import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
+import CourseLogoBadge, { LOGO_CONFIG } from '@/Components/flat/CourseLogoBadge';
 import {
     MagnifyingGlassIcon,
     XMarkIcon,
@@ -216,6 +216,8 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                         {filteredCourses.map((course) => {
                             const enrolled = isEnrolled(course.id);
                             const isCommercial = course.billing_type !== 'free' && Number(course.price || 0) > 0;
+                            const themeConfig = LOGO_CONFIG[course.category_logo] || LOGO_CONFIG.charcoal || LOGO_CONFIG.general;
+                            const EmblemIcon = themeConfig?.icon;
 
                             return (
                                 <div
@@ -230,113 +232,199 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                     }}
                                     className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden flex flex-col justify-between transition-all duration-200 hover:scale-[1.01] hover:border-black cursor-pointer"
                                 >
-                                    <div>
-                                        {/* Top Subject Emblem Banner */}
-                                        <div className="relative">
-                                            <CourseLogoBadge
-                                                category={course.category_logo}
-                                                size="tile"
-                                                className="!w-full !border-b-2 !border-r-0 !py-6"
-                                            />
-                                            <div className="absolute top-3 right-3 bg-white border border-[#111827] px-2.5 py-0.5 rounded text-[11px] font-black text-[#111827]">
-                                                {course.academic_year || '2026 / 2027'}
+                                    {/* Mobile View (< sm): Ultra-compact horizontal layout */}
+                                    <div className="block sm:hidden p-3.5 space-y-2.5">
+                                        <div className="flex items-start gap-3">
+                                            {/* 56x56 Compact Emblem */}
+                                            <div className={`w-14 h-14 shrink-0 rounded-md ${themeConfig.bg} ${themeConfig.text} flex flex-col items-center justify-center border border-black/10`}>
+                                                {EmblemIcon ? <EmblemIcon className="w-6 h-6" /> : <span className="text-sm font-black">🎓</span>}
+                                                <span className="text-[8px] font-black uppercase tracking-wider opacity-85 leading-none mt-0.5">UUM</span>
                                             </div>
-                                        </div>
 
-                                        {/* Eyebrow Pricing Strip */}
-                                        <div className="px-5 py-2 bg-[#F9FAFB] border-b-2 border-[#E5E7EB] flex items-center justify-between text-xs">
-                                            <span className="font-extrabold text-gray-600 uppercase tracking-wider text-[10px]">
-                                                {course.billing_type === 'subscription' ? 'CoPED Pass' : 'Course Admission'}
-                                            </span>
-                                            {course.billing_type === 'subscription' ? (
-                                                <span className="font-black text-amber-800 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded text-[11px]">
-                                                    RM {Number(course.price || 0).toFixed(2)}/mo
-                                                </span>
-                                            ) : course.billing_type === 'one_time' ? (
-                                                <span className="font-black text-blue-800 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded text-[11px]">
-                                                    RM {Number(course.price || 0).toFixed(2)} ONE-TIME
-                                                </span>
-                                            ) : (
-                                                <span className="font-black text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded text-[11px]">
-                                                    FREE ACCESS
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Body */}
-                                        <div className="p-6 space-y-4">
-                                            <div>
-                                                <h2 className="font-display font-bold text-lg text-[#111827] line-clamp-2">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                                    {course.billing_type === 'subscription' ? (
+                                                        <span className="font-black text-amber-800 bg-amber-50 border border-amber-300 px-1.5 py-0.2 rounded text-[9px]">
+                                                            RM {Number(course.price || 0).toFixed(2)}/mo
+                                                        </span>
+                                                    ) : course.billing_type === 'one_time' ? (
+                                                        <span className="font-black text-blue-800 bg-blue-50 border border-blue-300 px-1.5 py-0.2 rounded text-[9px]">
+                                                            RM {Number(course.price || 0).toFixed(2)}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="font-black text-emerald-800 bg-emerald-50 border border-emerald-300 px-1.5 py-0.2 rounded text-[9px]">
+                                                            FREE ACCESS
+                                                        </span>
+                                                    )}
+                                                    <span className="text-[10px] font-bold text-gray-500">
+                                                        {course.academic_year || '2026/2027'}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-500 font-semibold">
+                                                        · {course.modules_count ?? 0} mod
+                                                    </span>
+                                                </div>
+                                                <h2 className="font-display text-sm font-black text-[#111827] line-clamp-2 leading-snug">
                                                     {course.title}
                                                 </h2>
-                                                <p className="text-sm text-gray-600 mt-1">
+                                                <p className="text-[11px] text-gray-500 truncate mt-0.5">
                                                     {course.instructor?.name || 'Faculty Instructor'}
                                                 </p>
                                             </div>
+                                        </div>
 
-                                            <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
-                                                {course.description || 'Comprehensive curriculum designed for applied professional development.'}
-                                            </p>
-
-                                            {/* Certification Badge */}
-                                            {course.cert_title && (
-                                                <div className="pt-1">
-                                                    <div className="flex items-center gap-2 text-xs font-bold text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] p-2 rounded">
-                                                        <GraduationCapIcon className="w-4 h-4 text-[#F59E0B] shrink-0" />
-                                                        <span className="line-clamp-1">🎓 {course.cert_title}</span>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Metadata List */}
-                                            <div className="border-t-2 border-[#E5E7EB] pt-4 space-y-2 text-xs font-semibold text-[#111827]">
-                                                <div className="flex items-center gap-2.5">
-                                                    <BookOpenIcon className="w-4 h-4 text-[#3B82F6] shrink-0" />
-                                                    <span>{course.modules_count ?? 0} modules</span>
-                                                </div>
-                                                <div className="flex items-center gap-2.5">
-                                                    <GraduationCapIcon className="w-4 h-4 text-[#10B981] shrink-0" />
-                                                    <span>Self-paced learning · Direct to Learn</span>
-                                                </div>
-                                                <div className="flex items-center gap-2.5">
-                                                    <CircleCheckIcon className="w-4 h-4 text-[#F59E0B] shrink-0" />
-                                                    <span>Official Course Certificate</span>
-                                                </div>
+                                        {/* Bottom Action Row */}
+                                        <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between gap-2">
+                                            <div className="text-xs text-gray-500 truncate min-w-0">
+                                                {course.cert_title ? (
+                                                    <span className="text-[#92400E] font-bold text-[11px] truncate block">
+                                                        🎓 {course.cert_title}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[11px] text-gray-500">Self-paced learning</span>
+                                                )}
+                                            </div>
+                                            <div className="shrink-0">
+                                                {enrolled ? (
+                                                    <Link
+                                                        href={route('learner.course.learn', course.id)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs py-1.5 px-3 rounded inline-flex items-center gap-1 active:scale-95"
+                                                    >
+                                                        <span>Continue →</span>
+                                                    </Link>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEnrollClick(course);
+                                                        }}
+                                                        className="bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs py-1.5 px-3 rounded inline-flex items-center gap-1 active:scale-95"
+                                                    >
+                                                        <span>{isCommercial ? `Enroll · RM ${Number(course.price || 0).toFixed(0)}` : 'Enroll Free →'}</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Action Footer */}
-                                    <div className="p-6 pt-0">
-                                        {enrolled ? (
-                                            <Link
-                                                href={route('learner.course.learn', course.id)}
-                                                className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
-                                            >
-                                                <span>Enrolled ✓ · Continue Course</span>
-                                                <ArrowRightIcon className="w-4 h-4" />
-                                            </Link>
-                                        ) : isCommercial ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleEnrollClick(course)}
-                                                className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
-                                            >
-                                                <span>
-                                                    Subscribe & Unlock · RM {Number(course.price || 0).toFixed(2)}
+                                    {/* Desktop View (sm:): Full Cover Banner & Multi-Row Details */}
+                                    <div className="hidden sm:flex flex-col justify-between h-full">
+                                        <div>
+                                            {/* Top Subject Emblem Banner */}
+                                            <div className="relative">
+                                                <CourseLogoBadge
+                                                    category={course.category_logo}
+                                                    size="tile"
+                                                    className="!w-full !border-b-2 !border-r-0 !py-6"
+                                                />
+                                                <div className="absolute top-3 right-3 bg-white border border-[#111827] px-2.5 py-0.5 rounded text-[11px] font-black text-[#111827]">
+                                                    {course.academic_year || '2026 / 2027'}
+                                                </div>
+                                            </div>
+
+                                            {/* Eyebrow Pricing Strip */}
+                                            <div className="px-5 py-2 bg-[#F9FAFB] border-b-2 border-[#E5E7EB] flex items-center justify-between text-xs">
+                                                <span className="font-extrabold text-gray-600 uppercase tracking-wider text-[10px]">
+                                                    {course.billing_type === 'subscription' ? 'CoPED Pass' : 'Course Admission'}
                                                 </span>
-                                                <ArrowRightIcon className="w-4 h-4" />
-                                            </button>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleEnrollClick(course)}
-                                                className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
-                                            >
-                                                <span>Enroll Now (Free)</span>
-                                                <ArrowRightIcon className="w-4 h-4" />
-                                            </button>
-                                        )}
+                                                {course.billing_type === 'subscription' ? (
+                                                    <span className="font-black text-amber-800 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded text-[11px]">
+                                                        RM {Number(course.price || 0).toFixed(2)}/mo
+                                                    </span>
+                                                ) : course.billing_type === 'one_time' ? (
+                                                    <span className="font-black text-blue-800 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded text-[11px]">
+                                                        RM {Number(course.price || 0).toFixed(2)} ONE-TIME
+                                                    </span>
+                                                ) : (
+                                                    <span className="font-black text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded text-[11px]">
+                                                        FREE ACCESS
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Body */}
+                                            <div className="p-6 space-y-4">
+                                                <div>
+                                                    <h2 className="font-display font-bold text-lg text-[#111827] line-clamp-2">
+                                                        {course.title}
+                                                    </h2>
+                                                    <p className="text-sm text-gray-600 mt-1">
+                                                        {course.instructor?.name || 'Faculty Instructor'}
+                                                    </p>
+                                                </div>
+
+                                                <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                                                    {course.description || 'Comprehensive curriculum designed for applied professional development.'}
+                                                </p>
+
+                                                {/* Certification Badge */}
+                                                {course.cert_title && (
+                                                    <div className="pt-1">
+                                                        <div className="flex items-center gap-2 text-xs font-bold text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] p-2 rounded">
+                                                            <GraduationCapIcon className="w-4 h-4 text-[#F59E0B] shrink-0" />
+                                                            <span className="line-clamp-1">🎓 {course.cert_title}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Metadata List */}
+                                                <div className="border-t-2 border-[#E5E7EB] pt-4 space-y-2 text-xs font-semibold text-[#111827]">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <BookOpenIcon className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                                                        <span>{course.modules_count ?? 0} modules</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <GraduationCapIcon className="w-4 h-4 text-[#10B981] shrink-0" />
+                                                        <span>Self-paced learning · Direct to Learn</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <CircleCheckIcon className="w-4 h-4 text-[#F59E0B] shrink-0" />
+                                                        <span>Official Course Certificate</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Footer */}
+                                        <div className="p-6 pt-0">
+                                            {enrolled ? (
+                                                <Link
+                                                    href={route('learner.course.learn', course.id)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
+                                                >
+                                                    <span>Enrolled ✓ · Continue Course</span>
+                                                    <ArrowRightIcon className="w-4 h-4" />
+                                                </Link>
+                                            ) : isCommercial ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEnrollClick(course);
+                                                    }}
+                                                    className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
+                                                >
+                                                    <span>
+                                                        Subscribe & Unlock · RM {Number(course.price || 0).toFixed(2)}
+                                                    </span>
+                                                    <ArrowRightIcon className="w-4 h-4" />
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEnrollClick(course);
+                                                    }}
+                                                    className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold py-3 px-4 rounded text-sm transition-transform active:scale-[0.98]"
+                                                >
+                                                    <span>Enroll Now (Free)</span>
+                                                    <ArrowRightIcon className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );

@@ -21,15 +21,15 @@ export default function StaffLayout({ children }) {
             <nav className="sticky top-0 z-50 bg-white border-b-2 border-[#E5E7EB] w-full max-w-full">
                 <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-14 sm:h-16 items-center w-full max-w-full gap-2">
-                        <div className="flex items-center space-x-4 sm:space-x-8">
-                            <Link href={route('dashboard')} className="flex items-center space-x-2 sm:space-x-3" aria-label="CoPED PULSE Staff Home">
+                        <div className="flex items-center space-x-3 sm:space-x-8">
+                            <Link href={route('dashboard')} className="flex items-center space-x-2 sm:space-x-3 shrink-0" aria-label="CoPED PULSE Staff Home">
                                 <img src={logo} alt="CoPED PULSE Logo" className="h-7 sm:h-8 w-auto" />
-                                <span className="text-lg sm:text-xl font-display font-extrabold text-[#111827] tracking-tight hidden sm:block">
+                                <span className="text-sm sm:text-xl font-display font-black tracking-tight text-[#111827] flex items-center">
                                     CoPED PULSE
                                     {auth?.user?.role === 'coordinator' ? (
-                                        <span className="text-xs uppercase tracking-wider font-extrabold px-2 py-0.5 bg-amber-500 text-white rounded ml-2">Coordinator</span>
+                                        <span className="hidden xs:inline-block text-[10px] sm:text-xs uppercase tracking-wider font-extrabold px-1.5 sm:px-2 py-0.5 bg-amber-500 text-white rounded ml-1.5 sm:ml-2">Coordinator</span>
                                     ) : (
-                                        <span className="text-xs uppercase tracking-wider font-extrabold px-2 py-0.5 bg-[#10B981] text-white rounded ml-2">Instructor</span>
+                                        <span className="hidden xs:inline-block text-[10px] sm:text-xs uppercase tracking-wider font-extrabold px-1.5 sm:px-2 py-0.5 bg-[#10B981] text-white rounded ml-1.5 sm:ml-2">Instructor</span>
                                     )}
                                 </span>
                             </Link>
@@ -86,46 +86,58 @@ export default function StaffLayout({ children }) {
                 {children}
             </main>
 
-            {/* Sticky Mobile Bottom Navigation Bar */}
+            {/* Sticky Mobile Bottom Navigation Bar: 4-Column Flat App Bar */}
             <nav
                 aria-label="Mobile Bottom Navigation"
                 className="md:hidden fixed bottom-0 inset-x-0 z-40 w-full max-w-full bg-white border-t-2 border-[#111827] print:hidden"
             >
-                <div className="grid grid-cols-3 w-full max-w-full divide-x-2 divide-gray-200">
+                <div className="grid grid-cols-4 w-full max-w-full divide-x-2 divide-gray-200">
                     <Link
                         href={route('dashboard')}
-                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-1 text-center transition-colors min-w-0 ${
+                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
                             url === '/dashboard'
                                 ? 'bg-[#111827] text-white font-black'
                                 : 'text-gray-700 hover:bg-[#F3F4F6] font-bold'
                         }`}
                     >
                         <span className="text-base leading-none mb-1 shrink-0">📊</span>
-                        <span className="text-[11px] uppercase tracking-wide leading-none truncate w-full text-center">Dashboard</span>
+                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Studio</span>
                     </Link>
 
                     <Link
                         href={route('staff.courses.index')}
-                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-1 text-center transition-colors min-w-0 ${
+                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
                             url.startsWith('/staff/courses') && !url.includes('/create')
                                 ? 'bg-[#111827] text-white font-black'
                                 : 'text-gray-700 hover:bg-[#F3F4F6] font-bold'
                         }`}
                     >
                         <span className="text-base leading-none mb-1 shrink-0">📁</span>
-                        <span className="text-[11px] uppercase tracking-wide leading-none truncate w-full text-center">Courses</span>
+                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Courses</span>
                     </Link>
 
                     <Link
                         href={route('staff.courses.create')}
-                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-1 text-center transition-colors min-w-0 ${
+                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
                             url.includes('/create')
                                 ? 'bg-[#10B981] text-white font-black'
                                 : 'text-[#065F46] bg-emerald-50 hover:bg-emerald-100 font-bold'
                         }`}
                     >
                         <span className="text-base leading-none mb-1 shrink-0">➕</span>
-                        <span className="text-[11px] uppercase tracking-wide leading-none truncate w-full text-center">New Course</span>
+                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Create</span>
+                    </Link>
+
+                    <Link
+                        href={route('profile.edit')}
+                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
+                            url.startsWith('/profile')
+                                ? 'bg-[#111827] text-white font-black'
+                                : 'text-gray-700 hover:bg-[#F3F4F6] font-bold'
+                        }`}
+                    >
+                        <span className="text-base leading-none mb-1 shrink-0">👤</span>
+                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Profile</span>
                     </Link>
                 </div>
             </nav>
