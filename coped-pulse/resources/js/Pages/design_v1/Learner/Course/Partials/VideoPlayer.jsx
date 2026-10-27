@@ -84,9 +84,70 @@ export default function VideoPlayer({ module, mediaUrl, activeTitle = null, onEn
         return () => window.removeEventListener('message', handleVimeoMessage);
     }, [vimeoId, onEnded]);
 
+    const isMedia = Boolean(ytId || vimeoId || isVideo || isPdf);
+    const domain = (() => {
+        try {
+            return new URL(safe).hostname.replace(/^www\./, '');
+        } catch {
+            return 'external-resource';
+        }
+    })();
+
     const ytEmbedUrl = ytId
         ? formatEmbedUrl(safe, typeof window !== 'undefined' ? window.location.origin : '')
         : null;
+
+    if (!isMedia) {
+        return (
+            <div key={safe} className="mt-4 animate-fade-in space-y-2">
+                {/* Top Utility Strip */}
+                <div className="flex items-center justify-between px-3.5 py-2.5 bg-white text-[#111827] rounded-t-md text-xs font-bold border-2 border-b-0 border-[#111827]">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#2563EB] bg-[#EFF6FF] px-2.5 py-0.5 rounded border border-[#BFDBFE]">
+                            OFFICIAL RESOURCE
+                        </span>
+                        <span className="text-[11px] font-mono font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+                            {domain}
+                        </span>
+                    </div>
+                    <span className="text-gray-500 text-[11px] font-semibold hidden sm:inline-block">
+                        Verified Curriculum Reference
+                    </span>
+                </div>
+
+                {/* Main Reference Stage */}
+                <div className="bg-[#F8FAFC] border-2 border-[#111827] rounded-b-md p-6 sm:p-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="space-y-2 min-w-0 flex-1">
+                            <h3 className="font-display font-extrabold text-lg sm:text-xl text-[#111827]">
+                                {titleText}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed max-w-2xl">
+                                {module?.description || 'Official curriculum reference documentation, standards, or study materials for this unit.'}
+                            </p>
+                            <div className="pt-1">
+                                <span className="text-[11px] font-mono text-[#2563EB] bg-blue-50 border border-blue-100 px-2.5 py-1 rounded inline-block truncate max-w-md">
+                                    {safe}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="shrink-0 flex sm:flex-col items-center sm:items-end gap-2">
+                            <a
+                                href={safe}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs transition-colors border-2 border-[#111827] min-h-[44px]"
+                            >
+                                <span>Open Official Resource</span>
+                                <span className="text-sm font-bold">↗</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div key={safe} className="mt-4 animate-fade-in space-y-2">
@@ -140,34 +201,13 @@ export default function VideoPlayer({ module, mediaUrl, activeTitle = null, onEn
                             Your browser does not support HTML5 video playback.
                         </video>
                     </div>
-                ) : isPdf ? (
+                ) : (
                     <div className="w-full bg-white">
                         <iframe
                             src={safe}
                             title={titleText}
                             className="w-full h-[55vh] sm:h-[65vh] border-0"
                         />
-                    </div>
-                ) : (
-                    <div className="p-8 text-center text-white space-y-4 bg-[#1F2937]">
-                        <div className="w-12 h-12 bg-gray-800 rounded-md flex items-center justify-center mx-auto text-xl">
-                            📄
-                        </div>
-                        <div>
-                            <p className="font-bold text-base">{titleText}</p>
-                            <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">
-                                Attached course material or document. Click below to view or download.
-                            </p>
-                        </div>
-                        <a
-                            href={safe}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs transition-transform active:scale-[0.98]"
-                        >
-                            <span>Open Material in Viewer</span>
-                            <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                        </a>
                     </div>
                 )}
             </div>

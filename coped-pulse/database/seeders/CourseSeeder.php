@@ -41,56 +41,56 @@ class CourseSeeder extends Seeder
         );
 
         $m1 = $maritimeCourse->modules()->updateOrCreate(
-            ['title' => 'Topik 1: Ancaman Siber Terhadap Sistem Maritim & VTS'],
+            ['course_id' => $maritimeCourse->id, 'order' => 1],
             [
+                'title' => 'Topik 1: Ancaman Siber Terhadap Sistem Maritim & VTS',
                 'description' => 'Ketahui risiko serangan ke atas Sistem Pengurusan Trafik Vab (VTS), GPS Spoofing, dan percubaan pencerobohan pangkalan data pelabuhan.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
-                'order' => 1,
+                'media_url' => 'https://www.imo.org/en/OurWork/Security/Pages/Cyber-security.aspx',
             ]
         );
-        $m1->lessons()->firstOrCreate(
-            ['title' => 'Subtopik 1.1: Pengenalan kepada VTS & Kerentanan Rangkaian'],
+        $m1->lessons()->updateOrCreate(
+            ['module_id' => $m1->id, 'order' => 1],
             [
+                'title' => 'Subtopik 1.1: Pengenalan kepada VTS & Kerentanan Rangkaian',
                 'content_type' => 'link',
-                'content_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
-                'order' => 1,
+                'content_url' => 'https://www.imo.org/en/OurWork/Security/Pages/Cyber-security.aspx',
             ]
         );
 
         $m2 = $maritimeCourse->modules()->updateOrCreate(
-            ['title' => 'Topik 2: Keselamatan Emel & Serangan Phishing Sasaran'],
+            ['course_id' => $maritimeCourse->id, 'order' => 2],
             [
+                'title' => 'Topik 2: Keselamatan Emel & Serangan Phishing Sasaran',
                 'description' => 'Teknik mengenalpasti e-mel palsu yang menyamar sebagai pihak pengurusan tertinggi JLM atau agensi antarabangsa IMO.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
-                'order' => 2,
+                'media_url' => 'https://www.youtube.com/watch?v=YfiN_W8I1cE',
             ]
         );
-        $m2->lessons()->firstOrCreate(
-            ['title' => 'Subtopik 2.1: Analisis Header Emel & Domain Palsu'],
+        $m2->lessons()->updateOrCreate(
+            ['module_id' => $m2->id, 'order' => 1],
             [
+                'title' => 'Subtopik 2.1: Analisis Header Emel & Domain Palsu',
                 'content_type' => 'link',
-                'content_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
-                'order' => 1,
+                'content_url' => 'https://www.youtube.com/watch?v=YfiN_W8I1cE',
             ]
         );
 
         $m3 = $maritimeCourse->modules()->updateOrCreate(
-            ['title' => 'Topik 3: Protokol Tindak Balas Insiden & Pelaporan Rasmi'],
+            ['course_id' => $maritimeCourse->id, 'order' => 3],
             [
+                'title' => 'Topik 3: Protokol Tindak Balas Insiden & Pelaporan Rasmi',
                 'description' => 'Langkah pantas apabila mengesyaki berlakunya ketirisan data sulit perkapalan atau jangkitan perisian tebusan (ransomware).',
-                'content_type' => 'embed',
-                'media_url' => 'https://www.youtube.com/embed/aircAruvnKk',
-                'order' => 3,
+                'content_type' => 'link',
+                'media_url' => 'https://www.cisa.gov/topics/cyber-threats-and-advisories/incident-response',
             ]
         );
-        $m3->lessons()->firstOrCreate(
-            ['title' => 'Subtopik 3.1: Pelan Pengasingan Peranti (Network Air-Gapping)'],
+        $m3->lessons()->updateOrCreate(
+            ['module_id' => $m3->id, 'order' => 1],
             [
-                'content_type' => 'embed',
-                'content_url' => 'https://www.youtube.com/embed/aircAruvnKk',
-                'order' => 1,
+                'title' => 'Subtopik 3.1: Pelan Pengasingan Peranti (Network Air-Gapping)',
+                'content_type' => 'link',
+                'content_url' => 'https://www.cisa.gov/topics/cyber-threats-and-advisories/incident-response',
             ]
         );
 
@@ -162,56 +162,56 @@ class CourseSeeder extends Seeder
         );
 
         $capm1 = $capmCourse->modules()->updateOrCreate(
-            ['title' => 'Modul 1: Kerangka Pengurusan Projek & Domain Prestasi PMBOK®'],
+            ['course_id' => $capmCourse->id, 'order' => 1],
             [
+                'title' => 'Modul 1: Kerangka Pengurusan Projek & Domain Prestasi PMBOK®',
                 'description' => 'Pengenalan kepada kitaran hayat projek, peranan pengurus projek, dan domain prestasi projek berpandukan standard global PMI.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
-                'order' => 1,
+                'media_url' => 'https://www.youtube.com/watch?v=Wg7575ZVxxg',
             ]
         );
-        $capm1->lessons()->firstOrCreate(
-            ['title' => 'Subtopik 1.1: Asas Metodologi Projek & Kod Etika PMI'],
+        $capm1->lessons()->updateOrCreate(
+            ['module_id' => $capm1->id, 'order' => 1],
             [
+                'title' => 'Subtopik 1.1: Asas Metodologi Projek & Kod Etika PMI',
                 'content_type' => 'link',
-                'content_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
-                'order' => 1,
+                'content_url' => 'https://www.youtube.com/watch?v=Wg7575ZVxxg',
             ]
         );
 
         $capm2 = $capmCourse->modules()->updateOrCreate(
-            ['title' => 'Modul 2: Pendekatan Pembangunan & Prinsip Agile/Hibrid'],
+            ['course_id' => $capmCourse->id, 'order' => 2],
             [
+                'title' => 'Modul 2: Pendekatan Pembangunan & Prinsip Agile/Hibrid',
                 'description' => 'Memahami perbezaan antara pendekatan prediktif (waterfall), adaptif (Agile, Scrum), dan hibrid dalam mengurus skop dan jadual projek.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
-                'order' => 2,
+                'media_url' => 'https://www.youtube.com/watch?v=YP_ZcGdlbH0',
             ]
         );
-        $capm2->lessons()->firstOrCreate(
-            ['title' => 'Subtopik 2.1: Upacara Scrum & Peranan Product Owner / Scrum Master'],
+        $capm2->lessons()->updateOrCreate(
+            ['module_id' => $capm2->id, 'order' => 1],
             [
+                'title' => 'Subtopik 2.1: Upacara Scrum & Peranan Product Owner / Scrum Master',
                 'content_type' => 'link',
-                'content_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
-                'order' => 1,
+                'content_url' => 'https://www.youtube.com/watch?v=YP_ZcGdlbH0',
             ]
         );
 
         $capm3 = $capmCourse->modules()->updateOrCreate(
-            ['title' => 'Modul 3: Pengurusan Risiko, Kualiti & Penyerahan Nilai Perniagaan'],
+            ['course_id' => $capmCourse->id, 'order' => 3],
             [
+                'title' => 'Modul 3: Pengurusan Risiko, Kualiti & Penyerahan Nilai Perniagaan',
                 'description' => 'Strategi pengenalpastian risiko awal, analisis impak kualitatif/kuantitatif, dan pengukuran pulangan nilai bagi pihak berkepentingan.',
-                'content_type' => 'embed',
-                'media_url' => 'https://www.youtube.com/embed/aircAruvnKk',
-                'order' => 3,
+                'content_type' => 'link',
+                'media_url' => 'https://www.pmi.org/certifications/certified-associate-capm',
             ]
         );
-        $capm3->lessons()->firstOrCreate(
-            ['title' => 'Subtopik 3.1: Matriks Penilaian Risiko & Pelan Tindak Balas Mitigasi'],
+        $capm3->lessons()->updateOrCreate(
+            ['module_id' => $capm3->id, 'order' => 1],
             [
-                'content_type' => 'embed',
-                'content_url' => 'https://www.youtube.com/embed/aircAruvnKk',
-                'order' => 1,
+                'title' => 'Subtopik 3.1: Matriks Penilaian Risiko & Pelan Tindak Balas Mitigasi',
+                'content_type' => 'link',
+                'content_url' => 'https://www.pmi.org/certifications/certified-associate-capm',
             ]
         );
 
@@ -260,31 +260,35 @@ class CourseSeeder extends Seeder
             ]
         );
 
-        if ($aiCourse->modules()->count() === 0) {
-            $aiCourse->modules()->create([
-                'title' => 'Chapter-1st Intro to ai',
+        $aiCourse->modules()->updateOrCreate(
+            ['course_id' => $aiCourse->id, 'order' => 1],
+            [
+                'title' => 'Chapter 1: Introduction to Artificial Intelligence',
                 'description' => 'Fundamental concepts of artificial intelligence, machine learning history, and real-world applications.',
                 'content_type' => 'link',
                 'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
-                'order' => 1,
-            ]);
+            ]
+        );
 
-            $aiCourse->modules()->create([
-                'title' => 'Chapter-2 ai',
+        $aiCourse->modules()->updateOrCreate(
+            ['course_id' => $aiCourse->id, 'order' => 2],
+            [
+                'title' => 'Chapter 2: Applied Generative AI & Google Gemini',
                 'description' => 'Core AI paradigms: supervised learning, unsupervised learning, and neural network fundamentals.',
                 'content_type' => 'link',
                 'media_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
-                'order' => 2,
-            ]);
+            ]
+        );
 
-            $aiCourse->modules()->create([
-                'title' => 'chaprter 3',
+        $aiCourse->modules()->updateOrCreate(
+            ['course_id' => $aiCourse->id, 'order' => 3],
+            [
+                'title' => 'Chapter 3: Neural Networks & Deep Learning Fundamentals',
                 'description' => 'Interactive deep learning demonstration, modern LLMs, and ethical considerations in AI.',
                 'content_type' => 'embed',
                 'media_url' => 'https://www.youtube.com/embed/aircAruvnKk',
-                'order' => 3,
-            ]);
-        }
+            ]
+        );
 
         if ($aiCourse->assessments()->count() === 0) {
             $aiCourse->assessments()->create([
@@ -322,29 +326,33 @@ class CourseSeeder extends Seeder
             ]
         );
 
-        if ($cpFund->modules()->count() === 0) {
-            $cpFund->modules()->create([
+        $cpFund->modules()->updateOrCreate(
+            ['course_id' => $cpFund->id, 'order' => 1],
+            [
                 'title' => 'Unit 1: UNCRC & International Legal Frameworks',
                 'description' => 'Understanding the UN Convention on the Rights of the Child (UNCRC) and state obligations.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
-                'order' => 1,
-            ]);
-            $cpFund->modules()->create([
+                'media_url' => 'https://www.youtube.com/watch?v=bkQqMawi2-Y',
+            ]
+        );
+        $cpFund->modules()->updateOrCreate(
+            ['course_id' => $cpFund->id, 'order' => 2],
+            [
                 'title' => 'Unit 2: Identifying Vulnerabilities & Risk Indicators',
                 'description' => 'Recognizing signs of neglect, physical abuse, psychological harm, and environmental risks.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
-                'order' => 2,
-            ]);
-            $cpFund->modules()->create([
+                'media_url' => 'https://www.youtube.com/watch?v=hfrOFoYnnco',
+            ]
+        );
+        $cpFund->modules()->updateOrCreate(
+            ['course_id' => $cpFund->id, 'order' => 3],
+            [
                 'title' => 'Unit 3: Mandatory Reporting & Multi-Agency Referral',
                 'description' => 'Legal reporting responsibilities, inter-agency communication, and keeping the child safe.',
-                'content_type' => 'embed',
-                'media_url' => 'https://www.youtube.com/embed/aircAruvnKk',
-                'order' => 3,
-            ]);
-        }
+                'content_type' => 'link',
+                'media_url' => 'https://www.unicef.org/child-protection',
+            ]
+        );
 
         if ($cpFund->assessments()->count() === 0) {
             $cpFund->assessments()->create([
@@ -373,29 +381,33 @@ class CourseSeeder extends Seeder
             ]
         );
 
-        if ($pssCourse->modules()->count() === 0) {
-            $pssCourse->modules()->create([
+        $pssCourse->modules()->updateOrCreate(
+            ['course_id' => $pssCourse->id, 'order' => 1],
+            [
                 'title' => 'Unit 1: Psychological First Aid (PFA) for Minors',
                 'description' => 'Core action principles: Look, Listen, and Link in humanitarian crisis settings.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
-                'order' => 1,
-            ]);
-            $pssCourse->modules()->create([
+                'media_url' => 'https://www.who.int/publications/i/item/9789241548205',
+            ]
+        );
+        $pssCourse->modules()->updateOrCreate(
+            ['course_id' => $pssCourse->id, 'order' => 2],
+            [
                 'title' => 'Unit 2: Designing Child-Friendly Safe Spaces',
                 'description' => 'Setting up secure, stimulating physical spaces that support healing and peer socialization.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
-                'order' => 2,
-            ]);
-            $pssCourse->modules()->create([
+                'media_url' => 'https://www.unicef.org/protection/child-friendly-spaces',
+            ]
+        );
+        $pssCourse->modules()->updateOrCreate(
+            ['course_id' => $pssCourse->id, 'order' => 3],
+            [
                 'title' => 'Unit 3: Caregiver & Family Engagement',
                 'description' => 'Strengthening caregiver capacity and resilience during displacement or trauma.',
-                'content_type' => 'embed',
-                'media_url' => 'https://www.youtube.com/embed/aircAruvnKk',
-                'order' => 3,
-            ]);
-        }
+                'content_type' => 'link',
+                'media_url' => 'https://www.unicef.org/parenting',
+            ]
+        );
 
         if ($pssCourse->assessments()->count() === 0) {
             $pssCourse->assessments()->create([
@@ -424,29 +436,33 @@ class CourseSeeder extends Seeder
             ]
         );
 
-        if ($cmCourse->modules()->count() === 0) {
-            $cmCourse->modules()->create([
+        $cmCourse->modules()->updateOrCreate(
+            ['course_id' => $cmCourse->id, 'order' => 1],
+            [
                 'title' => 'Unit 1: Step 1-2: Identification & Needs Assessment',
                 'description' => 'Immediate intake, informed consent/assent, and safety planning.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
-                'order' => 1,
-            ]);
-            $cmCourse->modules()->create([
+                'media_url' => 'https://alliancecpha.org/en/child-protection-hub/child-protection-case-management',
+            ]
+        );
+        $cmCourse->modules()->updateOrCreate(
+            ['course_id' => $cmCourse->id, 'order' => 2],
+            [
                 'title' => 'Unit 2: Step 3-4: Action Planning & Multi-Agency Referral',
                 'description' => 'Developing child-centered case plans and coordinating specialist medical or legal support.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=PDMcpthR88U',
-                'order' => 2,
-            ]);
-            $cmCourse->modules()->create([
+                'media_url' => 'https://alliancecpha.org/en/system/files/library/cm_guidelines_english_web_0.pdf',
+            ]
+        );
+        $cmCourse->modules()->updateOrCreate(
+            ['course_id' => $cmCourse->id, 'order' => 3],
+            [
                 'title' => 'Unit 3: Step 5-6: Case Monitoring, Evaluation & Safe Closure',
                 'description' => 'Periodic case review, family stabilization indicators, and safe case transition.',
-                'content_type' => 'embed',
-                'media_url' => 'https://www.youtube.com/embed/aircAruvnKk',
-                'order' => 3,
-            ]);
-        }
+                'content_type' => 'link',
+                'media_url' => 'https://alliancecpha.org/en/resources/case-management-standard',
+            ]
+        );
 
         if ($cmCourse->assessments()->count() === 0) {
             $cmCourse->assessments()->create([
@@ -475,15 +491,15 @@ class CourseSeeder extends Seeder
             ]
         );
 
-        if ($safePolicy->modules()->count() === 0) {
-            $safePolicy->modules()->create([
+        $safePolicy->modules()->updateOrCreate(
+            ['course_id' => $safePolicy->id, 'order' => 1],
+            [
                 'title' => 'Draft Unit 1: Organizational Risk Audit & Code of Conduct',
                 'description' => 'Draft policies, vetting staff, and establishing clear behavioral boundaries.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
-                'order' => 1,
-            ]);
-        }
+                'media_url' => 'https://www.keepingchildrensafe.global/standards/',
+            ]
+        );
 
         // -------------------------------------------------------------
         // 8. Legacy Course: Basic Hygiene Promotion (Archived)
@@ -501,14 +517,14 @@ class CourseSeeder extends Seeder
             ]
         );
 
-        if ($legacyCourse->modules()->count() === 0) {
-            $legacyCourse->modules()->create([
+        $legacyCourse->modules()->updateOrCreate(
+            ['course_id' => $legacyCourse->id, 'order' => 1],
+            [
                 'title' => 'Archived Unit: WASH Principles for Emergency Camps',
                 'description' => 'Archived lecture notes and historical health promotion guides.',
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=ad79nYk2keg',
-                'order' => 1,
-            ]);
-        }
+                'media_url' => 'https://www.who.int/teams/environment-climate-change-and-health/water-sanitation-and-health',
+            ]
+        );
     }
 }
