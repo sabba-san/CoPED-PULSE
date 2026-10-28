@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\CourseMessage;
 use App\Models\Enrollment;
-use App\Models\User;
-use App\Services\WhatsAppApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -104,13 +102,6 @@ class CourseChatController extends Controller
             'body' => $validated['body'],
         ]);
 
-        // Attempt WhatsApp Cloud API dispatch if recipient has phone
-        try {
-            app(WhatsAppApiService::class)->dispatchMessage($message);
-        } catch (\Throwable $e) {
-            // Silently log or continue
-        }
-
         if ($request->wantsJson() && ! $request->header('X-Inertia')) {
             return response()->json(
                 $message->load(['sender:id,name,email,role,phone', 'recipient:id,name,email,role,phone']),
@@ -162,76 +153,5 @@ class CourseChatController extends Controller
         }
 
         return back();
-    }
-
-    /**
-     * Simulate an incoming WhatsApp reply into the course chat.
-     */
-    public function simulateWhatsapp(Request $request, Course $course, WhatsAppApiService $whatsappService): JsonResponse|RedirectResponse
-    {
-        $user = $request->user();
-        $this->authorizeCourseAccess($user, $course);
-
-        if (! ($user->isStaffOrCoordinator() || $course->instructor_id === $user->id)) {
-            abort(403, 'WhatsApp simulation is reserved for faculty instructors and coordinators.');
-        }
-
-        $validated = $request->validate([
-            'body' => ['nullable', 'string', 'max:5000'],
-            'sender_id' => ['nullable', 'exists:users,id'],
-            'recipient_id' => ['nullable', 'exists:users,id'],
-        ]);
-
-        $senderId = $validated['sender_id'] ?? null;
-        $recipientId = $validated['recipient_id'] ?? null;
-
-        if (! $senderId) {
-            $learnerEnrollment = Enrollment::where('course_id', $course->id)->first();
-            $senderId = $learnerEnrollment?->user_id ?? User::where('role', User::ROLE_LEARNER)->first()?->id ?? $user->id;
-            $recipientId = $recipientId ?? $user->id;
-        }
-
-        $message = $whatsappService->simulateIncomingReply(
-            courseId: $course->id,
-            senderUserId: (int) $senderId,
-            text: $validated['body'],
-            recipientId: $recipientId ? (int) $recipientId : null
-        );
-
-        if ($request->wantsJson() && ! $request->header('X-Inertia')) {
-            return response()->json(
-                $message->load(['sender:id,name,email,role,phone', 'recipient:id,name,email,role,phone']),
-                201
-            );
-        }
-
-        return back()->with('success', 'WhatsApp simulated reply received.');
-    }
-
-    /**
-     * Update the course WhatsApp Group link.
-     */
-    public function updateWhatsappLink(Request $request, Course $course): JsonResponse|RedirectResponse
-    {
-        $user = $request->user();
-
-        if (! ($user->isStaffOrCoordinator() || $course->instructor_id === $user->id)) {
-            abort(403, 'Unauthorized to update course WhatsApp settings.');
-        }
-
-        $validated = $request->validate([
-            'whatsapp_group_url' => ['nullable', 'url', 'max:500'],
-        ]);
-
-        $course->update($validated);
-
-        if ($request->wantsJson() && ! $request->header('X-Inertia')) {
-            return response()->json([
-                'message' => 'WhatsApp group link updated successfully.',
-                'whatsapp_group_url' => $course->whatsapp_group_url,
-            ]);
-        }
-
-        return back()->with('success', 'WhatsApp group link updated successfully.');
     }
 }

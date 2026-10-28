@@ -7,42 +7,44 @@ export default function StaffLayout({ children }) {
     const { url } = usePage();
     const { auth, flash } = usePage().props;
 
+    const isCoordinator = auth?.user?.role === 'coordinator';
+
     const navLinks = [
         { name: 'Dashboard', href: route('dashboard'), active: url === '/dashboard' },
-        { name: 'Courses', href: route('staff.courses.index'), active: url.startsWith('/staff/courses') },
+        { name: 'My courses', href: route('staff.courses.index'), active: url.startsWith('/staff/courses') },
         ...(auth?.user?.organization_id
-            ? [{ name: 'Organization', href: route('staff.organization.show'), active: url.startsWith('/staff/organization') }]
+            ? [{ name: 'Site administration', href: route('staff.organization.show'), active: url.startsWith('/staff/organization') }]
             : []),
     ];
 
     return (
-        <div className="min-h-screen bg-[#F9FAFB] text-[#111827] font-sans w-full max-w-[100vw] overflow-x-hidden">
-            {/* Top Navigation */}
-            <nav className="sticky top-0 z-50 bg-white border-b-2 border-[#E5E7EB] w-full max-w-full">
-                <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-[#E5EAF0] text-[#1E293B] font-sans w-full max-w-[100vw] overflow-x-hidden">
+            {/* Low-Glare Institutional Slate Top Navigation Bar */}
+            <nav className="sticky top-0 z-50 bg-[#1E293B] border-b border-[#0F172A] w-full max-w-full">
+                <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-14 sm:h-16 items-center w-full max-w-full gap-2">
-                        <div className="flex items-center space-x-3 sm:space-x-8">
-                            <Link href={route('dashboard')} className="flex items-center space-x-2 sm:space-x-3 shrink-0" aria-label="CoPED PULSE Staff Home">
-                                <img src={logo} alt="CoPED PULSE Logo" className="h-7 sm:h-8 w-auto" />
-                                <span className="text-sm sm:text-xl font-display font-black tracking-tight text-[#111827] flex items-center">
-                                    CoPED PULSE
-                                    {auth?.user?.role === 'coordinator' ? (
-                                        <span className="hidden xs:inline-block text-[10px] sm:text-xs uppercase tracking-wider font-extrabold px-1.5 sm:px-2 py-0.5 bg-amber-500 text-white rounded ml-1.5 sm:ml-2">Coordinator</span>
-                                    ) : (
-                                        <span className="hidden xs:inline-block text-[10px] sm:text-xs uppercase tracking-wider font-extrabold px-1.5 sm:px-2 py-0.5 bg-[#10B981] text-white rounded ml-1.5 sm:ml-2">Instructor</span>
-                                    )}
-                                </span>
+                        <div className="flex items-center h-full space-x-4 sm:space-x-6">
+                            <Link href={route('dashboard')} className="flex items-center space-x-2.5 shrink-0" aria-label="UUM CoPED LMS Home">
+                                <img src={logo} alt="UUM CoPED Logo" className="h-7 sm:h-8 w-auto bg-[#F8FAFC] rounded p-0.5" />
+                                <div className="leading-tight">
+                                    <span className="text-sm sm:text-base font-display font-bold tracking-tight text-[#F8FAFC] block">
+                                        UUM CoPED
+                                    </span>
+                                    <span className="text-[11px] text-slate-300 font-medium hidden sm:block">
+                                        {isCoordinator ? 'Coordinator Portal' : 'Instructor Portal'}
+                                    </span>
+                                </div>
                             </Link>
-                            
-                            <div className="hidden md:flex space-x-2">
+
+                            <div className="hidden md:flex items-center h-full space-x-1 border-l border-slate-700 pl-6">
                                 {navLinks.map((link) => (
                                     <Link
                                         key={link.name}
                                         href={link.href}
-                                        className={`px-4 py-2 rounded-md text-sm transition-colors ${
+                                        className={`h-full inline-flex items-center px-3 text-sm border-b-2 transition-colors ${
                                             link.active
-                                                ? 'bg-[#111827] text-white font-bold'
-                                                : 'text-gray-700 hover:text-[#111827] hover:bg-[#F3F4F6] font-semibold'
+                                                ? 'border-[#38BDF8] text-white font-semibold'
+                                                : 'border-transparent text-slate-300 hover:text-white hover:border-slate-500 font-medium'
                                         }`}
                                     >
                                         {link.name}
@@ -51,7 +53,7 @@ export default function StaffLayout({ children }) {
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-2 sm:space-x-3">
+                        <div className="flex items-center space-x-2.5">
                             <ChatNotificationBell isStaff={true} />
                             <UserProfileDropdown />
                         </div>
@@ -61,20 +63,20 @@ export default function StaffLayout({ children }) {
 
             {/* Global Flash Messages */}
             {flash?.success && (
-                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                    <div className="bg-emerald-50 border-2 border-[#10B981] text-[#065F46] rounded-md px-4 sm:px-5 py-3 text-sm font-bold flex items-center justify-between">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+                    <div className="bg-[#ECFDF5] border border-[#10B981] text-[#065F46] rounded px-4 py-3 text-sm font-medium flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 bg-[#10B981] text-white rounded-full flex items-center justify-center text-xs font-black">✓</span>
+                            <span className="w-5 h-5 bg-[#10B981] text-white rounded-full flex items-center justify-center text-xs font-bold">✓</span>
                             <span>{flash.success}</span>
                         </div>
                     </div>
                 </div>
             )}
             {flash?.error && (
-                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                    <div className="bg-red-50 border-2 border-red-500 text-red-900 rounded-md px-4 sm:px-5 py-3 text-sm font-bold flex items-center justify-between">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+                    <div className="bg-[#FEF2F2] border border-[#EF4444] text-[#991B1B] rounded px-4 py-3 text-sm font-medium flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-black">!</span>
+                            <span className="w-5 h-5 bg-[#EF4444] text-white rounded-full flex items-center justify-center text-xs font-bold">!</span>
                             <span>{flash.error}</span>
                         </div>
                     </div>
@@ -82,62 +84,58 @@ export default function StaffLayout({ children }) {
             )}
 
             {/* Main Content Area */}
-            <main className="max-w-7xl mx-auto py-6 sm:py-8 px-3 sm:px-6 lg:px-8 pb-20 md:pb-8">
+            <main className="max-w-6xl mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8 pb-20 md:pb-12">
                 {children}
             </main>
 
-            {/* Sticky Mobile Bottom Navigation Bar: 4-Column Flat App Bar */}
+            {/* Mobile Bottom Navigation Bar */}
             <nav
                 aria-label="Mobile Bottom Navigation"
-                className="md:hidden fixed bottom-0 inset-x-0 z-40 w-full max-w-full bg-white border-t-2 border-[#111827] print:hidden"
+                className="md:hidden fixed bottom-0 inset-x-0 z-40 w-full max-w-full bg-[#1E293B] border-t border-[#0F172A] print:hidden"
             >
-                <div className="grid grid-cols-4 w-full max-w-full divide-x-2 divide-gray-200">
+                <div className="grid grid-cols-4 w-full max-w-full divide-x divide-slate-700">
                     <Link
                         href={route('dashboard')}
-                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
+                        className={`min-h-[52px] w-full flex flex-col items-center justify-center py-1.5 px-1 text-center transition-colors min-w-0 ${
                             url === '/dashboard'
-                                ? 'bg-[#111827] text-white font-black'
-                                : 'text-gray-700 hover:bg-[#F3F4F6] font-bold'
+                                ? 'bg-[#0F172A] text-white font-semibold'
+                                : 'text-slate-300 hover:bg-slate-800 font-medium'
                         }`}
                     >
-                        <span className="text-base leading-none mb-1 shrink-0">📊</span>
-                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Studio</span>
+                        <span className="text-[11px] leading-tight truncate w-full text-center">Dashboard</span>
                     </Link>
 
                     <Link
                         href={route('staff.courses.index')}
-                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
+                        className={`min-h-[52px] w-full flex flex-col items-center justify-center py-1.5 px-1 text-center transition-colors min-w-0 ${
                             url.startsWith('/staff/courses') && !url.includes('/create')
-                                ? 'bg-[#111827] text-white font-black'
-                                : 'text-gray-700 hover:bg-[#F3F4F6] font-bold'
+                                ? 'bg-[#0F172A] text-white font-semibold'
+                                : 'text-slate-300 hover:bg-slate-800 font-medium'
                         }`}
                     >
-                        <span className="text-base leading-none mb-1 shrink-0">📁</span>
-                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Courses</span>
+                        <span className="text-[11px] leading-tight truncate w-full text-center">My courses</span>
                     </Link>
 
                     <Link
                         href={route('staff.courses.create')}
-                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
+                        className={`min-h-[52px] w-full flex flex-col items-center justify-center py-1.5 px-1 text-center transition-colors min-w-0 ${
                             url.includes('/create')
-                                ? 'bg-[#10B981] text-white font-black'
-                                : 'text-[#065F46] bg-emerald-50 hover:bg-emerald-100 font-bold'
+                                ? 'bg-[#0F172A] text-white font-semibold'
+                                : 'text-slate-300 hover:bg-slate-800 font-medium'
                         }`}
                     >
-                        <span className="text-base leading-none mb-1 shrink-0">➕</span>
-                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Create</span>
+                        <span className="text-[11px] leading-tight truncate w-full text-center">New course</span>
                     </Link>
 
                     <Link
                         href={route('profile.edit')}
-                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
+                        className={`min-h-[52px] w-full flex flex-col items-center justify-center py-1.5 px-1 text-center transition-colors min-w-0 ${
                             url.startsWith('/profile')
-                                ? 'bg-[#111827] text-white font-black'
-                                : 'text-gray-700 hover:bg-[#F3F4F6] font-bold'
+                                ? 'bg-[#0F172A] text-white font-semibold'
+                                : 'text-slate-300 hover:bg-slate-800 font-medium'
                         }`}
                     >
-                        <span className="text-base leading-none mb-1 shrink-0">👤</span>
-                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Profile</span>
+                        <span className="text-[11px] leading-tight truncate w-full text-center">Profile</span>
                     </Link>
                 </div>
             </nav>

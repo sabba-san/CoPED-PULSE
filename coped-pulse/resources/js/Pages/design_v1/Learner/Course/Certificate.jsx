@@ -3,10 +3,15 @@ import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 import CourseLogoBadge, { LOGO_CONFIG } from '@/Components/flat/CourseLogoBadge';
 
 const PRINT_CSS = `
-@page { size: A4 landscape; margin: 10mm; }
+@page { size: A4 landscape; margin: 0; }
 @media print {
-    html, body { background: #ffffff !important; }
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    html, body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
 }
 `;
 
@@ -27,12 +32,22 @@ export default function Certificate({ course, enrollment }) {
     const verificationId = `COPED-${enrollment.id}-${course.id}`;
     const instructorName = course.instructor?.name || 'Faculty Instructor';
 
+    const handlePrint = () => {
+        const sanitizedTitle = (course.title || 'Course').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const prevTitle = document.title;
+        document.title = `CoPED-PULSE-Certificate-${sanitizedTitle}`;
+        window.print();
+        setTimeout(() => {
+            document.title = prevTitle;
+        }, 1000);
+    };
+
     return (
         <LearnerLayout>
             <Head title={`Certificate: ${course.title}`} />
             <style>{PRINT_CSS}</style>
 
-            <div className="max-w-5xl mx-auto space-y-5 print:space-y-0 print:max-w-none">
+            <div className="max-w-5xl mx-auto space-y-5 print:space-y-0 print:max-w-none print:p-8">
                 {/* Top Action Bar (hidden in print) */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
                     <Link
@@ -44,7 +59,7 @@ export default function Certificate({ course, enrollment }) {
                     </Link>
                     <button
                         type="button"
-                        onClick={() => window.print()}
+                        onClick={handlePrint}
                         className="inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-[#10B981] text-white font-bold text-sm px-5 py-2.5 rounded transition-colors duration-200"
                     >
                         <span>&#11015;</span>
@@ -121,7 +136,7 @@ export default function Certificate({ course, enrollment }) {
                 {course.cert_title && (
                     <section
                         aria-label="Industry certification pathway"
-                        className="bg-[#FEF3C7] border-2 border-[#F59E0B] rounded-lg p-5 print:p-3 flex flex-col md:flex-row md:items-center justify-between gap-4 print:gap-2 break-inside-avoid print:mt-3"
+                        className="bg-[#FEF3C7] border-2 border-[#F59E0B] rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden"
                     >
                         <div className="flex items-start gap-3">
                             <span className="text-2xl shrink-0 print:text-xl">&#127891;</span>

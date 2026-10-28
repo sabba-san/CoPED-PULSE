@@ -290,13 +290,17 @@ class CourseSeeder extends Seeder
             ]
         );
 
-        if ($aiCourse->assessments()->count() === 0) {
+        $aiCourse->assessments()->where('question', 'like', '%fox say%')->delete();
+
+        if ($aiCourse->assessments()->count() < 2) {
+            $aiCourse->assessments()->delete();
+
             $aiCourse->assessments()->create([
-                'question' => 'what does the fox say ?',
-                'option_a' => 'meow',
-                'option_b' => 'AAA',
-                'option_c' => 'Artificial intelligence',
-                'option_d' => 'VVV',
+                'question' => 'Which machine learning paradigm trains a model using labeled input-output pairs?',
+                'option_a' => 'Supervised Learning',
+                'option_b' => 'Unsupervised Clustering',
+                'option_c' => 'Hardware Overclocking',
+                'option_d' => 'Relational Database Indexing',
                 'correct_option' => 'a',
             ]);
 
@@ -526,5 +530,107 @@ class CourseSeeder extends Seeder
                 'media_url' => 'https://www.who.int/teams/environment-climate-change-and-health/water-sanitation-and-health',
             ]
         );
+
+        // -------------------------------------------------------------
+        // 9. Outcome-Based Education (OBE) & Digital Pedagogy (Fresh SV Evaluation Course)
+        // -------------------------------------------------------------
+        $obeCourse = Course::updateOrCreate(
+            ['title' => 'Outcome-Based Education (OBE) & Digital Pedagogy'],
+            [
+                'description' => 'Comprehensive professional development course for university educators on Constructive Alignment, Bloom\'s Taxonomy, Course Learning Outcomes (CLOs), and digital assessment design in higher education.',
+                'instructor_id' => $staffId,
+                'status' => 'published',
+                'academic_year' => '2026 / 2027 · Semester 1',
+                'category_logo' => 'blue',
+                'billing_type' => 'free',
+                'price' => 0.00,
+                'cert_title' => 'UUM CoPED · Certificate in Outcome-Based Education (OBE)',
+                'cert_url' => 'https://www.mqa.gov.my',
+            ]
+        );
+
+        $obeMod1 = $obeCourse->modules()->updateOrCreate(
+            ['course_id' => $obeCourse->id, 'order' => 1],
+            [
+                'title' => 'Constructive Alignment & Course Learning Outcomes (CLOs)',
+                'description' => 'Formulating measurable Course Learning Outcomes using Bloom\'s Taxonomy and aligning teaching-learning activities with Program Educational Objectives (PEOs).',
+                'duration' => 1800,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=ayeFYhg8y7A',
+            ]
+        );
+
+        $obeMod1->lessons()->updateOrCreate(
+            ['module_id' => $obeMod1->id, 'order' => 1],
+            [
+                'title' => 'Video Lecture: Introduction to Constructive Alignment (John Biggs)',
+                'content' => 'Core principles of aligning intended learning outcomes, teaching methods, and assessment tasks.',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=ayeFYhg8y7A',
+                'duration' => 900,
+            ]
+        );
+
+        $obeMod1->lessons()->updateOrCreate(
+            ['module_id' => $obeMod1->id, 'order' => 2],
+            [
+                'title' => 'Reference Guide: Revised Bloom\'s Taxonomy Action Verbs',
+                'content' => 'Cognitive domain action verbs from Remembering and Understanding to Evaluating and Creating.',
+                'content_type' => 'link',
+                'content_url' => 'https://www.mqa.gov.my',
+                'duration' => 900,
+            ]
+        );
+
+        $obeMod2 = $obeCourse->modules()->updateOrCreate(
+            ['course_id' => $obeCourse->id, 'order' => 2],
+            [
+                'title' => 'Designing Formative & Summative Digital Assessments',
+                'description' => 'Building valid assessment rubrics, mastery quizzes, and continuous quality improvement (CQI) feedback loops in an institutional LMS.',
+                'duration' => 2100,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=JI-YgKMVlZc',
+            ]
+        );
+
+        $obeMod2->lessons()->updateOrCreate(
+            ['module_id' => $obeMod2->id, 'order' => 1],
+            [
+                'title' => 'Video Lecture: Formative vs. Summative Evaluation Strategies',
+                'content' => 'Designing diagnostic, formative, and summative assessments to measure student mastery.',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=JI-YgKMVlZc',
+                'duration' => 1200,
+            ]
+        );
+
+        if ($obeCourse->assessments()->whereNull('module_id')->count() === 0) {
+            $obeCourse->assessments()->create([
+                'question' => 'In Outcome-Based Education (OBE), what does John Biggs\' principle of Constructive Alignment require?',
+                'option_a' => 'Grading students strictly on a bell curve regardless of learning outcomes',
+                'option_b' => 'Directly aligning teaching-learning activities and assessment tasks with the intended Course Learning Outcomes (CLOs)',
+                'option_c' => 'Replacing all written examinations with attendance marks',
+                'option_d' => 'Scheduling lectures only in the morning session',
+                'correct_option' => 'b',
+            ]);
+
+            $obeCourse->assessments()->create([
+                'question' => 'Which cognitive level represents the highest order of thinking in the revised Bloom\'s Taxonomy?',
+                'option_a' => 'Creating',
+                'option_b' => 'Remembering',
+                'option_c' => 'Understanding',
+                'option_d' => 'Applying',
+                'correct_option' => 'a',
+            ]);
+
+            $obeCourse->assessments()->create([
+                'question' => 'What is the primary purpose of Formative Assessment during a semester?',
+                'option_a' => 'To issue the final graduation transcript at convocation',
+                'option_b' => 'To rank departments by research funding',
+                'option_c' => 'To monitor student learning continuously and provide actionable feedback for improvement',
+                'option_d' => 'To archive old course syllabi',
+                'correct_option' => 'c',
+            ]);
+        }
     }
 }

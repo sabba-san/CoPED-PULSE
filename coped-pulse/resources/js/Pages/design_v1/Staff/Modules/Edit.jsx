@@ -4,7 +4,7 @@ import QuestionCard from '../Partials/QuestionCard';
 import QuestionEditForm from '../Partials/QuestionEditForm';
 import QuestionForm from '../Partials/QuestionForm';
 import { useEffect, useState } from 'react';
-import { formatEmbedUrl, isVideoUrl, safeUrl } from '@/Utils/mediaUtils';
+import { formatEmbedUrl, isPdfFile, isVideoUrl, safeUrl } from '@/Utils/mediaUtils';
 
 const MAX_MODULE_FILE_SIZE = 15 * 1024 * 1024; // 15MB - must stay below PHP post_max_size
 const MAX_MODULE_FILE_LABEL = '15MB';
@@ -32,6 +32,7 @@ export default function Edit({ course, module, assessments, finalAssessments = [
 
     // Materials Sub-Tab: 'info' | 'subtopics'
     const [materialsSubTab, setMaterialsSubTab] = useState(initialSubtab);
+    const [previewMaterial, setPreviewMaterial] = useState(null);
 
     const [details, setDetails] = useState({
         title: module.title || '',
@@ -111,7 +112,6 @@ export default function Edit({ course, module, assessments, finalAssessments = [
         content: '',
         content_type: initialType,
         content_url: '',
-        transcript: '',
         file: null,
     });
     const [lessonErrors, setLessonErrors] = useState({});
@@ -130,13 +130,12 @@ export default function Edit({ course, module, assessments, finalAssessments = [
             content: newLesson.content,
             content_type: newLesson.content_type,
             content_url: newLesson.content_url,
-            transcript: newLesson.transcript,
             file: newLesson.file,
         }, {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => {
-                setNewLesson({ title: '', content: '', content_type: 'link', content_url: '', transcript: '', file: null });
+                setNewLesson({ title: '', content: '', content_type: 'link', content_url: '', file: null });
                 setFileAlert(null);
                 pop('Subtopic added.');
             },
@@ -153,7 +152,6 @@ export default function Edit({ course, module, assessments, finalAssessments = [
             content: l.content || '',
             content_type: l.content_type === 'file' ? 'file' : 'link',
             content_url: l.content_url || '',
-            transcript: l.transcript || '',
             file: null,
         });
     };
@@ -166,7 +164,6 @@ export default function Edit({ course, module, assessments, finalAssessments = [
             content: lessonDraft.content,
             content_type: lessonDraft.content_type,
             content_url: lessonDraft.content_url,
-            transcript: lessonDraft.transcript,
             file: lessonDraft.file,
         }, {
             preserveScroll: true,
@@ -299,7 +296,7 @@ export default function Edit({ course, module, assessments, finalAssessments = [
                                         : 'bg-white border-[#E5E7EB] text-gray-700 hover:border-[#10B981]'
                                 }`}
                             >
-                                1. Module Info
+                                1. Chapter Overview Media
                             </button>
                             <button
                                 type="button"
@@ -310,7 +307,7 @@ export default function Edit({ course, module, assessments, finalAssessments = [
                                         : 'bg-white border-[#E5E7EB] text-gray-700 hover:border-[#10B981]'
                                 }`}
                             >
-                                2. Subtopics & Materials ({lessons.length})
+                                2. Subtopic Lessons & Materials ({lessons.length})
                             </button>
                         </div>
 
@@ -320,10 +317,10 @@ export default function Edit({ course, module, assessments, finalAssessments = [
                                 <div className="border-b-2 border-[#E5E7EB] pb-4 flex items-center justify-between">
                                     <div>
                                         <h2 className="text-xl font-extrabold text-[#111827] font-display">
-                                            1. Module Topic & Overview
+                                            1. Chapter Overview Media (Main Unit Stage)
                                         </h2>
                                         <p className="text-xs text-gray-500 mt-0.5">
-                                            Primary title, estimated completion duration, and learning goals for this chapter.
+                                            Primary introductory video or reference link shown when a learner first opens this chapter.
                                         </p>
                                     </div>
                                     <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded">
@@ -419,8 +416,12 @@ export default function Edit({ course, module, assessments, finalAssessments = [
                                 <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                                         <div>
-                                            <h2 className="text-xl font-extrabold text-[#111827] font-display">Subtopics & Materials</h2>
-                                            <p className="text-xs text-gray-500 mt-0.5">Lectures, videos, PDF slides, documents, and transcripts.</p>
+                                            <h2 className="text-xl font-extrabold text-[#111827] font-display">
+                                                2. Subtopic Lessons & Downloadable Materials (PDFs, Slides & Extra Videos)
+                                            </h2>
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                Add individual subtopics, downloadable PDF notes, or supplementary links inside this chapter.
+                                            </p>
                                         </div>
                                         <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded shrink-0">
                                             {lessons.length} Item{lessons.length === 1 ? '' : 's'}
@@ -532,15 +533,6 @@ export default function Edit({ course, module, assessments, finalAssessments = [
                                                                 {fileAlert && <p className="mt-1 text-xs font-bold text-red-600">{fileAlert}</p>}
                                                             </div>
                                                             )}
-                                                            <div className="sm:col-span-2">
-                                                                <label className="block text-xs font-bold text-[#111827] mb-1">Transcript (optional)</label>
-                                                                <textarea
-                                                                    rows={2}
-                                                                    value={lessonDraft.transcript}
-                                                                    onChange={(e) => setLessonDraft((p) => ({ ...p, transcript: e.target.value }))}
-                                                                    className="block w-full px-3 py-2 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] focus:bg-white focus:border-[#10B981] focus:outline-none resize-y"
-                                                                />
-                                                            </div>
                                                         </div>
                                                         <div className="flex justify-end space-x-2 pt-1">
                                                             <button
@@ -568,6 +560,19 @@ export default function Edit({ course, module, assessments, finalAssessments = [
                                                                 <span className="text-[#10B981] mr-1">{li + 1}.</span> {l.title}
                                                             </p>
                                                             <div className="flex items-center gap-2 shrink-0">
+                                                                {(l.content_url || l.file) && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setPreviewMaterial({
+                                                                            title: l.title,
+                                                                            url: l.content_url,
+                                                                            contentType: l.content_type,
+                                                                        })}
+                                                                        className="px-2.5 py-1 text-xs font-extrabold text-[#111827] bg-white border border-[#E5E7EB] hover:border-[#111827] rounded transition-colors"
+                                                                    >
+                                                                        👁 Preview
+                                                                    </button>
+                                                                )}
                                                                 <button onClick={() => startLessonEdit(l)} className="text-amber-700 hover:text-amber-800 text-xs font-bold">Edit</button>
                                                                 <button onClick={() => deleteLesson(l)} className="text-red-600 hover:text-red-700 text-xs font-bold">Delete</button>
                                                             </div>
@@ -575,7 +580,6 @@ export default function Edit({ course, module, assessments, finalAssessments = [
                                                         <div className="mt-1 flex flex-wrap gap-2 text-[11px] font-bold text-gray-500">
                                                             {l.content_type && <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] uppercase">{l.content_type}</span>}
                                                             {l.content_url && <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB]">has media</span>}
-                                                            {l.transcript && <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB]">has transcript</span>}
                                                         </div>
                                                     </div>
                                                 )
@@ -696,16 +700,6 @@ export default function Edit({ course, module, assessments, finalAssessments = [
                                                 {fileAlert && <p className="mt-2 text-sm font-bold text-red-600">{fileAlert}</p>}
                                             </div>
                                             )}
-                                            <div className="sm:col-span-2">
-                                                <label className="block text-sm font-bold text-[#111827] mb-2">Transcript (optional)</label>
-                                                <textarea
-                                                    rows={2}
-                                                    value={newLesson.transcript}
-                                                    onChange={(e) => setNewLesson((p) => ({ ...p, transcript: e.target.value }))}
-                                                    placeholder="Video transcript for the Dive deeper panel..."
-                                                    className="block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md sm:text-sm text-[#111827] resize-y focus:bg-white focus:border-[#10B981] focus:outline-none"
-                                                />
-                                            </div>
                                         </div>
                                         <div className="flex justify-end pt-2">
                                             <button
@@ -898,6 +892,114 @@ export default function Edit({ course, module, assessments, finalAssessments = [
                     </div>
                 )}
             </div>
+
+            {previewMaterial && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+                    <div className="bg-white rounded-lg border-2 border-[#111827] w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* Header */}
+                        <div className="bg-[#111827] text-white p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="text-lg">👁</span>
+                                <h3 className="font-extrabold text-sm truncate font-display">
+                                    {previewMaterial.title}
+                                </h3>
+                                {(() => {
+                                    const url = safeUrl(previewMaterial.url) || '';
+                                    const isPdf = isPdfFile(url, previewMaterial.contentType);
+                                    const isVid = isVideoUrl(url, previewMaterial.contentType);
+                                    if (isPdf) {
+                                        return <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-rose-50 text-rose-700 border border-rose-200 shrink-0">PDF DOCUMENT</span>;
+                                    }
+                                    if (isVid) {
+                                        return <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-50 text-blue-700 border border-blue-200 shrink-0">VIDEO EMBED</span>;
+                                    }
+                                    return <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-50 text-amber-700 border border-amber-200 shrink-0">EXTERNAL LINK</span>;
+                                })()}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewMaterial(null)}
+                                className="text-gray-400 hover:text-white text-lg font-bold p-1 leading-none transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-4 overflow-y-auto flex-1 bg-[#F9FAFB]">
+                            {(() => {
+                                const url = safeUrl(previewMaterial.url);
+                                const isPdf = isPdfFile(url, previewMaterial.contentType);
+                                const isVid = isVideoUrl(url, previewMaterial.contentType);
+
+                                if (isPdf) {
+                                    return (
+                                        <div className="space-y-3">
+                                            <div className="p-3 bg-white border-2 border-[#E5E7EB] rounded-md flex items-center justify-between gap-3">
+                                                <span className="text-xs font-bold text-gray-700">PDF Document Preview</span>
+                                                <a
+                                                    href={url}
+                                                    download
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-4 py-2 bg-[#111827] hover:bg-gray-800 text-white font-extrabold text-xs rounded transition-colors inline-flex items-center gap-1.5"
+                                                >
+                                                    <span>⬇ Download PDF Document</span>
+                                                </a>
+                                            </div>
+                                            <div className="border-2 border-[#E5E7EB] rounded-md overflow-hidden bg-white">
+                                                <iframe src={url} title={previewMaterial.title} className="w-full h-[500px] border-0" />
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                if (isVid) {
+                                    return (
+                                        <div className="aspect-video w-full bg-[#111827] rounded-md overflow-hidden border-2 border-[#E5E7EB]">
+                                            <iframe
+                                                src={formatEmbedUrl(url)}
+                                                title={previewMaterial.title}
+                                                className="w-full h-full border-0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                allowFullScreen
+                                            />
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div className="bg-white border-2 border-[#E5E7EB] rounded-md p-8 text-center space-y-4">
+                                        <p className="text-sm font-bold text-[#111827]">External Resource Link</p>
+                                        <p className="text-xs text-gray-600 break-all">{url || 'No URL provided'}</p>
+                                        {url && (
+                                            <a
+                                                href={url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-block px-5 py-2.5 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs rounded transition-colors"
+                                            >
+                                                Open Link in New Tab ↗
+                                            </a>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-3 bg-white border-t-2 border-[#E5E7EB] flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setPreviewMaterial(null)}
+                                className="px-4 py-2 bg-[#F3F4F6] hover:bg-gray-200 text-[#111827] font-bold text-xs rounded transition-colors"
+                            >
+                                Close Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {toast && (
                 <div

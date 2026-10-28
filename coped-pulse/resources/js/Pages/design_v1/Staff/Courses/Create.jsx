@@ -12,9 +12,9 @@ const INPUT_CLASS =
     'block w-full px-4 py-3 bg-[#F3F4F6] border-2 border-transparent rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-[#10B981] focus:outline-none transition-colors';
 
 const STEPS = [
-    { id: 1, label: 'Course Identity', short: 'Course Info' },
-    { id: 2, label: 'Subscription Model', short: 'Pricing' },
-    { id: 3, label: 'Industry Certification', short: 'Certification' },
+    { id: 1, label: 'General & Course Summary', short: 'General' },
+    { id: 2, label: 'Enrollment & Pricing', short: 'Enrollment' },
+    { id: 3, label: 'Certificate & Review', short: 'Certificate' },
 ];
 
 const FIELD_STEP = {
@@ -115,130 +115,80 @@ export default function Create({ instructors = [], isCoordinator = false }) {
         setData('category_logo', next);
     };
 
-    const prefillCapm = () => {
-        setData((prev) => ({
-            ...prev,
-            category_logo: 'amber',
-            cert_title: 'CAPM® · Certified Associate in Project Management',
-            cert_url: 'https://www.pmi.org/certifications/certified-associate-capm',
-            billing_type: 'one_time',
-            price: '199.00',
-        }));
-    };
-
-    const prefillMaritime = () => {
-        setData((prev) => ({
-            ...prev,
-            category_logo: 'navy',
-            cert_title: 'JLM Pelaut & Pegawai Operasi Maritim Certified',
-            cert_url: 'https://www.marine.gov.my',
-            billing_type: 'one_time',
-            price: '150.00',
-        }));
+    const saveImmediately = () => {
+        if (!titleIsValid()) {
+            setStepError('Please enter a Course Title before saving.');
+            setCurrentStep(1);
+            return;
+        }
+        post(route('staff.courses.store'));
     };
 
     const currentTheme = LOGO_CONFIG[data.category_logo] || LOGO_CONFIG.charcoal || LOGO_CONFIG.general;
 
     return (
         <StaffLayout>
-            <Head title="Create Course · Instructor Studio" />
+            <Head title="Add a New Course · UUM CoPED" />
 
-            <div className="max-w-4xl mx-auto space-y-8">
-                {/* Header */}
-                <div>
-                    <Link
-                        href={route('staff.courses.index')}
-                        className="inline-flex items-center text-sm font-semibold text-[#10B981] hover:text-emerald-700 mb-4 transition-colors"
-                    >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                        Back to Courses
-                    </Link>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight font-display">
-                                Create New Subject
-                            </h1>
-                            <p className="text-sm text-gray-600 mt-1">
-                                Three quick steps: course info, subscription model, and industry certification.
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2 shrink-0">
-                            <button
-                                type="button"
-                                onClick={prefillCapm}
-                                className="px-3 py-1.5 text-xs font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] rounded hover:bg-amber-200 transition-colors"
-                            >
-                                + Prefill CAPM® Demo
-                            </button>
-                            <button
-                                type="button"
-                                onClick={prefillMaritime}
-                                className="px-3 py-1.5 text-xs font-bold bg-[#EFF6FF] text-[#1E3A8A] border border-[#BFDBFE] rounded hover:bg-blue-200 transition-colors"
-                            >
-                                + Prefill Maritime Demo
-                            </button>
-                        </div>
+            <div className="max-w-4xl mx-auto space-y-6">
+                {/* Breadcrumb & Header */}
+                <div className="pb-4 border-b border-[#D1D5DB]">
+                    <div className="text-xs text-gray-500 mb-2 flex items-center gap-1.5">
+                        <Link href={route('dashboard')} className="hover:text-[#111827] hover:underline">
+                            Dashboard
+                        </Link>
+                        <span>/</span>
+                        <Link href={route('staff.courses.index')} className="hover:text-[#111827] hover:underline">
+                            My courses
+                        </Link>
+                        <span>/</span>
+                        <span className="text-[#111827] font-medium">Add a new course</span>
                     </div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#111827] tracking-tight font-display">
+                        Add a New Course
+                    </h1>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                        Configure general course information, enrollment access, and certification details.
+                    </p>
                 </div>
 
-                {/* Wizard Progress Bar + Step Tracker */}
+                {/* Moodle Section Navigation Bar */}
                 <nav
-                    aria-label="Course setup progress"
-                    className="bg-white rounded-md border-2 border-[#E5E7EB] p-5 space-y-4"
+                    aria-label="Course setup sections"
+                    className="bg-white rounded border border-[#D1D5DB] px-4 pt-2 flex overflow-x-auto gap-2"
                 >
-                    <div className="flex items-center justify-between text-xs font-extrabold text-[#111827]">
-                        <span>Step {currentStep} of {STEPS.length} · {progressPct}%</span>
-                        <span className="text-gray-500 uppercase tracking-wider">
-                            {STEPS[currentStep - 1].label}
-                        </span>
-                    </div>
-                    <div
-                        className="w-full bg-[#F3F4F6] border border-[#E5E7EB] h-3 rounded-full overflow-hidden"
-                        role="progressbar"
-                        aria-valuenow={progressPct}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                    >
-                        <div className={`h-full bg-[#10B981] rounded-full transition-all duration-300 ${progressWidth}`} />
-                    </div>
-                    <ol className="grid grid-cols-3 gap-2">
-                        {STEPS.map((step) => {
-                            const active = currentStep === step.id;
-                            const done = currentStep > step.id;
-                            return (
-                                <li key={step.id}>
-                                    <button
-                                        type="button"
-                                        onClick={() => goToStep(step.id)}
-                                        aria-current={active ? 'step' : undefined}
-                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md border-2 text-left transition-colors ${
-                                            active
-                                                ? 'border-[#111827] bg-[#111827] text-white'
-                                                : done
-                                                ? 'border-[#10B981] bg-emerald-50 text-[#065F46]'
-                                                : 'border-[#E5E7EB] bg-white text-gray-600 hover:border-gray-400'
-                                        }`}
-                                    >
-                                        <span
-                                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
-                                                active
-                                                    ? 'bg-white text-[#111827]'
-                                                    : done
-                                                    ? 'bg-[#10B981] text-white'
-                                                    : 'bg-[#F3F4F6] text-gray-500'
-                                            }`}
-                                        >
-                                            {done ? '✓' : step.id}
-                                        </span>
-                                        <span className="text-xs font-extrabold leading-tight">
-                                            <span className="hidden sm:inline">{step.label}</span>
-                                            <span className="sm:hidden">{step.short}</span>
-                                        </span>
-                                    </button>
-                                </li>
-                            );
-                        })}
-                    </ol>
+                    {STEPS.map((step) => {
+                        const active = currentStep === step.id;
+                        const done = currentStep > step.id;
+                        return (
+                            <button
+                                key={step.id}
+                                type="button"
+                                onClick={() => goToStep(step.id)}
+                                aria-current={active ? 'step' : undefined}
+                                className={`px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
+                                    active
+                                        ? 'border-[#111827] text-[#111827]'
+                                        : done
+                                        ? 'border-transparent text-[#065F46]'
+                                        : 'border-transparent text-gray-500 hover:text-[#111827]'
+                                }`}
+                            >
+                                <span
+                                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                                        active
+                                            ? 'bg-[#111827] text-white'
+                                            : done
+                                            ? 'bg-[#10B981] text-white'
+                                            : 'bg-[#F3F4F6] text-gray-600'
+                                    }`}
+                                >
+                                    {done ? '✓' : step.id}
+                                </span>
+                                <span>{step.label}</span>
+                            </button>
+                        );
+                    })}
                 </nav>
 
                 {stepError && (
@@ -369,10 +319,9 @@ export default function Create({ instructors = [], isCoordinator = false }) {
                                         <button
                                             type="button"
                                             onClick={pickRandomColor}
-                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-[#F3F4F6] hover:bg-gray-200 border border-[#E5E7EB] px-2.5 py-1 rounded transition-colors"
+                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-[#F3F4F6] hover:bg-gray-200 border border-[#D1D5DB] px-2.5 py-1 rounded transition-colors"
                                         >
-                                            <span>🎲</span>
-                                            <span>Random Color</span>
+                                            <span>Cycle colour</span>
                                         </button>
                                     </div>
                                     <p className="text-xs text-gray-500 mb-3">
@@ -426,21 +375,31 @@ export default function Create({ instructors = [], isCoordinator = false }) {
                                 </div>
                             </div>
 
-                            <div key="actions-step-1" className="bg-white rounded-md border-2 border-[#E5E7EB] p-5 flex items-center justify-between gap-3">
+                            <div key="actions-step-1" className="bg-white rounded border border-[#D1D5DB] p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
                                 <Link
                                     href={route('staff.courses.index')}
-                                    className="px-6 py-3 text-sm font-bold text-[#111827] bg-[#F3F4F6] hover:bg-gray-200 rounded-md transition-colors"
+                                    className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#111827] bg-[#F3F4F6] hover:bg-gray-200 rounded transition-colors"
                                 >
                                     Cancel
                                 </Link>
-                                <button
-                                    key="next-1"
-                                    type="button"
-                                    onClick={() => goToStep(2)}
-                                    className="px-6 py-3 text-sm font-bold text-white bg-[#111827] rounded-md hover:bg-[#10B981] transition-colors duration-200"
-                                >
-                                    Next: Subscription Model →
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        disabled={processing}
+                                        onClick={saveImmediately}
+                                        className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-[#10B981] hover:bg-emerald-600 rounded transition-colors disabled:opacity-50"
+                                    >
+                                        {processing ? 'Saving...' : 'Save and display'}
+                                    </button>
+                                    <button
+                                        key="next-1"
+                                        type="button"
+                                        onClick={() => goToStep(2)}
+                                        className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-[#111827] rounded hover:bg-gray-800 transition-colors"
+                                    >
+                                        Next: Enrollment &amp; Pricing →
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -695,9 +654,9 @@ export default function Create({ instructors = [], isCoordinator = false }) {
                                     key="submit-3"
                                     type="submit"
                                     disabled={processing}
-                                    className="px-8 py-3 text-sm font-bold text-white bg-[#10B981] rounded-md hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                                    className="px-6 py-2.5 text-xs sm:text-sm font-semibold text-white bg-[#10B981] rounded hover:bg-emerald-600 transition-colors disabled:opacity-50"
                                 >
-                                    {processing ? 'Creating...' : '✓ Create Subject & Open Action Hub'}
+                                    {processing ? 'Saving...' : 'Save and open course'}
                                 </button>
                             </div>
                         </div>

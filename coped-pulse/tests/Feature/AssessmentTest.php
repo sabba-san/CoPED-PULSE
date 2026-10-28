@@ -129,28 +129,35 @@ class AssessmentTest extends TestCase
 
         $response->assertRedirect();
         $response->assertSessionHas('assessment_passed', true);
+        $response->assertSessionHas('success', 'Assessment passed! All 2 questions correct. Your certificate is now unlocked.');
 
         $fresh = $enrollment->fresh();
         $this->assertEquals(100.00, (float) $fresh->progress);
         $this->assertNotNull($fresh->completed_at);
     }
 
-    public function test_partial_score_updates_progress_without_completion(): void
+    public function test_partial_score_retains_progress_without_completion(): void
     {
         $course = $this->publishedCourseWithQuiz($this->staff(), 2);
         $learner = $this->learner();
-        $enrollment = $learner->enrollments()->create(['course_id' => $course->id]);
+        $enrollment = $learner->enrollments()->create([
+            'course_id' => $course->id,
+            'progress' => 50.00,
+        ]);
 
         $answers = $course->assessments->pluck('id')->all();
-        $payload = [$answers[0] => 'b', $answers[1] => 'a']; // 1/2 correct
+        $payload = [$answers[0] => 'b', $answers[1] => 'a']; // 1/2 correct (score < 100)
 
         $response = $this->actingAs($learner)
             ->post(route('learner.course.assess', $course), ['answers' => $payload]);
 
         $response->assertRedirect();
         $response->assertSessionHas('assessment_passed', false);
+        $response->assertSessionHas('assessment_results');
+        $response->assertSessionHas('error', 'Assessment needs review: 1 of 2 answers correct. Check the highlighted questions below or click Restart Quiz.');
 
         $fresh = $enrollment->fresh();
+        // Progress must retain current percentage and not drop or overwrite on failed quiz
         $this->assertEquals(50.00, (float) $fresh->progress);
         $this->assertNull($fresh->completed_at);
     }

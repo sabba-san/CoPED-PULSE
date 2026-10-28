@@ -38,18 +38,33 @@ class AssessmentController extends Controller
         $submitted = collect($validated['answers'])
             ->mapWithKeys(fn ($value, $key) => [(int) $key => strtolower($value)]);
 
-        $correct = $assessments->filter(
+        $correctAssessments = $assessments->filter(
             fn ($a) => ($submitted[$a->id] ?? null) === strtolower($a->correct_option)
-        )->count();
+        );
+        $correct = $correctAssessments->count();
+        $correctIds = $correctAssessments->pluck('id')->values()->all();
 
         $total = $assessments->count();
         $score = $total > 0 ? round(($correct / $total) * 100, 2) : 0;
         $passed = $correct === $total;
 
-        $enrollment->update([
-            'progress' => $score,
-            'completed_at' => $passed ? now() : null,
-        ]);
+        // Never drop or reset progress if quiz score < 100.
+        // Progress strictly retains current percentage and only updates to 100% upon passing.
+        if ($passed) {
+            $enrollment->update([
+                'progress' => 100,
+                'completed_at' => now(),
+            ]);
+        }
+
+        $assessmentResults = [
+            'correct_ids' => $correctIds,
+            'submitted' => $submitted->all(),
+            'total' => $total,
+            'correct' => $correct,
+            'score' => $score,
+            'passed' => $passed,
+        ];
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -57,21 +72,24 @@ class AssessmentController extends Controller
                 'correct' => $correct,
                 'total' => $total,
                 'passed' => $passed,
+                'assessment_results' => $assessmentResults,
             ]);
         }
 
         if ($passed) {
             return back()->with([
-                'success' => 'Congratulations! You passed and completed the course.',
+                'success' => "Assessment passed! All {$total} questions correct. Your certificate is now unlocked.",
                 'assessment_score' => $score,
                 'assessment_passed' => true,
+                'assessment_results' => $assessmentResults,
             ]);
         }
 
         return back()->with([
-            'success' => "You scored {$score}% ({$correct}/{$total} correct). Try again to reach 100%.",
+            'error' => "Assessment needs review: {$correct} of {$total} answers correct. Check the highlighted questions below or click Restart Quiz.",
             'assessment_score' => $score,
             'assessment_passed' => false,
+            'assessment_results' => $assessmentResults,
         ]);
     }
 }

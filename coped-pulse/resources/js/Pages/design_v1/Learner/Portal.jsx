@@ -593,6 +593,64 @@ export default function Portal({ enrollments, stats }) {
                                 </div>
                             )}
                         </div>
+
+                        {/* Card 3: Achievement Points & Training Rewards */}
+                        {(() => {
+                            const modulesCompletedCount = stats?.modules_completed || 0;
+                            const certificatesEarnedCount = stats?.completed || completedEnrollments.length || 0;
+                            const totalXp = (modulesCompletedCount * 50) + (certificatesEarnedCount * 200);
+                            const xpRewardThreshold = 500;
+                            const xpProgressPct = Math.min(100, Math.round((totalXp / xpRewardThreshold) * 100));
+
+                            return (
+                                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl">⚡</span>
+                                            <h2 className="font-display font-extrabold text-lg text-[#111827]">
+                                                Achievement Points
+                                            </h2>
+                                        </div>
+                                        <span className="bg-[#111827] text-white text-xs font-black px-2.5 py-1 rounded">
+                                            {totalXp} XP
+                                        </span>
+                                    </div>
+
+                                    <p className="text-xs text-gray-600">
+                                        +50 XP per chapter · +200 XP per certificate · Unlock CoPED course discount vouchers at 500 XP.
+                                    </p>
+
+                                    <div className="space-y-1.5 pt-1">
+                                        <div className="flex items-center justify-between text-xs font-bold text-gray-700">
+                                            <span>Reward Progress</span>
+                                            <span>{totalXp} / {xpRewardThreshold} XP</span>
+                                        </div>
+                                        <div
+                                            className="w-full bg-[#F3F4F6] border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden"
+                                            role="progressbar"
+                                            aria-valuenow={xpProgressPct}
+                                            aria-valuemin={0}
+                                            aria-valuemax={100}
+                                        >
+                                            <div
+                                                className="h-full bg-[#10B981] rounded-full transition-all duration-300"
+                                                style={{ width: `${xpProgressPct}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {totalXp >= xpRewardThreshold ? (
+                                        <div className="p-3 bg-[#ECFDF5] border border-[#10B981] rounded text-xs font-bold text-[#065F46]">
+                                            🎉 Milestone Achieved: You have unlocked a CoPED course discount voucher! Contact program administration to redeem.
+                                        </div>
+                                    ) : (
+                                        <p className="text-[11px] text-gray-500">
+                                            Earn {xpRewardThreshold - totalXp} more XP to reach your first training discount voucher.
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
             </div>

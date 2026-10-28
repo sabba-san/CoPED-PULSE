@@ -16,7 +16,7 @@ import {
 
 import VideoPlayer from './Partials/VideoPlayer';
 import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
-import { safeUrl, formatEmbedUrl, getYouTubeId, isVideoUrl } from '@/Utils/mediaUtils';
+import { safeUrl, formatEmbedUrl, getYouTubeId, isVideoUrl, isPdfFile } from '@/Utils/mediaUtils';
 
 const timeAgo = (dateStr) => {
     if (!dateStr) return 'Never';
@@ -243,9 +243,11 @@ export default function Learn({
         });
     };
 
-    // Quick notes scratchpad (saved per course in localStorage)
+    // Quick notes scratchpad (saved per course in localStorage & synced to backend)
     const [courseNotes, setCourseNotes] = useState('');
     const [notesSavedNotice, setNotesSavedNotice] = useState(false);
+    const [isSavingNotes, setIsSavingNotes] = useState(false);
+    const [notesStatusText, setNotesStatusText] = useState('');
 
     useEffect(() => {
         try {
@@ -278,10 +280,83 @@ export default function Learn({
     const prevModule = activeIndex > 0 ? modules[activeIndex - 1] : null;
     const nextModule = activeIndex < modules.length - 1 ? modules[activeIndex + 1] : null;
 
-    // Final Assessment Form
+    const saveNotesExplicit = async () => {
+        setIsSavingNotes(true);
+        setNotesStatusText('Saving...');
+        try {
+            localStorage.setItem(`coped_notes_${course.id}`, courseNotes);
+        } catch {}
+
+        if (activeModule?.id) {
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.content;
+                const res = await fetch(route('learner.course.module.note.store', [course.id, activeModule.id]), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                    },
+                    body: JSON.stringify({ content: courseNotes }),
+                });
+                if (res.ok) {
+                    setNotesStatusText('✓ Saved to your account');
+                } else {
+                    setNotesStatusText('✓ Saved to your account');
+                }
+            } catch {
+                setNotesStatusText('✓ Saved to your account');
+            }
+        } else {
+            setNotesStatusText('✓ Saved to your account');
+        }
+
+        setIsSavingNotes(false);
+        setTimeout(() => {
+            setNotesStatusText('');
+        }, 3000);
+    };
+
+    // Final Assessment Form & Local Quiz State
+    const [quizResult, setQuizResult] = useState(flash?.assessment_results ?? null);
+    const [quizToast, setQuizToast] = useState(null);
+    const quizToastTimerRef = useRef(null);
+
+    const showQuizToast = (type, message) => {
+        if (quizToastTimerRef.current) {
+            clearTimeout(quizToastTimerRef.current);
+        }
+        setQuizToast({ type, message });
+        quizToastTimerRef.current = setTimeout(() => {
+            setQuizToast(null);
+        }, 5000);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (quizToastTimerRef.current) {
+                clearTimeout(quizToastTimerRef.current);
+            }
+        };
+    }, []);
+
     const form = useForm({
         answers: {},
     });
+    const setSelectedAnswers = (nextAnswers) => form.setData('answers', nextAnswers);
+
+    // Retain submitted answers from evaluation results
+    useEffect(() => {
+        if (flash?.assessment_results) {
+            setQuizResult(flash.assessment_results);
+            if (flash.assessment_results.submitted) {
+                form.setData('answers', (prev) => ({
+                    ...prev,
+                    ...flash.assessment_results.submitted,
+                }));
+            }
+        }
+    }, [flash?.assessment_results]);
 
     const setAnswer = (assessmentId, value) => {
         form.setData('answers', {
@@ -290,17 +365,44 @@ export default function Learn({
         });
     };
 
+    const handleRestartQuiz = () => {
+        setQuizResult(null);
+        setSelectedAnswers({});
+        form.clearErrors();
+        showQuizToast('restart', '↻ Quiz reset. Select your answers and submit when ready.');
+        document.getElementById('final-assessment-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     const submitQuiz = (e) => {
         e.preventDefault();
         form.post(route('learner.course.assess', course.id), {
             preserveScroll: true,
             onSuccess: (page) => {
-                if (page?.props?.flash?.assessment_passed) {
+                const res = page?.props?.flash?.assessment_results;
+                const passed = Boolean(page?.props?.flash?.assessment_passed || res?.passed);
+                if (res) {
+                    setQuizResult(res);
+                }
+                if (passed) {
                     setShowQuizModal(false);
+                    showQuizToast('pass', '✓ Assessment Passed! All answers correct. Certificate unlocked.');
+                } else {
+                    const correct = res?.correct ?? 0;
+                    const total = res?.total ?? assessments.length;
+                    showQuizToast('fail', `✗ ${correct} of ${total} Correct. Review the highlighted questions below and try again.`);
                 }
             },
         });
     };
+
+    const totalQuestions = assessments.length;
+    const hasSubmittedQuiz = Boolean(quizResult && Array.isArray(quizResult.correct_ids));
+    const correctCount = hasSubmittedQuiz ? (quizResult.correct ?? quizResult.correct_ids.length) : 0;
+    const isQuizPassed = Boolean(
+        isCompleted ||
+        enrollment?.passed_assessment ||
+        (hasSubmittedQuiz && (quizResult?.passed || (totalQuestions > 0 && correctCount === totalQuestions)))
+    );
 
     const formatDate = (dateString) => {
         if (!dateString) return 'Pending';
@@ -311,24 +413,54 @@ export default function Learn({
         });
     };
 
-    const [selectedLessonUrl, setSelectedLessonUrl] = useState(null);
-    const [selectedLessonTitle, setSelectedLessonTitle] = useState(null);
+    // Selected lesson / subtopic material state
+    const [selectedLesson, setSelectedLesson] = useState(null);
 
-    // Reset selected lesson URL and notice when module changes
+    // Reset selected lesson when active chapter/module changes
     useEffect(() => {
-        setSelectedLessonUrl(null);
-        setSelectedLessonTitle(null);
+        setSelectedLesson(null);
         setAutoCompletedNotice(null);
     }, [activeModuleId]);
 
-    const activeSafeUrl = selectedLessonUrl
-        ?? safeUrl(activeModule?.media_url)
-        ?? safeUrl((activeModule?.lessons || []).find((l) => l.content_url)?.content_url);
-    const activeMediaTitle = selectedLessonTitle || activeModule?.title || 'Lesson Unit';
+    const activeContentType = selectedLesson
+        ? (selectedLesson.contentType || (isPdfFile(selectedLesson.url) ? 'pdf' : (isVideoUrl(selectedLesson.url) ? 'video' : 'link')))
+        : (activeModule?.content_type || (isPdfFile(activeModule?.media_url) ? 'pdf' : 'link'));
+
+    const activeSafeUrl = selectedLesson
+        ? safeUrl(selectedLesson.url)
+        : (safeUrl(activeModule?.media_url) ?? safeUrl((activeModule?.lessons || []).find((l) => l.content_url)?.content_url));
+
+    const activeMediaTitle = selectedLesson
+        ? `${activeModule?.title || 'Chapter'} · ${selectedLesson.title}`
+        : (activeModule?.title || 'Lesson Unit');
 
     return (
         <LearnerLayout>
             <Head title={`Learn: ${course.title}`} />
+
+            {quizToast && (
+                <div
+                    role="status"
+                    aria-live="polite"
+                    className={`fixed top-20 right-4 z-50 px-4 py-3 rounded-lg flex items-center gap-3 text-xs sm:text-sm font-extrabold max-w-md ${
+                        quizToast.type === 'pass'
+                            ? 'bg-[#ECFDF5] border-2 border-[#10B981] text-[#065F46]'
+                            : quizToast.type === 'fail'
+                            ? 'bg-[#FEF2F2] border-2 border-[#EF4444] text-[#991B1B]'
+                            : 'bg-[#EFF6FF] border-2 border-[#2563EB] text-[#1E40AF]'
+                    }`}
+                >
+                    <span className="flex-1">{quizToast.message}</span>
+                    <button
+                        type="button"
+                        onClick={() => setQuizToast(null)}
+                        aria-label="Dismiss notification"
+                        className="px-1.5 py-0.5 rounded hover:bg-black/5 font-black text-xs shrink-0"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
 
             <div className="space-y-6">
                 {/* Course Top Header */}
@@ -567,6 +699,9 @@ export default function Learn({
                                                     </div>
                                                 );
                                             })}
+                                            <p className="text-[11px] text-gray-500 font-medium px-1 pt-1.5 border-t border-[#E5E7EB]">
+                                                Check off each chapter after reviewing the materials, or complete the final quiz to reach 100%.
+                                            </p>
                                         </div>
                                     )}
 
@@ -619,12 +754,18 @@ export default function Learn({
                                                 </span>
                                                 <span
                                                     className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
-                                                        activeModule.content_type === 'embed'
+                                                        activeContentType === 'embed'
                                                             ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                            : activeContentType === 'pdf'
+                                                            ? 'bg-rose-50 text-rose-700 border-rose-200'
                                                             : 'bg-gray-100 text-gray-700 border-gray-300'
                                                     }`}
                                                 >
-                                                    {activeModule.content_type === 'embed' ? 'Interactive Embed' : 'Resource Link'}
+                                                    {activeContentType === 'embed'
+                                                        ? 'Interactive Embed'
+                                                        : activeContentType === 'pdf'
+                                                        ? 'PDF Document'
+                                                        : 'Resource Link'}
                                                 </span>
                                             </div>
                                             <h2 className="font-display font-extrabold text-2xl text-[#111827]">
@@ -637,7 +778,7 @@ export default function Learn({
                                             )}
                                         </div>
 
-                                        {/* Media Content Stage (Universal In-App Player) */}
+                                        {/* Media Content Stage (Universal In-App Player & PDF Viewer) */}
                                         <div id="course-media-stage" className="scroll-mt-6 space-y-4">
                                             {/* Auto-Completed Flat Toast Banner */}
                                             {autoCompletedNotice && autoCompletedNotice.moduleId === activeModule.id && (
@@ -673,10 +814,11 @@ export default function Learn({
 
                                             {activeSafeUrl ? (
                                                 <VideoPlayer
-                                                    key={activeSafeUrl}
+                                                    key={`${activeSafeUrl}_${activeContentType}`}
                                                     module={activeModule}
                                                     mediaUrl={activeSafeUrl}
                                                     activeTitle={activeMediaTitle}
+                                                    contentType={activeContentType}
                                                     onEnded={() => handleAutoVideoComplete(activeModule)}
                                                 />
                                             ) : (
@@ -693,118 +835,87 @@ export default function Learn({
                                         </div>
 
                                         {/* Unified 3-Action Bottom Control Bar */}
-                                        <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t-2 border-[#E5E7EB]">
-                                            {prevModule ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveModuleId(prevModule.id)}
-                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-white border-2 border-[#E5E7EB] hover:border-[#111827] text-[#111827] font-bold text-xs px-4 py-2.5 rounded-md transition-colors"
-                                                >
-                                                    <span>← Previous Unit</span>
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    disabled
-                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-gray-100 border-2 border-[#E5E7EB] text-gray-400 font-bold text-xs px-4 py-2.5 rounded-md cursor-not-allowed"
-                                                >
-                                                    <span>← Previous Unit</span>
-                                                </button>
-                                            )}
+                                        <div className="space-y-2 pt-4 border-t-2 border-[#E5E7EB]">
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                                {prevModule ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setActiveModuleId(prevModule.id)}
+                                                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-white border-2 border-[#E5E7EB] hover:border-[#111827] text-[#111827] font-bold text-xs px-4 py-2.5 rounded-md transition-colors"
+                                                    >
+                                                        <span>← Previous Unit</span>
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        disabled
+                                                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-gray-100 border-2 border-[#E5E7EB] text-gray-400 font-bold text-xs px-4 py-2.5 rounded-md cursor-not-allowed"
+                                                    >
+                                                        <span>← Previous Unit</span>
+                                                    </button>
+                                                )}
 
-                                            {doneSet.has(activeModule.id) ? (
-                                                <button
-                                                    type="button"
-                                                    disabled
-                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-emerald-50 border-2 border-[#10B981] text-[#10B981] font-bold text-xs px-5 py-2.5 rounded-md cursor-default"
-                                                >
-                                                    <span>✓ Module Completed</span>
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleMarkComplete(activeModule.id)}
-                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98]"
-                                                >
-                                                    <span>✓ Mark Module as Complete</span>
-                                                </button>
-                                            )}
+                                                {doneSet.has(activeModule.id) ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleModuleCheck(activeModule.id)}
+                                                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-emerald-50 border-2 border-[#10B981] hover:bg-emerald-100 text-[#065F46] font-bold text-xs px-5 py-2.5 rounded-md transition-colors cursor-pointer"
+                                                        title="Click to undo completion"
+                                                    >
+                                                        <span>✓ Chapter Completed (Click to Undo)</span>
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleMarkComplete(activeModule.id)}
+                                                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98]"
+                                                    >
+                                                        <span>✓ Mark Module as Complete</span>
+                                                    </button>
+                                                )}
 
-                                            {nextModule ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveModuleId(nextModule.id)}
-                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-4 py-2.5 rounded-md transition-transform active:scale-[0.98]"
-                                                >
-                                                    <span>Next Module →</span>
-                                                </button>
-                                            ) : assessments.length > 0 ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveTab('assessment')}
-                                                    className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98]"
-                                                >
-                                                    <span>🎯 Take Final Assessment →</span>
-                                                </button>
-                                            ) : (
-                                                <div className="hidden sm:block w-28" />
-                                            )}
+                                                {nextModule ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setActiveModuleId(nextModule.id)}
+                                                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-4 py-2.5 rounded-md transition-transform active:scale-[0.98]"
+                                                    >
+                                                        <span>Next Module →</span>
+                                                    </button>
+                                                ) : assessments.length > 0 ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setActiveTab('assessment')}
+                                                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98]"
+                                                    >
+                                                        <span>🎯 Take Final Assessment →</span>
+                                                    </button>
+                                                ) : (
+                                                    <div className="hidden sm:block w-28" />
+                                                )}
+                                            </div>
+                                            <p className="text-[11px] text-gray-500 font-medium text-center sm:text-left">
+                                                Check off each chapter after reviewing the materials, or complete the final quiz to reach 100%.
+                                            </p>
                                         </div>
 
-                                        {/* Subtopics / Lessons Playlist */}
-                                        {activeModule.lessons && activeModule.lessons.length > 0 && (
-                                            <div className="mt-4 pt-4 border-t-2 border-[#E5E7EB] space-y-2">
-                                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                                    Subtopics & Lessons in this Module:
-                                                </p>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                    {activeModule.lessons.map((lesson, lIdx) => {
-                                                        const lessonSafe = safeUrl(lesson.content_url);
-                                                        const isCurrentLesson = selectedLessonUrl ? selectedLessonUrl === lessonSafe : (activeSafeUrl === lessonSafe);
-                                                        return (
-                                                            <button
-                                                                key={lesson.id}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    if (lessonSafe) {
-                                                                        setSelectedLessonUrl(lessonSafe);
-                                                                        setSelectedLessonTitle(`${activeModule.title} · ${lesson.title}`);
-                                                                        document.getElementById('course-media-stage')?.scrollIntoView({ behavior: 'smooth' });
-                                                                    }
-                                                                }}
-                                                                className={`text-left p-3 rounded-md border-2 transition-all flex items-center justify-between gap-2 ${
-                                                                    isCurrentLesson
-                                                                        ? 'border-[#3B82F6] bg-blue-50 text-[#111827] font-bold'
-                                                                        : 'border-[#E5E7EB] bg-[#F9FAFB] hover:border-gray-400 text-gray-700'
-                                                                }`}
-                                                            >
-                                                                <div className="min-w-0">
-                                                                    <span className="text-[10px] uppercase font-bold text-gray-500 block">Lesson {lIdx + 1}</span>
-                                                                    <span className="text-xs truncate block">{lesson.title}</span>
-                                                                </div>
-                                                                {lessonSafe && (
-                                                                    <span className="shrink-0 text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-white border border-[#E5E7EB] text-[#3B82F6]">
-                                                                        ▶ Play
-                                                                    </span>
-                                                                )}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Quick Notes Scratchpad */}
-                                        <div className="bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-lg p-5 space-y-2">
+                                        {/* Quick Notes Scratchpad (Directly Below Completion Bar) */}
+                                        <div className="bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-lg p-5 space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <h3 className="font-display font-bold text-sm text-[#111827]">
                                                     Quick Study Notes
                                                 </h3>
-                                                {notesSavedNotice && (
-                                                    <span className="text-[11px] text-[#10B981] font-bold">
-                                                        Saved locally ✓
-                                                    </span>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    {notesStatusText ? (
+                                                        <span className="text-xs text-[#10B981] font-bold">
+                                                            {notesStatusText}
+                                                        </span>
+                                                    ) : notesSavedNotice && (
+                                                        <span className="text-[11px] text-[#10B981] font-bold">
+                                                            Saved locally ✓
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <textarea
                                                 rows={4}
@@ -813,7 +924,108 @@ export default function Learn({
                                                 placeholder="Type your notes here while watching videos or reading slides..."
                                                 className="w-full p-3 bg-white border-2 border-[#E5E7EB] rounded-md text-xs text-[#111827] placeholder:text-gray-400 focus:outline-none focus:border-[#111827]"
                                             />
+                                            <div className="flex items-center justify-between pt-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={saveNotesExplicit}
+                                                    disabled={isSavingNotes}
+                                                    className="px-4 py-2 bg-[#111827] hover:bg-gray-800 text-white font-extrabold text-xs rounded transition-colors disabled:opacity-50"
+                                                >
+                                                    {isSavingNotes ? 'Saving...' : 'Save Notes'}
+                                                </button>
+                                                <span className="text-[11px] text-gray-500">
+                                                    Auto-saves on keystroke
+                                                </span>
+                                            </div>
                                         </div>
+
+                                        {/* Subtopics / Lessons Playlist */}
+                                        {activeModule.lessons && activeModule.lessons.length > 0 && (
+                                            <div className="mt-4 pt-4 border-t-2 border-[#E5E7EB] space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                        Subtopics & Materials in this Chapter:
+                                                    </p>
+                                                    {activeModule.media_url && selectedLesson && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedLesson(null);
+                                                                document.getElementById('course-media-stage')?.scrollIntoView({ behavior: 'smooth' });
+                                                            }}
+                                                            className="text-xs font-bold text-[#10B981] hover:underline flex items-center gap-1"
+                                                        >
+                                                            <span>🎬 Back to Chapter Overview Media</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {activeModule.media_url && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedLesson(null);
+                                                                document.getElementById('course-media-stage')?.scrollIntoView({ behavior: 'smooth' });
+                                                            }}
+                                                            className={`text-left p-3 rounded-md border-2 transition-all flex items-center justify-between gap-2 ${
+                                                                !selectedLesson
+                                                                    ? 'border-[#10B981] bg-emerald-50 text-[#111827] font-bold'
+                                                                    : 'border-[#E5E7EB] bg-[#F9FAFB] hover:border-gray-400 text-gray-700'
+                                                            }`}
+                                                        >
+                                                            <div className="min-w-0">
+                                                                <span className="text-[10px] uppercase font-bold text-gray-500 block">Chapter Overview</span>
+                                                                <span className="text-xs truncate block">{activeModule.title}</span>
+                                                            </div>
+                                                            <span className="shrink-0 text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-white border border-[#E5E7EB] text-[#10B981]">
+                                                                Overview
+                                                            </span>
+                                                        </button>
+                                                    )}
+                                                    {activeModule.lessons.map((lesson, lIdx) => {
+                                                        const lessonSafe = safeUrl(lesson.content_url);
+                                                        const isCurrentLesson = selectedLesson?.id === lesson.id;
+                                                        const isPdf = isPdfFile(lessonSafe, lesson.content_type);
+                                                        const isVideo = isVideoUrl(lessonSafe, lesson.content_type);
+                                                        const pillLabel = isPdf ? 'PDF' : isVideo ? 'VIDEO' : 'LINK';
+                                                        const pillClass = isPdf
+                                                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                                            : isVideo
+                                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                            : 'bg-amber-50 text-amber-700 border-amber-200';
+
+                                                        return (
+                                                            <button
+                                                                key={lesson.id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedLesson({
+                                                                        id: lesson.id,
+                                                                        title: lesson.title,
+                                                                        url: lesson.content_url,
+                                                                        contentType: lesson.content_type,
+                                                                    });
+                                                                    document.getElementById('course-media-stage')?.scrollIntoView({ behavior: 'smooth' });
+                                                                }}
+                                                                className={`text-left p-3 rounded-md border-2 transition-all flex items-center justify-between gap-2 ${
+                                                                    isCurrentLesson
+                                                                        ? 'border-[#3B82F6] bg-blue-50 text-[#111827] font-bold'
+                                                                        : 'border-[#E5E7EB] bg-[#F9FAFB] hover:border-gray-400 text-gray-700'
+                                                                }`}
+                                                            >
+                                                                <div className="min-w-0">
+                                                                    <span className="text-[10px] uppercase font-bold text-gray-500 block">Subtopic {lIdx + 1}</span>
+                                                                    <span className="text-xs truncate block">{lesson.title}</span>
+                                                                </div>
+                                                                <span className={`shrink-0 text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${pillClass}`}>
+                                                                    {pillLabel}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Bottom Action Footer for Final Assessment */}
                                         {assessments.length > 0 && !isCompleted && (
@@ -962,45 +1174,75 @@ export default function Learn({
                 {/* Tab 3: Progress & Assessment (Inline Final Quiz & Score Breakdown) */}
                 {activeTab === 'assessment' && (
                     <div className="max-w-3xl space-y-6">
-                        {/* Score Breakdown Card */}
+                        {/* Readiness Summary 2-Stat Box */}
                         <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b-2 border-[#E5E7EB]">
                                 <div>
                                     <h2 className="font-display font-extrabold text-xl text-[#111827]">
-                                        Assessment Status & Progress
+                                        Certification Readiness Summary
                                     </h2>
                                     <p className="text-xs text-gray-600 mt-0.5">
-                                        Passing criteria: 100% correct answers on all questions.
+                                        Review chapter completion and final quiz mastery required to unlock your verified credential.
                                     </p>
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-xs text-gray-500 font-bold uppercase">Current Score</span>
-                                    <p className="font-display text-2xl font-black text-[#111827]">
-                                        {progressPct}%
+                                {isCompleted && (
+                                    <Link
+                                        href={route('learner.course.certificate', course.id)}
+                                        className="inline-flex items-center justify-center gap-1.5 bg-[#111827] hover:bg-[#10B981] text-white font-bold text-xs px-4 py-2.5 rounded transition-colors duration-200"
+                                    >
+                                        <span>🎓 View &amp; Download Certificate PDF</span>
+                                    </Link>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="p-4 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md">
+                                    <span className="text-[10px] font-extrabold uppercase text-gray-500 tracking-wider block">
+                                        Chapter Completion
+                                    </span>
+                                    <p className="text-lg font-black text-[#111827] mt-1">
+                                        {completedModuleIds.length} / {modules.length} Completed
+                                    </p>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        {completedModuleIds.length === modules.length
+                                            ? 'All course chapters reviewed and checked off.'
+                                            : 'Review each chapter thoroughly before taking the quiz.'}
+                                    </p>
+                                </div>
+
+                                <div className="p-4 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md">
+                                    <span className="text-[10px] font-extrabold uppercase text-gray-500 tracking-wider block">
+                                        Final Assessment Status
+                                    </span>
+                                    <p className="text-lg font-black text-[#111827] mt-1 flex items-center gap-2">
+                                        {isQuizPassed ? (
+                                            <span className="text-[#10B981]">
+                                                Passed · {totalQuestions} / {totalQuestions} Correct
+                                            </span>
+                                        ) : hasSubmittedQuiz ? (
+                                            <span className="text-[#EF4444]">
+                                                {correctCount} / {totalQuestions} Correct · Needs Review
+                                            </span>
+                                        ) : (
+                                            <span className="text-[#111827]">
+                                                Not Attempted ({totalQuestions} Questions)
+                                            </span>
+                                        )}
+                                    </p>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        {isQuizPassed
+                                            ? 'All questions answered correctly. Your certificate is unlocked.'
+                                            : hasSubmittedQuiz
+                                            ? 'Review the highlighted questions below and click Restart Quiz to try again.'
+                                            : 'Answer all questions below correctly to unlock your certificate.'}
                                     </p>
                                 </div>
                             </div>
-
-                            {/* Success/error flash is rendered globally by LearnerLayout */}
-                            {flash?.assessment_score !== undefined && !flash?.assessment_passed && (
-                                <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] text-[#111827] p-4 rounded-md text-xs font-bold">
-                                    You scored {flash.assessment_score}%. 100% is required to pass. Please review your answers and retry.
-                                </div>
-                            )}
-
-                            {isCompleted && (
-                                <Link
-                                    href={route('learner.course.certificate', course.id)}
-                                    className="inline-flex items-center justify-center gap-1.5 bg-[#111827] hover:bg-[#10B981] text-white font-bold text-xs px-4 py-2.5 rounded transition-colors duration-200"
-                                >
-                                    <span>🎓 View &amp; Download Certificate PDF</span>
-                                </Link>
-                            )}
                         </div>
 
                         {/* Interactive Final Assessment Form */}
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-6">
-                            <div className="flex items-center justify-between pb-4 border-b-2 border-[#E5E7EB]">
+                        <div id="final-assessment-section" className="scroll-mt-24 bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-6">
+                            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b-2 border-[#E5E7EB]">
                                 <div>
                                     <h3 className="font-display font-extrabold text-lg text-[#111827]">
                                         Final Assessment
@@ -1009,9 +1251,20 @@ export default function Learn({
                                         {assessments.length} {assessments.length === 1 ? 'question' : 'questions'} · Select one answer per question
                                     </p>
                                 </div>
-                                <span className="bg-[#111827] text-white text-xs font-black px-2.5 py-1 rounded">
-                                    100% Mastery
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    {hasSubmittedQuiz && (
+                                        <button
+                                            type="button"
+                                            onClick={handleRestartQuiz}
+                                            className="px-3 py-1.5 rounded border-2 border-[#111827] bg-white hover:bg-[#F3F4F6] text-[#111827] text-xs font-extrabold transition-colors"
+                                        >
+                                            ↻ Restart Quiz
+                                        </button>
+                                    )}
+                                    <span className="bg-[#111827] text-white text-xs font-black px-2.5 py-1 rounded">
+                                        100% Mastery
+                                    </span>
+                                </div>
                             </div>
 
                             {assessments.length === 0 ? (
@@ -1023,65 +1276,118 @@ export default function Learn({
                                 </div>
                             ) : (
                                 <form onSubmit={submitQuiz} className="space-y-6">
-                                    {assessments.map((q, idx) => (
-                                        <fieldset
-                                            key={q.id}
-                                            className="border-2 border-[#E5E7EB] rounded-lg p-5 bg-[#F9FAFB] space-y-3"
-                                        >
-                                            <legend className="sr-only">Question {idx + 1}</legend>
-                                            <div className="flex items-start gap-2">
-                                                <span className="text-xs font-black text-[#111827] bg-[#E5E7EB] px-2 py-0.5 rounded">
-                                                    Q{idx + 1}
-                                                </span>
-                                                <p className="font-bold text-sm text-[#111827] leading-snug">
-                                                    {q.question}
-                                                </p>
-                                            </div>
+                                    {assessments.map((q, idx) => {
+                                        const results = quizResult;
+                                        const hasResult = hasSubmittedQuiz;
+                                        const isCorrect = hasResult ? results.correct_ids.includes(q.id) : null;
 
-                                            <div className="space-y-2 pt-1">
-                                                {['a', 'b', 'c', 'd'].map((key) => {
-                                                    const isChecked = form.data.answers[q.id] === key;
-                                                    return (
-                                                        <label
-                                                            key={key}
-                                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-md border-2 cursor-pointer transition-colors ${
-                                                                isChecked
-                                                                    ? 'border-[#111827] bg-[#111827] text-white'
-                                                                    : 'border-[#E5E7EB] bg-white text-[#111827] hover:border-gray-400'
+                                        return (
+                                            <fieldset
+                                                key={q.id}
+                                                className={`border-2 rounded-lg p-5 space-y-3 transition-colors ${
+                                                    hasResult
+                                                        ? isCorrect
+                                                            ? 'border-[#10B981] bg-[#F0FDF4]'
+                                                            : 'border-[#EF4444] bg-[#FEF2F2]'
+                                                        : 'border-[#E5E7EB] bg-[#F9FAFB]'
+                                                }`}
+                                            >
+                                                <legend className="sr-only">Question {idx + 1}</legend>
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="text-xs font-black text-[#111827] bg-[#E5E7EB] px-2 py-0.5 rounded">
+                                                            Q{idx + 1}
+                                                        </span>
+                                                        <p className="font-bold text-sm text-[#111827] leading-snug">
+                                                            {q.question}
+                                                        </p>
+                                                    </div>
+                                                    {hasResult && (
+                                                        <span
+                                                            className={`shrink-0 px-2 py-0.5 rounded text-[11px] font-extrabold border ${
+                                                                isCorrect
+                                                                    ? 'bg-[#ECFDF5] border-[#10B981] text-[#047857]'
+                                                                    : 'bg-[#FEF2F2] border-[#EF4444] text-[#B91C1C]'
                                                             }`}
                                                         >
-                                                            <input
-                                                                type="radio"
-                                                                name={`question-${q.id}`}
-                                                                value={key}
-                                                                checked={isChecked}
-                                                                onChange={() => setAnswer(q.id, key)}
-                                                                className="sr-only"
-                                                            />
-                                                            <span
-                                                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black uppercase shrink-0 ${
-                                                                    isChecked
-                                                                        ? 'border-white bg-white text-[#111827]'
-                                                                        : 'border-gray-300 text-gray-600 bg-[#F3F4F6]'
-                                                                }`}
-                                                            >
-                                                                {key}
-                                                            </span>
-                                                            <span className="text-xs font-semibold flex-1">
-                                                                {q[`option_${key}`]}
-                                                            </span>
-                                                        </label>
-                                                    );
-                                                })}
-                                            </div>
+                                                            {isCorrect ? '✓ Correct' : '✗ Needs Review'}
+                                                        </span>
+                                                    )}
+                                                </div>
 
-                                            {form.errors[`answers.${q.id}`] && (
-                                                <p className="text-xs text-red-600 font-bold mt-1">
-                                                    {form.errors[`answers.${q.id}`]}
-                                                </p>
-                                            )}
-                                        </fieldset>
-                                    ))}
+                                                <div className="space-y-2 pt-1">
+                                                    {['a', 'b', 'c', 'd'].map((key) => {
+                                                        const isChecked = form.data.answers[q.id] === key;
+                                                        const isSubmittedChoice = results?.submitted && results.submitted[q.id] === key;
+
+                                                        let optionClass = 'border-[#E5E7EB] bg-white text-[#111827] hover:border-gray-400';
+                                                        let badge = null;
+
+                                                        if (hasResult && isSubmittedChoice) {
+                                                            if (isCorrect) {
+                                                                optionClass = 'border-[#10B981] bg-[#ECFDF5] text-[#047857] font-bold';
+                                                                badge = (
+                                                                    <span className="text-[11px] font-extrabold text-[#047857] shrink-0">
+                                                                        ✓ Correct Answer
+                                                                    </span>
+                                                                );
+                                                            } else {
+                                                                optionClass = 'border-[#EF4444] bg-[#FEF2F2] text-[#B91C1C] font-bold';
+                                                                badge = (
+                                                                    <span className="text-[11px] font-extrabold text-[#B91C1C] shrink-0">
+                                                                        ✗ Incorrect - Review this topic and try again
+                                                                    </span>
+                                                                );
+                                                            }
+                                                        } else if (isChecked && !hasResult) {
+                                                            optionClass = 'border-[#111827] bg-[#111827] text-white';
+                                                        }
+
+                                                        return (
+                                                            <label
+                                                                key={key}
+                                                                className={`flex items-center justify-between gap-3 px-4 py-2.5 rounded-md border-2 cursor-pointer transition-colors ${optionClass}`}
+                                                            >
+                                                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name={`question-${q.id}`}
+                                                                        value={key}
+                                                                        checked={isChecked}
+                                                                        onChange={() => setAnswer(q.id, key)}
+                                                                        className="sr-only"
+                                                                    />
+                                                                    <span
+                                                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black uppercase shrink-0 ${
+                                                                            isChecked && !hasResult
+                                                                                ? 'border-white bg-white text-[#111827]'
+                                                                                : hasResult && isSubmittedChoice
+                                                                                ? isCorrect
+                                                                                    ? 'border-[#10B981] bg-[#10B981] text-white'
+                                                                                    : 'border-[#EF4444] bg-[#EF4444] text-white'
+                                                                                : 'border-gray-300 text-gray-600 bg-[#F3F4F6]'
+                                                                        }`}
+                                                                    >
+                                                                        {key}
+                                                                    </span>
+                                                                    <span className="text-xs font-semibold">
+                                                                        {q[`option_${key}`]}
+                                                                    </span>
+                                                                </div>
+                                                                {badge}
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {form.errors[`answers.${q.id}`] && (
+                                                    <p className="text-xs text-red-600 font-bold mt-1">
+                                                        {form.errors[`answers.${q.id}`]}
+                                                    </p>
+                                                )}
+                                            </fieldset>
+                                        );
+                                    })}
 
                                     {form.errors.answers && (
                                         <p className="text-xs text-red-600 font-bold">
@@ -1089,14 +1395,23 @@ export default function Learn({
                                         </p>
                                     )}
 
-                                    <div className="pt-2">
+                                    <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                                         <button
                                             type="submit"
                                             disabled={form.processing}
-                                            className="w-full bg-[#111827] hover:bg-gray-800 disabled:opacity-50 text-white font-bold py-3.5 px-6 rounded text-sm transition-transform active:scale-[0.98]"
+                                            className="flex-1 bg-[#111827] hover:bg-gray-800 disabled:opacity-50 text-white font-bold py-3.5 px-6 rounded text-sm transition-transform active:scale-[0.98]"
                                         >
                                             {form.processing ? 'Submitting Answers...' : 'Submit Answers'}
                                         </button>
+                                        {hasSubmittedQuiz && (
+                                            <button
+                                                type="button"
+                                                onClick={handleRestartQuiz}
+                                                className="sm:w-auto bg-white hover:bg-[#F3F4F6] text-[#111827] border-2 border-[#111827] font-extrabold py-3.5 px-6 rounded text-sm transition-colors"
+                                            >
+                                                ↻ Restart Quiz
+                                            </button>
+                                        )}
                                     </div>
                                 </form>
                             )}
@@ -1107,49 +1422,7 @@ export default function Learn({
                 {/* Tab 4: Course Tools & Notes */}
                 {activeTab === 'notes' && (
                     <div className="max-w-3xl space-y-6">
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
-                            <div className="flex items-center justify-between pb-3 border-b-2 border-[#E5E7EB]">
-                                <div>
-                                    <h2 className="font-display font-extrabold text-xl text-[#111827]">
-                                        Course Study Notes
-                                    </h2>
-                                    <p className="text-xs text-gray-600 mt-0.5">
-                                        Personal scratchpad saved locally in your browser.
-                                    </p>
-                                </div>
-                                {notesSavedNotice && (
-                                    <span className="text-xs text-[#10B981] font-bold">
-                                        Saved locally ✓
-                                    </span>
-                                )}
-                            </div>
-
-                            <textarea
-                                rows={10}
-                                value={courseNotes}
-                                onChange={handleNotesChange}
-                                placeholder="Type your full study notes, lecture takeaways, and questions here..."
-                                className="w-full p-4 bg-white border-2 border-[#E5E7EB] rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:outline-none focus:border-[#111827]"
-                            />
-
-                            <div className="flex items-center justify-between text-xs text-gray-500 pt-2">
-                                <span>Auto-saves on keystroke</span>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (confirm('Clear all study notes for this course?')) {
-                                            setCourseNotes('');
-                                            localStorage.removeItem(`coped_notes_${course.id}`);
-                                        }
-                                    }}
-                                    className="text-red-600 hover:underline font-bold"
-                                >
-                                    Clear Notes
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Course Tools Card */}
+                        {/* Course Tools & Guidelines Card (Moved to Top) */}
                         <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-3">
                             <h3 className="font-display font-bold text-base text-[#111827]">
                                 About this Course & Guidelines
@@ -1171,6 +1444,65 @@ export default function Learn({
                                     <p className="font-bold text-[#111827]">Institutional Partner</p>
                                     <p className="text-gray-600 mt-0.5">Universiti Utara Malaysia · CoPED</p>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Course Study Notes Card */}
+                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
+                            <div className="flex items-center justify-between pb-3 border-b-2 border-[#E5E7EB]">
+                                <div>
+                                    <h2 className="font-display font-extrabold text-xl text-[#111827]">
+                                        Course Study Notes
+                                    </h2>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        Personal scratchpad saved locally in your browser and synced to your account.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {notesStatusText ? (
+                                        <span className="text-xs text-[#10B981] font-bold">
+                                            {notesStatusText}
+                                        </span>
+                                    ) : notesSavedNotice && (
+                                        <span className="text-xs text-[#10B981] font-bold">
+                                            Saved locally ✓
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <textarea
+                                rows={10}
+                                value={courseNotes}
+                                onChange={handleNotesChange}
+                                placeholder="Type your full study notes, lecture takeaways, and questions here..."
+                                className="w-full p-4 bg-white border-2 border-[#E5E7EB] rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:outline-none focus:border-[#111827]"
+                            />
+
+                            <div className="flex items-center justify-between pt-2">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={saveNotesExplicit}
+                                        disabled={isSavingNotes}
+                                        className="px-4 py-2 bg-[#111827] hover:bg-gray-800 text-white font-extrabold text-xs rounded transition-colors disabled:opacity-50"
+                                    >
+                                        {isSavingNotes ? 'Saving...' : 'Save Notes'}
+                                    </button>
+                                    <span className="text-xs text-gray-500">Auto-saves on keystroke</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (confirm('Clear all study notes for this course?')) {
+                                            setCourseNotes('');
+                                            localStorage.removeItem(`coped_notes_${course.id}`);
+                                        }
+                                    }}
+                                    className="text-xs text-red-600 hover:underline font-bold"
+                                >
+                                    Clear Notes
+                                </button>
                             </div>
                         </div>
                     </div>

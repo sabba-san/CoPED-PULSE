@@ -67,16 +67,25 @@ export function isVideoFile(url) {
     return /\.(mp4|mov|webm|m4v|ogg)(\?|#|$)/i.test(safe);
 }
 
-export function isPdfFile(url) {
+export function isPdfFile(url, contentType = null) {
+    if (contentType === 'pdf') return true;
     const safe = safeUrl(url);
-    if (!safe) return false;
-    return /\.pdf(\?|#|$)/i.test(safe);
+    if (!safe) return contentType === 'file';
+    return /\.pdf(\?|#|$)/i.test(safe) || (contentType === 'file' && !isVideoFile(safe));
 }
 
-export function isVideoUrl(url) {
+export function isVideoUrl(url, contentType = null) {
+    if (contentType === 'video') return true;
     const safe = safeUrl(url);
     if (!safe) return false;
     return Boolean(getYouTubeId(safe) || getVimeoId(safe) || isVideoFile(safe));
+}
+
+export function resolveMediaType(url, contentType = null) {
+    if (isPdfFile(url, contentType)) return 'pdf';
+    if (isVideoUrl(url, contentType)) return 'video';
+    if (contentType === 'embed') return 'embed';
+    return 'link';
 }
 
 export function formatEmbedUrl(url, origin = '') {

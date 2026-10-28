@@ -202,11 +202,6 @@ export default function Edit({ user, stats = {} }) {
                                         <label htmlFor="phone" className="block text-xs font-bold text-[#111827]">
                                             Phone Number (Optional)
                                         </label>
-                                        {user?.role !== 'learner' && (
-                                            <span className="text-[10px] text-gray-500 font-semibold">
-                                                WhatsApp Sync Enabled
-                                            </span>
-                                        )}
                                     </div>
                                     <input
                                         id="phone"
@@ -219,7 +214,7 @@ export default function Edit({ user, stats = {} }) {
                                     <p className="mt-1 text-[11px] text-gray-500">
                                         {user?.role === 'learner'
                                             ? 'Optional contact phone number for official CoPED program verification and certificate records.'
-                                            : 'Used for official course cohort announcements and direct faculty WhatsApp sync.'}
+                                            : 'Used for official course cohort announcements and faculty directory records.'}
                                     </p>
                                     {profileErrors.phone && (
                                         <p className="mt-1 text-xs font-bold text-red-600">{profileErrors.phone}</p>
@@ -470,9 +465,7 @@ export default function Edit({ user, stats = {} }) {
                                 <span>Security Advisory</span>
                             </div>
                             <p className="leading-relaxed">
-                                {user?.role === 'learner'
-                                    ? 'CoPED PULSE instructors and system coordinators will never request your password via email or direct message. Always keep your credentials safe.'
-                                    : 'CoPED PULSE instructors and system coordinators will never request your password via email or WhatsApp. Always keep your credentials safe.'}
+                                CoPED PULSE instructors and system coordinators will never request your password via email or direct message. Always keep your credentials safe.
                             </p>
                         </div>
                     </div>

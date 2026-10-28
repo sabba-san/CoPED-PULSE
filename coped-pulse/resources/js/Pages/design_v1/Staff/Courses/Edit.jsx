@@ -55,10 +55,6 @@ export default function Edit({
     const [chatSearch, setChatSearch] = useState('');
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const [whatsappUrl, setWhatsappUrl] = useState(course.whatsapp_group_url || '');
-    const [isSavingWhatsapp, setIsSavingWhatsapp] = useState(false);
-    const [whatsappSaved, setWhatsappSaved] = useState(false);
-    const [isSimulatingWhatsapp, setIsSimulatingWhatsapp] = useState(false);
     const chatContainerRef = useRef(null);
     const prevLastMessageIdRef = useRef(null);
     const prevThreadKeyRef = useRef(null);
@@ -125,55 +121,6 @@ export default function Edit({
         return () => clearInterval(interval);
     }, [courseTab, course.id]);
 
-    const handleSaveWhatsappUrl = (e) => {
-        e.preventDefault();
-        setIsSavingWhatsapp(true);
-        router.post(route('staff.courses.whatsapp-link.update', course.id), {
-            whatsapp_group_url: whatsappUrl,
-        }, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsSavingWhatsapp(false);
-                setWhatsappSaved(true);
-                setTimeout(() => setWhatsappSaved(false), 3000);
-            },
-            onError: () => {
-                setIsSavingWhatsapp(false);
-            },
-        });
-    };
-
-    const handleSimulateWhatsappReply = async (customText = null) => {
-        setIsSimulatingWhatsapp(true);
-        const replyText = customText || (selectedStudentId
-            ? 'Hello instructor! I saw your note. Thank you for the guidance.'
-            : 'Waalaikumsalam! Thank you for reaching out. Let me know which module topic you would like to review.');
-
-        try {
-            const res = await fetch(route('courses.chat.whatsapp-simulate', course.id), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    body: replyText,
-                    sender_id: selectedStudentId || (enrolledStudents[0]?.id || null),
-                    recipient_id: selectedStudentId ? instructor?.id : null,
-                }),
-            });
-            if (res.ok) {
-                const newMsg = await res.json();
-                setMessages((prev) => [...prev, newMsg]);
-            }
-        } catch (err) {
-            // ignore
-        } finally {
-            setIsSimulatingWhatsapp(false);
-        }
-    };
-
     const handleSendMessage = (e) => {
         e?.preventDefault();
         if (!newMessage.trim() || isSending) return;
@@ -201,12 +148,14 @@ export default function Edit({
     const enrolledStudents = useMemo(() => {
         return (enrollments || []).map((e) => {
             const user = e.user || {};
+            const progress = Math.min(100, Math.max(0, Math.round(Number(e.progress ?? 0))));
             return {
                 id: user.id || e.user_id,
                 name: user.name || 'Enrolled Student',
                 email: user.email || 'N/A',
-                phone: user.phone || null,
                 role: user.role || 'learner',
+                progress,
+                isCertified: Boolean(e.completed_at),
             };
         });
     }, [enrollments]);
@@ -272,6 +221,7 @@ export default function Edit({
 
     // Edit Mode Toggle: true (interactive builder) | false (read-only canvas)
     const [editMode, setEditMode] = useState(true);
+    const [previewMaterial, setPreviewMaterial] = useState(null);
 
     // Settings sub-tab: 'identity' | 'pricing' | 'cert'
     const [settingsTab, setSettingsTab] = useState('identity');
@@ -458,188 +408,165 @@ export default function Edit({
 
     return (
         <StaffLayout>
-            <Head title={`Edit: ${course.title} · Instructor Studio`} />
+            <Head title={`${course.title} · Course Management`} />
 
-            {/* Top Workspace Bar */}
-            <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-4 sm:p-5 mb-6">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <Link
-                                href={route('staff.courses.index')}
-                                className="text-xs font-bold text-gray-500 hover:text-[#10B981] flex items-center gap-1 transition-colors"
-                            >
-                                <span>← Back to Courses</span>
-                            </Link>
-                            <span className="text-gray-300">·</span>
-                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                UUM CoPED Studio
-                            </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                            <CourseLogoBadge category={data.category_logo} size="badge" />
-                            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight font-display">
-                                {course.title}
-                            </h1>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-extrabold border ${
-                                course.status === 'published'
-                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                    : course.status === 'archived'
-                                    ? 'bg-gray-100 text-gray-800 border-gray-300'
-                                    : 'bg-amber-100 text-amber-800 border-amber-300'
-                            }`}>
-                                {course.status ? course.status.toUpperCase() : 'DRAFT'}
-                            </span>
-                            <span className="inline-flex items-center gap-1 bg-[#F3F4F6] border border-[#E5E7EB] text-xs font-bold text-gray-700 px-2.5 py-0.5 rounded">
-                                📅 {data.academic_year || '2026 / 2027'}
-                            </span>
-                        </div>
+            {/* Moodle 4 Course Header & Secondary Navigation Container */}
+            <div className="bg-[#F8FAFC] border border-[#CBD5E1] rounded mb-6 overflow-hidden">
+                <div className="p-4 sm:p-5">
+                    {/* Breadcrumb */}
+                    <div className="flex items-center flex-wrap gap-1.5 text-xs text-gray-500 mb-2">
+                        <Link href={route('dashboard')} className="hover:text-[#111827] hover:underline">
+                            Dashboard
+                        </Link>
+                        <span>/</span>
+                        <Link href={route('staff.courses.index')} className="hover:text-[#111827] hover:underline">
+                            My courses
+                        </Link>
+                        <span>/</span>
+                        <span className="text-[#111827] font-medium truncate max-w-xs">{course.title}</span>
                     </div>
 
-                    {/* Mode Toggle & Deploy Controls */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        {course.status === 'draft' ? (
-                            <button
-                                type="button"
-                                onClick={() => router.post(route('staff.courses.deploy', course.id), {}, { preserveScroll: true })}
-                                className="px-4 py-2 bg-[#10B981] hover:bg-emerald-600 text-white font-extrabold text-xs rounded-md flex items-center gap-1.5 transition-transform active:scale-[0.98] shrink-0"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>🚀 Deploy & Publish Subject</span>
-                            </button>
-                        ) : (
-                            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-xs rounded-md flex items-center gap-1 shrink-0">
-                                <span>✓ Deployed · Live in Catalog</span>
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <CourseLogoBadge category={data.category_logo} size="badge" />
+                            <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight font-display">
+                                {course.title}
+                            </h1>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                                course.status === 'published'
+                                    ? 'bg-[#ECFDF5] text-[#065F46] border-[#10B981]'
+                                    : 'bg-[#F3F4F6] text-gray-700 border-[#D1D5DB]'
+                            }`}>
+                                {course.status === 'published' ? 'Published' : 'Draft'}
                             </span>
-                        )}
+                            <span className="inline-flex items-center bg-[#F3F4F6] border border-[#D1D5DB] text-[11px] font-medium text-gray-700 px-2 py-0.5 rounded">
+                                {data.academic_year || '2026 / 2027'}
+                            </span>
+                        </div>
 
-                        <div className="flex items-center gap-2 bg-[#F3F4F6] p-1.5 rounded-lg border-2 border-[#E5E7EB] shrink-0">
+                        {/* Right Controls: Publish, Learner Preview, and Moodle 4 "Edit mode" Switch */}
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            {course.status === 'draft' && (
+                                <button
+                                    type="button"
+                                    onClick={() => router.post(route('staff.courses.deploy', course.id), {}, { preserveScroll: true })}
+                                    className="px-3.5 py-1.5 bg-[#10B981] hover:bg-emerald-600 text-white font-semibold text-xs rounded transition-colors shrink-0"
+                                >
+                                    Publish course
+                                </button>
+                            )}
+
                             <button
                                 type="button"
-                                onClick={() => setMode('editor')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-extrabold transition-colors ${
-                                    mode === 'editor'
-                                        ? 'bg-[#111827] text-white'
-                                        : 'text-gray-700 hover:text-[#111827]'
-                                }`}
-                            >
-                                <svg className="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                <span>Curriculum & Studio Editor</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setMode('preview')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-extrabold transition-colors ${
+                                onClick={() => setMode(mode === 'editor' ? 'preview' : 'editor')}
+                                className={`px-3 py-1.5 rounded text-xs font-semibold border transition-colors shrink-0 ${
                                     mode === 'preview'
-                                        ? 'bg-[#111827] text-white'
-                                        : 'text-gray-700 hover:text-[#111827]'
+                                        ? 'bg-[#111827] text-white border-[#111827]'
+                                        : 'bg-white text-gray-700 border-[#D1D5DB] hover:bg-[#F3F4F6]'
                                 }`}
                             >
-                                <svg className="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                <span>Learner Preview Mode</span>
+                                {mode === 'preview' ? 'Exit learner preview' : 'Switch to learner view'}
                             </button>
+
+                            {mode === 'editor' && (
+                                <div className="flex items-center gap-2 border border-[#D1D5DB] bg-[#F8FAFC] rounded px-3 py-1 shrink-0">
+                                    <span className="text-xs font-semibold text-[#111827]">Edit mode</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditMode((v) => !v)}
+                                        aria-pressed={editMode}
+                                        title={editMode ? 'Turn editing off' : 'Turn editing on'}
+                                        className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 cursor-pointer ${
+                                            editMode ? 'bg-[#2563EB] justify-end' : 'bg-gray-300 justify-start'
+                                        }`}
+                                    >
+                                        <span className="bg-white w-4 h-4 rounded-full block border border-black/10" />
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
+
+                {/* Moodle 4 Contextual Secondary Navigation Bar (Underline Tabs, Zero Emojis) */}
+                {mode === 'editor' && (
+                    <div className="px-4 sm:px-5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex overflow-x-auto whitespace-nowrap items-center gap-1" role="tablist">
+                        {[
+                            { id: 'curriculum', label: 'Course' },
+                            { id: 'settings', label: 'Settings' },
+                            { id: 'participants', label: `Participants (${enrollments.length})` },
+                            { id: 'grades', label: 'Grades' },
+                            { id: 'chat', label: 'Discussions' },
+                        ].map((tab) => {
+                            const active = courseTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={active}
+                                    onClick={() => setCourseTab(tab.id)}
+                                    className={`px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors shrink-0 ${
+                                        active
+                                            ? 'border-[#111827] text-[#111827] bg-white'
+                                            : 'border-transparent text-gray-600 hover:text-[#111827] hover:border-gray-300'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
-            {/* MODE 1: CURRICULUM & STUDIO EDITOR */}
+            {/* MODE 1: MOODLE 4 COURSE WORKSPACE */}
             {mode === 'editor' && (
                 <div className="space-y-6">
-                    {/* Top 5-Tab Moodle Bar + "Edit Mode" Toggle */}
-                    <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-2.5 sm:p-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        {/* 5 Tabs on Left (Horizontally Scrollable on Mobile) */}
-                        <div className="flex overflow-x-auto whitespace-nowrap -mx-2 px-2 sm:mx-0 sm:px-0 items-center gap-1.5 pb-1 max-w-full" role="tablist">
-                            {[
-                                { id: 'curriculum', label: `Course (${modules.length} Modules)`, icon: '📚' },
-                                { id: 'settings', label: 'Settings', icon: '⚙️' },
-                                { id: 'participants', label: `Participants (${enrollments.length})`, icon: '👥' },
-                                { id: 'grades', label: 'Grades', icon: '📊' },
-                                { id: 'chat', label: 'Student Chat', icon: '💬' },
-                            ].map((tab) => {
-                                const active = courseTab === tab.id;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        type="button"
-                                        role="tab"
-                                        aria-selected={active}
-                                        onClick={() => setCourseTab(tab.id)}
-                                        className={`px-3.5 sm:px-4 py-2 rounded-md text-xs font-extrabold border-2 transition-colors flex items-center gap-1.5 shrink-0 min-h-[44px] ${
-                                            active
-                                                ? 'bg-[#111827] border-[#111827] text-white'
-                                                : 'bg-white border-[#E5E7EB] text-gray-700 hover:border-[#111827] hover:text-[#111827]'
-                                        }`}
-                                    >
-                                        <span>{tab.icon}</span>
-                                        <span>{tab.label}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Edit Mode Toggle Switch on Right */}
-                        <div className="flex items-center gap-2.5 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-lg px-3 py-1.5 shrink-0 self-start md:self-auto">
-                            <span className="text-xs font-extrabold text-[#111827]">Edit Mode</span>
+                    {!editMode && courseTab === 'curriculum' && (
+                        <div className="bg-white border border-[#D1D5DB] rounded px-4 py-3 flex items-center justify-between gap-3 text-xs text-gray-600">
+                            <span>
+                                Viewing course in read-only mode. Turn on <strong className="text-[#111827]">Edit mode</strong> in the top-right corner to add or modify topics and activities.
+                            </span>
                             <button
                                 type="button"
-                                onClick={() => setEditMode((v) => !v)}
-                                aria-pressed={editMode}
-                                title={editMode ? 'Disable Edit Mode' : 'Enable Edit Mode'}
-                                className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 cursor-pointer ${
-                                    editMode ? 'bg-[#10B981] justify-end' : 'bg-gray-300 justify-start'
-                                }`}
+                                onClick={() => setEditMode(true)}
+                                className="px-3 py-1 rounded bg-[#111827] text-white font-semibold shrink-0"
                             >
-                                <span className="bg-white w-5 h-5 rounded-full block border border-black/10" />
+                                Turn editing on
                             </button>
-                            <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
-                                editMode ? 'text-[#10B981]' : 'text-gray-500'
-                            }`}>
-                                {editMode ? 'ON' : 'OFF'}
-                            </span>
                         </div>
-                    </div>
+                    )}
 
-                    {/* TAB 1: COURSE CURRICULUM (2-Column Index Tree + Module Canvas) */}
+                    {/* TAB 1: COURSE OUTLINE (Moodle 4 Left Course Index + Right Collapsible Topics) */}
                     {courseTab === 'curriculum' && (
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                            {/* Left Column (lg:col-span-3): Compact Course Index Tree */}
-                            <div className="lg:col-span-3 space-y-4 lg:sticky lg:top-4">
-                                {/* Mobile Index Accordion Toggle Button */}
+                            {/* Left Column: Moodle Course Index Drawer */}
+                            <div className="lg:col-span-3 space-y-3 lg:sticky lg:top-20">
                                 <div className="lg:hidden">
                                     <button
                                         type="button"
                                         onClick={() => setMobileIndexOpen((v) => !v)}
-                                        className="w-full flex items-center justify-between px-4 py-2.5 bg-white border-2 border-[#E5E7EB] rounded-md text-xs font-extrabold text-[#111827] hover:border-[#111827] transition-colors min-h-[44px]"
+                                        className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-[#D1D5DB] rounded text-xs font-semibold text-[#111827]"
                                     >
-                                        <span className="flex items-center gap-2">
-                                            <span>📑</span>
-                                            <span>Course Index ({modules.length} Modules)</span>
-                                        </span>
-                                        <span className="text-gray-500 font-bold">{mobileIndexOpen ? '▲ Hide' : '▼ View Index'}</span>
+                                        <span>Course index ({modules.length} topics)</span>
+                                        <span className="text-gray-500">{mobileIndexOpen ? 'Hide' : 'Show'}</span>
                                     </button>
                                 </div>
 
-                                <div className={`${mobileIndexOpen ? 'block' : 'hidden'} lg:block bg-white rounded-md border-2 border-[#E5E7EB] p-4 space-y-3`}>
-                                    <div className="flex items-center justify-between pb-2 border-b-2 border-[#E5E7EB]">
-                                        <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#111827] font-display">
-                                            Course Index
+                                <div className={`${mobileIndexOpen ? 'block' : 'hidden'} lg:block bg-white rounded border border-[#D1D5DB] p-4 space-y-3`}>
+                                    <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                            Course index
                                         </h3>
-                                        <span className="text-[10px] font-bold text-gray-500">
-                                            {modules.length} Module{modules.length === 1 ? '' : 's'}
+                                        <span className="text-[11px] font-medium text-gray-500">
+                                            {modules.length} {modules.length === 1 ? 'topic' : 'topics'}
                                         </span>
                                     </div>
 
                                     {modules.length === 0 ? (
-                                        <p className="text-xs text-gray-500 italic py-2">
-                                            No modules created yet.
+                                        <p className="text-xs text-gray-500 py-2">
+                                            No topics added yet.
                                         </p>
                                     ) : (
                                         <nav className="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
@@ -651,28 +578,24 @@ export default function Edit({
                                                             const el = document.getElementById(`module-${m.id}`);
                                                             if (el) el.scrollIntoView({ behavior: 'smooth' });
                                                         }}
-                                                        className="w-full text-left p-2 rounded hover:bg-[#F3F4F6] text-xs font-bold text-[#111827] flex items-center justify-between gap-1 transition-colors group"
+                                                        className="w-full text-left px-2.5 py-1.5 rounded hover:bg-[#F3F4F6] text-xs font-semibold text-[#111827] flex items-center justify-between gap-2 transition-colors"
                                                     >
                                                         <span className="truncate">
-                                                            {idx + 1}. {m.title}
+                                                            Topic {idx + 1}: {m.title}
                                                         </span>
-                                                        <span className="text-[10px] text-gray-500 font-semibold shrink-0 group-hover:text-[#10B981]">
-                                                            {m.lessons?.length || 0} unit{m.lessons?.length === 1 ? '' : 's'}
+                                                        <span className="text-[10px] text-gray-400 shrink-0">
+                                                            {m.lessons?.length || 0}
                                                         </span>
                                                     </button>
 
-                                                    {/* Nested subtopics */}
                                                     {m.lessons && m.lessons.length > 0 && (
-                                                        <div className="pl-4 space-y-1 border-l-2 border-[#E5E7EB] ml-2">
-                                                            {m.lessons.map((lesson, lIdx) => (
+                                                        <div className="pl-3 space-y-1 border-l border-[#E5E7EB] ml-2.5">
+                                                            {m.lessons.map((lesson) => (
                                                                 <div
                                                                     key={lesson.id}
-                                                                    className="text-[11px] text-gray-600 truncate py-0.5 flex items-center gap-1.5"
+                                                                    className="text-[11px] text-gray-600 truncate py-0.5"
                                                                 >
-                                                                    <span className="text-[9px] text-gray-400">
-                                                                        {lesson.content_type === 'file' ? '📄' : '🎬'}
-                                                                    </span>
-                                                                    <span className="truncate">{lesson.title}</span>
+                                                                    {lesson.title}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -682,156 +605,124 @@ export default function Edit({
                                         </nav>
                                     )}
 
-                                    {/* Final Assessment Jump in Tree */}
-                                    {finalAssessments.length > 0 && (
-                                        <div className="pt-2 border-t-2 border-[#E5E7EB]">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const el = document.getElementById('final-exam-section');
-                                                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                                                }}
-                                                className="w-full text-left p-2 rounded bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-extrabold flex items-center justify-between transition-colors"
-                                            >
-                                                <span>🎯 Final Exam</span>
-                                                <span className="text-[10px]">{finalAssessments.length} Qs</span>
-                                            </button>
-                                        </div>
-                                    )}
+                                    <div className="pt-2 border-t border-[#E5E7EB]">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const el = document.getElementById('final-exam-section');
+                                                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                                            }}
+                                            className="w-full text-left px-2.5 py-1.5 rounded hover:bg-[#F3F4F6] text-xs font-semibold text-[#111827] flex items-center justify-between transition-colors"
+                                        >
+                                            <span>Final Assessment</span>
+                                            <span className="text-[10px] text-gray-500">{finalAssessments.length} Qs</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Right Column (lg:col-span-9): Modules & Activity Canvas */}
-                            <div className="lg:col-span-9 space-y-6">
-                                <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-6 sm:p-8">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-                                        <div>
-                                            <h2 className="text-2xl font-extrabold text-[#111827] font-display">
-                                                Course Modules & Curriculum
-                                            </h2>
-                                            <p className="text-sm text-gray-500 mt-0.5">
-                                                {editMode
-                                                    ? 'Use inline rename or Add Activity to build lessons, slides, and quizzes.'
-                                                    : 'Read-only preview. Turn Edit Mode ON above to make modifications.'}
+                            {/* Right Column: Moodle Course Sections */}
+                            <div className="lg:col-span-9 space-y-4">
+                                {/* General / Course Summary Section */}
+                                <div className="bg-white rounded border border-[#D1D5DB] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                                            General
+                                        </span>
+                                        <h2 className="text-base sm:text-lg font-bold text-[#111827] font-display">
+                                            Course Outline &amp; Topics
+                                        </h2>
+                                        {course.description && (
+                                            <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">
+                                                {course.description}
                                             </p>
-                                        </div>
-                                        {editMode && (
-                                            <button
-                                                type="button"
-                                                onClick={addModule}
-                                                className="px-5 py-2.5 text-xs font-bold text-white bg-[#10B981] hover:bg-emerald-600 rounded-md transition-colors shrink-0"
-                                            >
-                                                + Add Module
-                                            </button>
                                         )}
                                     </div>
-
-                                    {/* Module Completion Telemetry Strip */}
-                                    {modules.length > 0 && (
-                                        <div className="bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md p-5 mb-6">
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                                                <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#111827]">
-                                                    Module Completion & Telemetry ({enrolledCount} Enrolled Learners)
-                                                </h4>
-                                                <span className="text-[11px] font-semibold text-gray-500">
-                                                    Live learner unit completion rates
-                                                </span>
-                                            </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                                {modules.map((m, idx) => {
-                                                    const completed = m.completions_count ?? 0;
-                                                    const pct = enrolledCount > 0 ? Math.round((completed / enrolledCount) * 100) : 0;
-                                                    return (
-                                                        <div key={m.id} className="bg-white border-2 border-[#E5E7EB] rounded p-3">
-                                                            <div className="flex items-center justify-between text-xs mb-1">
-                                                                <span className="font-bold text-[#111827] truncate">Unit {idx + 1}</span>
-                                                                <span className="font-extrabold text-[#10B981]">{pct}%</span>
-                                                            </div>
-                                                            <p className="text-[11px] text-gray-600 truncate mb-2">{m.title}</p>
-                                                            <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="bg-[#10B981] h-full rounded-full transition-all"
-                                                                    style={{ width: `${pct}%` }}
-                                                                />
-                                                            </div>
-                                                            <span className="text-[10px] text-gray-500 font-medium mt-1.5 block">
-                                                                {completed} / {enrolledCount} completed
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
+                                    {editMode && (
+                                        <button
+                                            type="button"
+                                            onClick={addModule}
+                                            className="px-4 py-2 text-xs font-semibold text-white bg-[#111827] hover:bg-gray-800 rounded transition-colors shrink-0"
+                                        >
+                                            + Add topic
+                                        </button>
                                     )}
+                                </div>
 
-                                    {/* Module Cards List */}
-                                    <div className="space-y-4 mb-8">
-                                        {modules.length > 0 ? (
-                                            modules.map((module, index) => (
-                                                <ModuleCard
-                                                    key={module.id}
-                                                    course={course}
-                                                    module={module}
-                                                    index={index}
-                                                    quizCount={assessments.filter((q) => q.module_id === module.id).length}
-                                                    enrolledCount={enrolledCount}
-                                                    editMode={editMode}
-                                                    onAddActivity={openAddActivityModal}
-                                                    onQuickRename={handleQuickRename}
-                                                />
-                                            ))
-                                        ) : (
-                                            <div className="text-center py-12 bg-[#F9FAFB] rounded-md border-2 border-[#E5E7EB] border-dashed">
-                                                <p className="text-gray-700 font-bold text-sm mb-1">No modules added yet.</p>
-                                                <p className="text-xs text-gray-500 mb-4">Create your first chapter below to begin adding lessons and files.</p>
+                                {/* Topic Sections List */}
+                                <div className="space-y-3">
+                                    {modules.length > 0 ? (
+                                        modules.map((module, index) => (
+                                            <ModuleCard
+                                                key={module.id}
+                                                course={course}
+                                                module={module}
+                                                index={index}
+                                                quizCount={assessments.filter((q) => q.module_id === module.id).length}
+                                                enrolledCount={enrolledCount}
+                                                editMode={editMode}
+                                                onAddActivity={openAddActivityModal}
+                                                onQuickRename={handleQuickRename}
+                                                onPreviewMaterial={setPreviewMaterial}
+                                            />
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-12 bg-white rounded border border-dashed border-[#D1D5DB]">
+                                            <p className="text-[#111827] font-semibold text-sm mb-1">No topics added to this course yet.</p>
+                                            <p className="text-xs text-gray-500 mb-4">Add your first topic section to begin uploading lectures, slides, and quizzes.</p>
+                                            {editMode && (
                                                 <button
                                                     type="button"
                                                     onClick={addModule}
-                                                    className="px-5 py-2.5 text-xs font-bold text-white bg-[#111827] hover:bg-gray-800 rounded-md"
+                                                    className="px-4 py-2 text-xs font-semibold text-white bg-[#111827] hover:bg-gray-800 rounded"
                                                 >
-                                                    + Create First Module
+                                                    + Add first topic
                                                 </button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Final Exam Overview Card */}
-                                    <div id="final-exam-section" className="bg-[#FFFBEB] border-2 border-[#FDE68A] rounded-md p-5 scroll-mt-24">
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                            <div>
-                                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#92400E] block">
-                                                    Course Assessment
-                                                </span>
-                                                <h3 className="font-extrabold text-base text-[#92400E]">
-                                                    🎯 Final Exam ({finalAssessments.length} Questions)
-                                                </h3>
-                                                <p className="text-xs text-gray-600 mt-0.5">
-                                                    Learners must pass this exam with 100% to unlock their verified official certificate.
-                                                </p>
-                                            </div>
-                                            {modules.length > 0 && (
-                                                <Link
-                                                    href={`${route('staff.courses.modules.edit', [course.id, modules[0].id])}?tab=assessment`}
-                                                    className="px-4 py-2 bg-[#92400E] hover:bg-amber-800 text-white font-extrabold text-xs rounded-md shrink-0 transition-colors"
-                                                >
-                                                    Manage Final Exam Questions →
-                                                </Link>
                                             )}
-                                        </div>
-                                    </div>
-
-                                    {editMode && modules.length > 0 && (
-                                        <div className="flex justify-end pt-4 mt-6 border-t-2 border-[#E5E7EB]">
-                                            <button
-                                                type="button"
-                                                onClick={addModule}
-                                                className="px-6 py-3 text-sm font-bold text-white bg-[#111827] rounded-md hover:bg-gray-800 transition-colors"
-                                            >
-                                                + Add Next Module
-                                            </button>
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Final Assessment Section Card */}
+                                <div id="final-exam-section" className="bg-white border border-[#D1D5DB] rounded overflow-hidden scroll-mt-24">
+                                    <div className="px-4 sm:px-5 py-3.5 bg-[#F8FAFC] border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div>
+                                            <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 block">
+                                                Course Certification Requirement
+                                            </span>
+                                            <h3 className="font-display font-bold text-base text-[#111827]">
+                                                Final Assessment ({finalAssessments.length} Question{finalAssessments.length === 1 ? '' : 's'})
+                                            </h3>
+                                        </div>
+                                        {modules.length > 0 && editMode ? (
+                                            <Link
+                                                href={`${route('staff.courses.modules.edit', [course.id, modules[0].id])}?tab=assessment`}
+                                                className="px-3.5 py-1.5 bg-[#111827] hover:bg-gray-800 text-white font-semibold text-xs rounded shrink-0 transition-colors"
+                                            >
+                                                Edit final assessment →
+                                            </Link>
+                                        ) : (
+                                            <span className="text-xs font-medium text-gray-500 shrink-0">
+                                                100% score required for certificate
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="px-4 sm:px-5 py-3 text-xs text-gray-600">
+                                        Learners must complete all course topics and score 100% on the Final Assessment to unlock their verified certificate.
+                                    </div>
+                                </div>
+
+                                {editMode && modules.length > 0 && (
+                                    <div className="pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={addModule}
+                                            className="w-full py-2.5 text-xs font-semibold text-[#111827] bg-white border border-dashed border-[#D1D5DB] rounded hover:bg-[#F3F4F6] transition-colors"
+                                        >
+                                            + Add topic section
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -840,20 +731,20 @@ export default function Edit({
                     {courseTab === 'settings' && (
                         <form onSubmit={submitCourse} className="flex flex-col gap-6">
                             {/* Settings Sub-Tabs */}
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1 border-b border-[#D1D5DB]">
                                 {[
-                                    { key: 'identity', label: '1. Course Identity' },
-                                    { key: 'pricing', label: '2. Subscription Model' },
-                                    { key: 'cert', label: '3. Certification' },
+                                    { key: 'identity', label: 'General & Course Details' },
+                                    { key: 'pricing', label: 'Enrollment & Access' },
+                                    { key: 'cert', label: 'Certificate Settings' },
                                 ].map((t) => (
                                     <button
                                         key={t.key}
                                         type="button"
                                         onClick={() => setSettingsTab(t.key)}
-                                        className={`px-4 py-2 rounded-md text-xs font-extrabold border-2 transition-colors ${
+                                        className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors -mb-px ${
                                             settingsTab === t.key
-                                                ? 'bg-[#10B981] border-[#10B981] text-white'
-                                                : 'bg-white border-[#E5E7EB] text-gray-700 hover:border-[#10B981]'
+                                                ? 'border-[#111827] text-[#111827] bg-white'
+                                                : 'border-transparent text-gray-600 hover:text-[#111827]'
                                         }`}
                                     >
                                         {t.label}
@@ -1511,74 +1402,26 @@ export default function Edit({
                         </div>
                     )}
 
-                    {/* TAB 5: STUDENT CHAT (WHATSAPP WEB STYLE) */}
+                    {/* TAB 5: STUDENT CHAT */}
                     {courseTab === 'chat' && (
                         <div className="space-y-6">
-                            {/* Course WhatsApp Cloud API Integration Bar */}
-                            <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                    <span className="w-10 h-10 rounded-md bg-[#25D366] text-white flex items-center justify-center text-xl font-bold shrink-0">
-                                        💬
-                                    </span>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-sm font-extrabold text-[#111827]">
-                                                Meta WhatsApp Cloud API Integration
-                                            </h3>
-                                            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#DCFCE7] text-[#166534] border border-[#86EFAC]">
-                                                In-Web Cloud API Active
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="w-2 h-2 rounded-full bg-[#10B981] inline-block animate-pulse"></span>
-                                            <span className="text-xs text-gray-600 font-semibold">
-                                                Direct In-Web Bridge Active · Automatic Student Phone Routing & Webhook Simulation
-                                            </span>
-                                        </div>
-                                    </div>
+                            {/* Course Discussions Header */}
+                            <div className="bg-white rounded-md border-2 border-[#E5E7EB] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-sm font-extrabold text-[#111827] uppercase tracking-wider">
+                                        Course Discussions &amp; Student Inquiries
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        Broadcast announcements to the entire class or message enrolled students directly 1-on-1.
+                                    </p>
                                 </div>
-                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleSimulateWhatsappReply()}
-                                        disabled={isSimulatingWhatsapp}
-                                        className="px-3.5 py-1.5 text-xs font-black bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded border border-[#16A34A] transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                        title="Simulate incoming WhatsApp message from student"
-                                    >
-                                        <span>⚡</span>
-                                        <span>{isSimulatingWhatsapp ? 'Simulating...' : 'Simulate WhatsApp Reply'}</span>
-                                    </button>
-                                    <form onSubmit={handleSaveWhatsappUrl} className="flex items-center gap-2">
-                                        <input
-                                            type="url"
-                                            value={whatsappUrl}
-                                            onChange={(e) => setWhatsappUrl(e.target.value)}
-                                            placeholder="https://chat.whatsapp.com/..."
-                                            className="w-full sm:w-64 px-3 py-1.5 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded text-xs text-[#111827] font-semibold focus:bg-white focus:border-[#111827] focus:outline-none"
-                                        />
-                                        <button
-                                            type="submit"
-                                            disabled={isSavingWhatsapp}
-                                            className="px-3 py-1.5 text-xs font-bold bg-[#111827] text-white rounded hover:bg-black transition-colors disabled:opacity-50"
-                                        >
-                                            {isSavingWhatsapp ? 'Saving...' : whatsappSaved ? 'Saved!' : 'Save Link'}
-                                        </button>
-                                        {course.whatsapp_group_url && (
-                                            <a
-                                                href={course.whatsapp_group_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="px-3 py-1.5 text-xs font-bold bg-[#25D366] text-white rounded hover:bg-[#1EBE5D] transition-colors flex items-center justify-center gap-1.5"
-                                            >
-                                                <span>Open</span>
-                                                <span>↗</span>
-                                            </a>
-                                        )}
-                                    </form>
-                                </div>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] text-xs font-bold self-start sm:self-auto">
+                                    <span className="w-2 h-2 rounded-full bg-[#22C55E]"></span>
+                                    In-App Chat Active
+                                </span>
                             </div>
 
-                            {/* Split-Pane WhatsApp Web Interface */}
+                            {/* Split-Pane Course Chat Interface */}
                             <div className="bg-white rounded-md border-2 border-[#E5E7EB] overflow-hidden flex flex-col lg:flex-row min-h-[580px]">
                                 {/* Left Pane: Student Threads & Group Chat */}
                                 <div className={`w-full lg:w-80 xl:w-96 border-b-2 lg:border-b-0 lg:border-r-2 border-[#E5E7EB] bg-[#F9FAFB] flex flex-col ${
@@ -1599,7 +1442,7 @@ export default function Edit({
                                                 type="text"
                                                 value={chatSearch}
                                                 onChange={(e) => setChatSearch(e.target.value)}
-                                                placeholder="Search student, phone, or email..."
+                                                placeholder="Search student by name or email..."
                                                 className="w-full pl-8 pr-3 py-1.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded text-xs text-[#111827] focus:bg-white focus:border-[#111827] focus:outline-none"
                                             />
                                             <span className="absolute left-2.5 top-2 text-xs text-gray-400">🔍</span>
@@ -1703,20 +1546,21 @@ export default function Edit({
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="flex items-center gap-1.5 mt-0.5">
-                                                                {student.phone ? (
-                                                                    <span className={`text-[10px] font-mono ${
-                                                                        isSelected ? 'text-emerald-300 font-bold' : 'text-emerald-700 font-semibold'
-                                                                    }`}>
-                                                                        📞 {student.phone}
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className={`text-[10px] truncate ${
-                                                                        isSelected ? 'text-gray-300' : 'text-gray-500'
-                                                                    }`}>
-                                                                        {student.email}
-                                                                    </span>
-                                                                )}
+                                                            <div className="flex items-center justify-between gap-1.5 mt-0.5">
+                                                                <span className={`text-[10px] truncate ${
+                                                                    isSelected ? 'text-gray-300' : 'text-gray-500'
+                                                                }`}>
+                                                                    {student.email}
+                                                                </span>
+                                                                <span className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-extrabold border ${
+                                                                    isSelected
+                                                                        ? 'bg-gray-800 text-emerald-300 border-gray-700'
+                                                                        : student.isCertified
+                                                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                                                        : 'bg-gray-100 text-gray-700 border-gray-200'
+                                                                }`}>
+                                                                    {student.isCertified ? '✓ Certified' : `${student.progress}%`}
+                                                                </span>
                                                             </div>
                                                             <p className={`text-[11px] truncate mt-0.5 ${
                                                                 isSelected ? 'text-gray-300' : 'text-gray-500'
@@ -1775,9 +1619,13 @@ export default function Edit({
                                                             <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300">
                                                                 1-on-1 Direct Chat
                                                             </span>
-                                                            {selectedStudent?.phone && (
-                                                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
-                                                                    📞 {selectedStudent.phone}
+                                                            {selectedStudent && (
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold border ${
+                                                                    selectedStudent.isCertified
+                                                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                                                        : 'bg-gray-100 text-gray-700 border-gray-300'
+                                                                }`}>
+                                                                    {selectedStudent.isCertified ? '✓ Certified (100%)' : `${selectedStudent.progress}% Progress`}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1790,16 +1638,6 @@ export default function Edit({
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleSimulateWhatsappReply()}
-                                                disabled={isSimulatingWhatsapp}
-                                                className="px-2.5 py-1 text-xs font-black bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded border border-[#16A34A] transition-colors flex items-center gap-1 disabled:opacity-50"
-                                                title="Simulate student incoming WhatsApp reply"
-                                            >
-                                                <span>⚡</span>
-                                                <span className="hidden sm:inline">Simulate Reply</span>
-                                            </button>
                                             {selectedStudentId !== null && (
                                                 <button
                                                     type="button"
@@ -1830,7 +1668,6 @@ export default function Edit({
                                             activeThreadMessages.map((msg) => {
                                                 const isInstructorMsg = msg.sender?.role === 'staff' || msg.sender?.role === 'coordinator';
                                                 const isMine = msg.sender_id === instructor?.id;
-                                                const isWhatsapp = msg.body.startsWith('[WhatsApp]');
 
                                                 return (
                                                     <div
@@ -1844,11 +1681,6 @@ export default function Edit({
                                                             {isInstructorMsg && (
                                                                 <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-100 text-purple-800 border border-purple-300">
                                                                     Lecturer
-                                                                </span>
-                                                            )}
-                                                            {isWhatsapp && (
-                                                                <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-[#DCFCE7] text-[#166534] border border-[#86EFAC] flex items-center gap-0.5">
-                                                                    ✓✓ WhatsApp API
                                                                 </span>
                                                             )}
                                                             <span className="text-[10px] text-gray-400">
@@ -2273,6 +2105,114 @@ export default function Edit({
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {previewMaterial && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+                    <div className="bg-white rounded-lg border-2 border-[#111827] w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* Header */}
+                        <div className="bg-[#111827] text-white p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="text-lg">👁</span>
+                                <h3 className="font-extrabold text-sm truncate font-display">
+                                    {previewMaterial.title}
+                                </h3>
+                                {(() => {
+                                    const url = safeUrl(previewMaterial.url) || '';
+                                    const isPdf = isPdfFile(url, previewMaterial.contentType);
+                                    const isVid = isVideoUrl(url, previewMaterial.contentType);
+                                    if (isPdf) {
+                                        return <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-rose-50 text-rose-700 border border-rose-200 shrink-0">PDF DOCUMENT</span>;
+                                    }
+                                    if (isVid) {
+                                        return <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-50 text-blue-700 border border-blue-200 shrink-0">VIDEO EMBED</span>;
+                                    }
+                                    return <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-50 text-amber-700 border border-amber-200 shrink-0">EXTERNAL LINK</span>;
+                                })()}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewMaterial(null)}
+                                className="text-gray-400 hover:text-white text-lg font-bold p-1 leading-none transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-4 overflow-y-auto flex-1 bg-[#F9FAFB]">
+                            {(() => {
+                                const url = safeUrl(previewMaterial.url);
+                                const isPdf = isPdfFile(url, previewMaterial.contentType);
+                                const isVid = isVideoUrl(url, previewMaterial.contentType);
+
+                                if (isPdf) {
+                                    return (
+                                        <div className="space-y-3">
+                                            <div className="p-3 bg-white border-2 border-[#E5E7EB] rounded-md flex items-center justify-between gap-3">
+                                                <span className="text-xs font-bold text-gray-700">PDF Document Preview</span>
+                                                <a
+                                                    href={url}
+                                                    download
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-4 py-2 bg-[#111827] hover:bg-gray-800 text-white font-extrabold text-xs rounded transition-colors inline-flex items-center gap-1.5"
+                                                >
+                                                    <span>⬇ Download PDF Document</span>
+                                                </a>
+                                            </div>
+                                            <div className="border-2 border-[#E5E7EB] rounded-md overflow-hidden bg-white">
+                                                <iframe src={url} title={previewMaterial.title} className="w-full h-[500px] border-0" />
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                if (isVid) {
+                                    return (
+                                        <div className="aspect-video w-full bg-[#111827] rounded-md overflow-hidden border-2 border-[#E5E7EB]">
+                                            <iframe
+                                                src={formatEmbedUrl(url)}
+                                                title={previewMaterial.title}
+                                                className="w-full h-full border-0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                allowFullScreen
+                                            />
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div className="bg-white border-2 border-[#E5E7EB] rounded-md p-8 text-center space-y-4">
+                                        <p className="text-sm font-bold text-[#111827]">External Resource Link</p>
+                                        <p className="text-xs text-gray-600 break-all">{url || 'No URL provided'}</p>
+                                        {url && (
+                                            <a
+                                                href={url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-block px-5 py-2.5 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs rounded transition-colors"
+                                            >
+                                                Open Link in New Tab ↗
+                                            </a>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-3 bg-white border-t-2 border-[#E5E7EB] flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setPreviewMaterial(null)}
+                                className="px-4 py-2 bg-[#F3F4F6] hover:bg-gray-200 text-[#111827] font-bold text-xs rounded transition-colors"
+                            >
+                                Close Preview
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

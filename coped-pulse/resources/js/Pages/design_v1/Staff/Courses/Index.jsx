@@ -84,55 +84,48 @@ export default function Index({
         <StaffLayout>
             <Head title="My Courses" />
 
-            {/* Back navigation */}
-            <Link
-                href={route('dashboard')}
-                className="inline-flex items-center text-xs font-bold text-[#10B981] hover:text-emerald-700 uppercase tracking-wider mb-4 transition-colors"
-            >
-                ← Back to Studio Dashboard
-            </Link>
+            {/* Breadcrumb */}
+            <div className="text-xs text-gray-500 mb-3 flex items-center gap-1.5">
+                <Link href={route('dashboard')} className="hover:text-[#111827] hover:underline">
+                    Dashboard
+                </Link>
+                <span>/</span>
+                <span className="text-[#111827] font-medium">My courses</span>
+            </div>
 
             {/* Top Header */}
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#D1D5DB]">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight font-display">
-                            {isCoordinator ? 'All Subject Curricula' : 'My Courses'}
-                        </h1>
-                        {isCoordinator && (
-                            <span className="text-xs uppercase tracking-wider font-extrabold px-2.5 py-1 bg-amber-500 text-white rounded">
-                                Coordinator View
-                            </span>
-                        )}
-                    </div>
-                    <p className="mt-1 text-sm sm:text-base text-gray-600">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#111827] tracking-tight font-display">
+                        {isCoordinator ? 'Course Administration' : 'My Courses'}
+                    </h1>
+                    <p className="mt-1 text-xs sm:text-sm text-gray-600">
                         {isCoordinator
-                            ? 'Global coordinator overview: monitor all institutional subjects and assign faculty instructors.'
-                            : 'Manage your training curriculum'}
+                            ? 'Manage institutional courses, review publication status, and assign lecturers.'
+                            : 'Manage your assigned courses, topics, and learning materials.'}
                     </p>
                 </div>
                 <div>
                     <Link
                         href={route('staff.courses.create')}
-                        className="inline-flex items-center justify-center w-full sm:w-auto min-h-[44px] px-5 py-2.5 text-xs font-bold rounded-md text-white bg-[#10B981] hover:bg-emerald-600 transition-colors"
+                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-semibold rounded text-white bg-[#111827] hover:bg-gray-800 transition-colors"
                     >
-                        <span>+ New Course</span>
+                        + Create new course
                     </Link>
                 </div>
             </div>
 
             {/* Control Bar: Filter Tabs + Instructor Filter + Search Input */}
-            <div className="bg-white border-2 border-[#E5E7EB] rounded-t-lg p-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-0">
-                {/* Filter Tabs & Instructor Filter */}
+            <div className="bg-[#EDF1F7] border border-[#CBD5E1] rounded-t p-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-0">
                 <div className="flex items-center flex-wrap gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-center gap-1 bg-[#E2E8F0] p-1 rounded border border-[#CBD5E1]">
                         <button
                             type="button"
                             onClick={() => setFilterTab('all')}
-                            className={`px-3 py-1.5 rounded text-xs font-bold transition-colors min-h-[38px] flex items-center ${
+                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
                                 filterTab === 'all'
-                                    ? 'bg-[#111827] text-white'
-                                    : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-[#F8FAFC] text-[#1E293B] border border-[#CBD5E1]'
+                                    : 'text-slate-600 hover:text-[#1E293B]'
                             }`}
                         >
                             All ({allCourses.length})
@@ -140,21 +133,21 @@ export default function Index({
                         <button
                             type="button"
                             onClick={() => setFilterTab('live')}
-                            className={`px-3 py-1.5 rounded text-xs font-bold transition-colors min-h-[38px] flex items-center ${
+                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
                                 filterTab === 'live'
-                                    ? 'bg-[#111827] text-white'
-                                    : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-[#F8FAFC] text-[#1E293B] border border-[#CBD5E1]'
+                                    : 'text-slate-600 hover:text-[#1E293B]'
                             }`}
                         >
-                            Live ({liveCount})
+                            Published ({liveCount})
                         </button>
                         <button
                             type="button"
                             onClick={() => setFilterTab('draft')}
-                            className={`px-3 py-1.5 rounded text-xs font-bold transition-colors min-h-[38px] flex items-center ${
+                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
                                 filterTab === 'draft'
-                                    ? 'bg-[#111827] text-white'
-                                    : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-[#F8FAFC] text-[#1E293B] border border-[#CBD5E1]'
+                                    : 'text-slate-600 hover:text-[#1E293B]'
                             }`}
                         >
                             Drafts ({draftCount})
@@ -162,8 +155,8 @@ export default function Index({
                     </div>
 
                     {isCoordinator && instructors.length > 0 && (
-                        <div className="flex items-center gap-1.5 pl-2 border-l-2 border-[#E5E7EB]">
-                            <label htmlFor="instructor-filter" className="text-xs font-bold text-gray-600 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 pl-2 border-l border-[#CBD5E1]">
+                            <label htmlFor="instructor-filter" className="text-xs font-medium text-slate-600 whitespace-nowrap">
                                 Lecturer:
                             </label>
                             <select
@@ -177,7 +170,7 @@ export default function Index({
                                         { preserveState: true }
                                     );
                                 }}
-                                className="text-xs font-bold bg-[#F3F4F6] border-2 border-[#E5E7EB] rounded px-2.5 py-1.5 min-h-[38px] text-[#111827] focus:outline-none focus:border-[#111827]"
+                                className="text-xs font-medium bg-[#F8FAFC] border border-[#CBD5E1] rounded px-2.5 py-1.5 text-[#1E293B] focus:outline-none focus:border-[#1E293B]"
                             >
                                 <option value="">All Lecturers ({instructors.length})</option>
                                 {instructors.map((ins) => (
@@ -197,13 +190,13 @@ export default function Index({
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search courses by title..."
-                        className="w-full text-xs font-medium border-2 border-[#E5E7EB] rounded px-3 py-2 pr-8 min-h-[38px] text-[#111827] placeholder-gray-400 focus:outline-none focus:border-[#111827] transition-colors"
+                        className="w-full text-xs font-medium bg-[#F8FAFC] border border-[#CBD5E1] rounded px-3 py-2 pr-8 text-[#1E293B] placeholder-slate-400 focus:outline-none focus:border-[#1E293B] transition-colors"
                     />
                     {searchQuery && (
                         <button
                             type="button"
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] font-bold text-xs leading-none"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#1E293B] font-bold text-xs leading-none"
                             aria-label="Clear search"
                         >
                             &times;
@@ -213,7 +206,7 @@ export default function Index({
             </div>
 
             {/* Table Container */}
-            <div className="bg-white border-2 border-[#E5E7EB] rounded-b-lg overflow-hidden">
+            <div className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-b overflow-hidden">
                 {allCourses.length === 0 ? (
                     /* Initial Empty State */
                     <div className="text-center py-16 px-4">

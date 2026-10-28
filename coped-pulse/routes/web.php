@@ -266,13 +266,10 @@ Route::middleware('auth')->group(function () {
             ->only(['store', 'update', 'destroy']);
         Route::resource('courses.assessments', \App\Http\Controllers\Staff\AssessmentController::class)
             ->only(['index', 'store', 'update', 'destroy']);
-        Route::post('courses/{course}/whatsapp-link', [CourseChatController::class, 'updateWhatsappLink'])->name('courses.whatsapp-link.update');
     });
 
     // In-App Course Chat (Instructors, Staff, and Enrolled Learners)
     Route::get('courses/{course}/chat/messages', [CourseChatController::class, 'index'])->name('courses.chat.messages.index');
     Route::post('courses/{course}/chat/messages', [CourseChatController::class, 'store'])->name('courses.chat.messages.store');
     Route::post('courses/{course}/chat/mark-read', [CourseChatController::class, 'markRead'])->name('courses.chat.mark-read');
-    Route::post('courses/{course}/chat/whatsapp-simulate', [CourseChatController::class, 'simulateWhatsapp'])->name('courses.chat.whatsapp-simulate');
-    Route::post('courses/{course}/whatsapp-link', [CourseChatController::class, 'updateWhatsappLink'])->name('courses.whatsapp-link.store');
 });

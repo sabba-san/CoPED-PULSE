@@ -163,24 +163,6 @@ class CourseChatTest extends TestCase
         $postResponse->assertForbidden();
     }
 
-    public function test_instructor_can_configure_whatsapp_group_link(): void
-    {
-        $org = Organization::factory()->create();
-        $instructor = $this->staff(['organization_id' => $org->id]);
-        $course = Course::factory()->published()->forInstructor($instructor)->create([
-            'organization_id' => $org->id,
-            'whatsapp_group_url' => null,
-        ]);
-
-        $response = $this->actingAs($instructor)->post(route('staff.courses.whatsapp-link.update', $course->id), [
-            'whatsapp_group_url' => 'https://chat.whatsapp.com/L123AbcDefXyz',
-        ]);
-        $response->assertSessionHas('success');
-
-        $course->refresh();
-        $this->assertEquals('https://chat.whatsapp.com/L123AbcDefXyz', $course->whatsapp_group_url);
-    }
-
     public function test_newly_enrolled_learner_does_not_see_group_messages_sent_before_enrollment(): void
     {
         $org = Organization::factory()->create();
@@ -258,68 +240,5 @@ class CourseChatTest extends TestCase
             ->assertJsonPath('status', 'ok');
 
         $this->assertNotNull($msg->fresh()->read_at);
-    }
-
-    public function test_whatsapp_api_service_simulates_incoming_reply(): void
-    {
-        $org = Organization::factory()->create();
-        $instructor = $this->staff(['organization_id' => $org->id]);
-        $course = Course::factory()->published()->forInstructor($instructor)->create([
-            'organization_id' => $org->id,
-        ]);
-        $learner = $this->learner(['phone' => '+60111234567']);
-        Enrollment::create([
-            'user_id' => $learner->id,
-            'course_id' => $course->id,
-            'progress' => 0,
-            'enrolled_at' => now(),
-            'created_at' => now(),
-        ]);
-
-        $service = app(\App\Services\WhatsAppApiService::class);
-        $message = $service->simulateIncomingReply(
-            courseId: $course->id,
-            senderUserId: $learner->id,
-            text: 'Hello instructor from WhatsApp!',
-            recipientId: $instructor->id
-        );
-
-        $this->assertEquals('[WhatsApp] Hello instructor from WhatsApp!', $message->body);
-        $this->assertEquals($learner->id, $message->sender_id);
-        $this->assertEquals($instructor->id, $message->recipient_id);
-
-        // Also test the controller simulation endpoint
-        $endpointResponse = $this->actingAs($instructor)->postJson(route('courses.chat.whatsapp-simulate', $course->id), [
-            'body' => 'Yes, let us schedule a consultation tomorrow.',
-            'sender_id' => $learner->id,
-            'recipient_id' => $instructor->id,
-        ]);
-
-        $endpointResponse->assertCreated()
-            ->assertJsonPath('body', '[WhatsApp] Yes, let us schedule a consultation tomorrow.')
-            ->assertJsonPath('sender.id', $learner->id);
-    }
-
-    public function test_learner_cannot_simulate_whatsapp_reply(): void
-    {
-        $org = Organization::factory()->create();
-        $instructor = $this->staff(['organization_id' => $org->id]);
-        $course = Course::factory()->published()->forInstructor($instructor)->create([
-            'organization_id' => $org->id,
-        ]);
-        $learner = $this->learner();
-        Enrollment::create([
-            'user_id' => $learner->id,
-            'course_id' => $course->id,
-            'progress' => 0,
-            'enrolled_at' => now(),
-            'created_at' => now(),
-        ]);
-
-        $response = $this->actingAs($learner)->postJson(route('courses.chat.whatsapp-simulate', $course->id), [
-            'body' => 'Learner trying to simulate a WhatsApp reply.',
-        ]);
-
-        $response->assertForbidden();
     }
 }

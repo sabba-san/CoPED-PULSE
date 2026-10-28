@@ -12,8 +12,8 @@ export default function LearnerLayout({ children }) {
     const [mobileAlertsOpen, setMobileAlertsOpen] = useState(false);
 
     const navLinks = [
-        { name: 'My Portal', href: route('portal'), active: url.startsWith('/portal') },
         { name: 'Browse Catalog', href: route('learner.catalog'), active: url.startsWith('/learner/catalog') },
+        { name: 'My Portal', href: route('portal'), active: url.startsWith('/portal') },
     ];
 
     return (
@@ -85,18 +85,6 @@ export default function LearnerLayout({ children }) {
             >
                 <div className="grid grid-cols-4 w-full max-w-full divide-x-2 divide-gray-200">
                     <Link
-                        href={route('portal')}
-                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
-                            url.startsWith('/portal')
-                                ? 'bg-[#111827] text-white font-black'
-                                : 'text-gray-700 hover:bg-[#F3F4F6] font-bold'
-                        }`}
-                    >
-                        <span className="text-base leading-none mb-1 shrink-0">🏠</span>
-                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Portal</span>
-                    </Link>
-
-                    <Link
                         href={route('learner.catalog')}
                         className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
                             url.startsWith('/learner/catalog')
@@ -106,6 +94,18 @@ export default function LearnerLayout({ children }) {
                     >
                         <span className="text-base leading-none mb-1 shrink-0">📚</span>
                         <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Catalog</span>
+                    </Link>
+
+                    <Link
+                        href={route('portal')}
+                        className={`min-h-[56px] w-full flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-colors min-w-0 ${
+                            url.startsWith('/portal')
+                                ? 'bg-[#111827] text-white font-black'
+                                : 'text-gray-700 hover:bg-[#F3F4F6] font-bold'
+                        }`}
+                    >
+                        <span className="text-base leading-none mb-1 shrink-0">🏠</span>
+                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Portal</span>
                     </Link>
 
                     <button

@@ -27,8 +27,11 @@ export default function Dashboard({
     const liveCourses = myCourses.filter((c) => c.status === 'published');
     const draftCourses = myCourses.filter((c) => c.status !== 'published');
 
+    // Main workspace tab: 'courses' | 'activity' (eliminates side-by-side split clutter)
+    const [mainView, setMainView] = useState('courses');
+
     // Tab state & controls for Courses section
-    const [activeCourseTab, setActiveCourseTab] = useState('live');
+    const [activeCourseTab, setActiveCourseTab] = useState('all');
     const [expandedCourses, setExpandedCourses] = useState(false);
     const [activeMenuCourseId, setActiveMenuCourseId] = useState(null);
 
@@ -109,309 +112,247 @@ export default function Dashboard({
         return true;
     });
 
-    const tabCourses = activeCourseTab === 'live' ? liveCourses : draftCourses;
-    const displayedCourses = expandedCourses ? tabCourses : tabCourses.slice(0, 3);
+    const tabCourses =
+        activeCourseTab === 'all'
+            ? myCourses
+            : activeCourseTab === 'live'
+            ? liveCourses
+            : draftCourses;
+    const displayedCourses = expandedCourses ? tabCourses : tabCourses.slice(0, 6);
 
     return (
         <StaffLayout>
-            <Head title="Instructor Dashboard" />
+            <Head title="Course Overview" />
 
-            {/* Header */}
-            <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            {/* Calm, Low-Glare Header + Compact Summary Strip */}
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight font-display">
-                            {isCoordinator ? 'Subject Coordinator Oversight' : 'Instructor Studio & Dashboard'}
-                        </h1>
-                        {isCoordinator && (
-                            <span className="text-xs uppercase tracking-wider font-extrabold px-2.5 py-1 bg-amber-500 text-white rounded">
-                                Coordinator
-                            </span>
-                        )}
+                    <h1 className="text-2xl font-bold text-[#1E293B] tracking-tight font-display">
+                        {isCoordinator ? 'Course Administration' : 'My Courses'}
+                    </h1>
+                    <div className="mt-1.5 flex items-center flex-wrap gap-2 text-xs text-slate-600">
+                        <span className="font-semibold text-[#1E293B]">{myCourses.length} courses</span>
+                        <span>·</span>
+                        <span>{s.active_learners} enrolled learners</span>
+                        <span>·</span>
+                        <span>{s.completed} certified</span>
+                        <span>·</span>
+                        <span>{s.avg_completion}% avg. completion</span>
                     </div>
-                    <p className="mt-2 text-base sm:text-lg text-gray-600">
-                        {isCoordinator
-                            ? 'Global institutional curriculum oversight · Monitor subjects, track lecturer assignments, and audit learner completion.'
-                            : 'Active teaching workspace · Build your curriculum, preview courses, and track student submissions.'}
-                    </p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+
+                <div className="flex items-center gap-2 shrink-0">
                     <Link
                         href={route('staff.courses.create')}
-                        className="px-5 py-2.5 text-sm font-bold text-white bg-[#10B981] rounded-md hover:bg-emerald-600 transition-colors"
+                        className="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-[#1E293B] rounded hover:bg-[#0F172A] transition-colors"
                     >
-                        + New Course
-                    </Link>
-                    <Link
-                        href={route('staff.courses.index')}
-                        className="px-5 py-2.5 text-sm font-bold text-[#111827] bg-[#F3F4F6] border-2 border-[#E5E7EB] rounded-md hover:bg-gray-200 transition-colors"
-                    >
-                        All Courses
+                        + Create new course
                     </Link>
                 </div>
             </div>
 
-            {/* High-Contrast KPI Stat Cards (Single SVG Icon, Clarified Counts) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    value={`${myCourses.length} Courses (${liveCourses.length} live)`}
-                    label="Course Portfolio"
-                    sub={`${draftCourses.length} drafts · ${s.total_modules} total modules`}
-                    tone="bg-gray-100 text-gray-800 border-gray-300"
-                    icon={(
-                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                    )}
-                />
-                <StatCard
-                    value={s.active_learners}
-                    label="Active Students"
-                    sub={`${s.total_enrollments} total enrollments`}
-                    tone="bg-indigo-50 text-indigo-700 border-indigo-200"
-                    icon={(
-                        <svg className="w-5 h-5 text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    )}
-                />
-                <StatCard
-                    value={s.completed}
-                    label="Completions"
-                    sub={`${s.in_progress} actively studying`}
-                    tone="bg-green-50 text-green-700 border-green-200"
-                    icon={(
-                        <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    )}
-                />
-                <StatCard
-                    value={`${s.avg_completion}%`}
-                    label="Class Avg Progress"
-                    sub="across your curriculum"
-                    tone="bg-amber-50 text-amber-700 border-amber-200"
-                    icon={(
-                        <svg className="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                    )}
-                />
-            </div>
-
-            {/* 1. My Courses Tabbed Rows (left) + 2. Needs Attention Feed (right): side-by-side */}
-            <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* Left Column: My Courses (~100-115px Compact Rows with Live/Draft Tabs) */}
-                <div className="lg:col-span-7 space-y-4 min-w-0">
-                    {/* Flat Tab Bar Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-[#E5E7EB] pb-3">
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => { setActiveCourseTab('live'); setExpandedCourses(false); }}
-                                className={`px-3.5 py-1.5 rounded text-xs font-bold transition-colors ${
-                                    activeCourseTab === 'live'
-                                        ? 'bg-[#111827] text-white'
-                                        : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
-                                }`}
-                            >
-                                Live ({liveCourses.length})
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { setActiveCourseTab('draft'); setExpandedCourses(false); }}
-                                className={`px-3.5 py-1.5 rounded text-xs font-bold transition-colors ${
-                                    activeCourseTab === 'draft'
-                                        ? 'bg-[#111827] text-white'
-                                        : 'bg-[#F3F4F6] text-gray-700 hover:bg-gray-200'
-                                }`}
-                            >
-                                Drafts ({draftCourses.length})
-                            </button>
-                        </div>
-                        <Link
-                            href={route('staff.courses.index')}
-                            className="text-xs font-bold text-[#10B981] hover:text-emerald-700 uppercase tracking-wider shrink-0"
+            {/* Single-Focus Workspace Container (Soft Low-Glare Surface #F4F6F9) */}
+            <div className="bg-[#F4F6F9] border border-[#CBD5E1] rounded-md overflow-hidden">
+                {/* Primary Moodle Underline Tabs: My Courses vs Learner Activity */}
+                <div className="px-4 sm:px-6 bg-[#EDF1F7] border-b border-[#CBD5E1] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 -mb-px">
+                        <button
+                            type="button"
+                            onClick={() => setMainView('courses')}
+                            className={`px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors ${
+                                mainView === 'courses'
+                                    ? 'border-[#1E293B] text-[#1E293B] bg-[#F4F6F9]'
+                                    : 'border-transparent text-slate-600 hover:text-[#1E293B]'
+                            }`}
                         >
-                            View all ({myCourses.length}) →
-                        </Link>
+                            Course Overview ({myCourses.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMainView('activity')}
+                            className={`px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors ${
+                                mainView === 'activity'
+                                    ? 'border-[#1E293B] text-[#1E293B] bg-[#F4F6F9]'
+                                    : 'border-transparent text-slate-600 hover:text-[#1E293B]'
+                            }`}
+                        >
+                            Recent Learner Activity ({dedupedActivity.length})
+                        </button>
                     </div>
 
-                    {/* Compact Course Rows (Limited to 3 by default) */}
-                    {tabCourses.length > 0 ? (
-                        <div className="space-y-3">
-                            {displayedCourses.map((course) => (
-                                <CourseRow
-                                    key={course.id}
-                                    course={course}
-                                    status={course.status === 'published' ? 'published' : 'draft'}
-                                    variant="dashboard"
-                                    activeMenuCourseId={activeMenuCourseId}
-                                    setActiveMenuCourseId={setActiveMenuCourseId}
-                                    isCoordinator={isCoordinator}
-                                    instructors={instructors}
-                                />
+                    {mainView === 'courses' && (
+                        <div className="flex items-center gap-1 py-2 sm:py-0">
+                            {[
+                                { id: 'all', label: `All (${myCourses.length})` },
+                                { id: 'live', label: `Published (${liveCourses.length})` },
+                                { id: 'draft', label: `Drafts (${draftCourses.length})` },
+                            ].map((f) => (
+                                <button
+                                    key={f.id}
+                                    type="button"
+                                    onClick={() => { setActiveCourseTab(f.id); setExpandedCourses(false); }}
+                                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                                        activeCourseTab === f.id
+                                            ? 'bg-[#1E293B] text-white'
+                                            : 'text-slate-600 hover:bg-[#E2E8F0] hover:text-[#1E293B]'
+                                    }`}
+                                >
+                                    {f.label}
+                                </button>
                             ))}
-
-                            {/* Expand / Collapse Toggle if > 3 items */}
-                            {tabCourses.length > 3 && (
-                                <div className="pt-1 text-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => setExpandedCourses(!expandedCourses)}
-                                        className="text-xs font-bold text-[#111827] hover:text-[#10B981] transition-colors py-1.5 px-4 rounded border-2 border-[#E5E7EB] bg-white hover:bg-[#F9FAFB]"
-                                    >
-                                        {expandedCourses
-                                            ? '▲ Show fewer courses'
-                                            : `▼ Show all ${tabCourses.length} ${activeCourseTab} courses`}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="bg-white border-2 border-dashed border-[#E5E7EB] rounded-lg py-12 px-6 text-center">
-                            <p className="text-sm font-bold text-[#111827] mb-1">
-                                {activeCourseTab === 'live'
-                                    ? 'No live courses published yet.'
-                                    : 'No draft courses in progress.'}
-                            </p>
-                            <p className="text-xs text-gray-500 mb-4">
-                                {activeCourseTab === 'live'
-                                    ? 'Switch to the Drafts tab to review and deploy your modules live.'
-                                    : 'All courses you have created are currently live and visible to learners.'}
-                            </p>
-                            <Link
-                                href={route('staff.courses.create')}
-                                className="inline-flex items-center gap-1.5 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded"
-                            >
-                                <span>+ Create New Course</span>
-                            </Link>
                         </div>
                     )}
                 </div>
 
-                {/* Right Column: Needs Attention & Submissions Feed (2-Line Rows, Filter Pills) */}
-                <div className="lg:col-span-5 bg-white rounded-lg border-2 border-[#E5E7EB] overflow-hidden min-w-0">
-                    {/* Feed Header with Title + Pending Count + 3 Filter Pills */}
-                    <div className="p-4 border-b-2 border-[#E5E7EB] bg-[#F9FAFB] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                            <h3 className="text-base font-extrabold text-[#111827] font-display flex items-center gap-2">
-                                <span>Needs attention</span>
-                                <span className="text-xs font-bold bg-[#111827] text-white px-2 py-0.5 rounded">
-                                    {pendingCount}
-                                </span>
-                            </h3>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Learner submissions &amp; unit progression
-                            </p>
-                        </div>
+                {/* VIEW 1: SPACIOUS 2-COLUMN COURSE GRID */}
+                {mainView === 'courses' && (
+                    <div className="p-4 sm:p-6">
+                        {tabCourses.length > 0 ? (
+                            <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {displayedCourses.map((course) => (
+                                        <CourseRow
+                                            key={course.id}
+                                            course={course}
+                                            status={course.status === 'published' ? 'published' : 'draft'}
+                                            variant="dashboard"
+                                            activeMenuCourseId={activeMenuCourseId}
+                                            setActiveMenuCourseId={setActiveMenuCourseId}
+                                            isCoordinator={isCoordinator}
+                                            instructors={instructors}
+                                        />
+                                    ))}
+                                </div>
 
-                        {/* Filter Pills: All | Pending quizzes | Completed */}
-                        <div className="flex items-center gap-1 bg-[#E5E7EB] p-0.5 rounded-md self-start sm:self-auto">
-                            <button
-                                type="button"
-                                onClick={() => setActivityFilter('all')}
-                                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors ${
-                                    activityFilter === 'all'
-                                        ? 'bg-white text-[#111827]'
-                                        : 'text-gray-600 hover:text-[#111827]'
-                                }`}
-                            >
-                                All ({dedupedActivity.length})
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setActivityFilter('pending')}
-                                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors ${
-                                    activityFilter === 'pending'
-                                        ? 'bg-white text-[#92400E]'
-                                        : 'text-gray-600 hover:text-[#111827]'
-                                }`}
-                            >
-                                Pending ({pendingCount})
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setActivityFilter('completed')}
-                                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors ${
-                                    activityFilter === 'completed'
-                                        ? 'bg-white text-[#065F46]'
-                                        : 'text-gray-600 hover:text-[#111827]'
-                                }`}
-                            >
-                                Done ({dedupedActivity.length - pendingCount})
-                            </button>
-                        </div>
+                                {tabCourses.length > 6 && (
+                                    <div className="pt-4 text-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => setExpandedCourses(!expandedCourses)}
+                                            className="text-xs font-semibold text-[#1E293B] hover:bg-[#E2E8F0] transition-colors py-1.5 px-4 rounded border border-[#CBD5E1] bg-[#F8FAFC]"
+                                        >
+                                            {expandedCourses
+                                                ? 'Show fewer courses'
+                                                : `Show all ${tabCourses.length} courses`}
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="border border-dashed border-[#CBD5E1] rounded py-12 px-6 text-center bg-[#F8FAFC]">
+                                <p className="text-sm font-semibold text-[#1E293B] mb-1">
+                                    No courses in this filter.
+                                </p>
+                                <p className="text-xs text-slate-500 mb-4">
+                                    Create a new course or switch filters above.
+                                </p>
+                                <Link
+                                    href={route('staff.courses.create')}
+                                    className="inline-flex items-center gap-1.5 bg-[#1E293B] hover:bg-[#0F172A] text-white font-semibold text-xs px-4 py-2 rounded"
+                                >
+                                    + Create new course
+                                </Link>
+                            </div>
+                        )}
                     </div>
+                )}
 
-                    {/* 2-Line Activity Items */}
-                    {filteredActivity.length > 0 ? (
-                        <ul className="max-h-[440px] overflow-y-auto divide-y-2 divide-[#E5E7EB]">
-                            {filteredActivity.map((activity) => {
-                                const progressVal = Math.min(100, Math.max(0, Math.round(Number(activity.progress ?? 0))));
-                                const isDone = Boolean(activity.completed_at) || progressVal >= 100 || activity.assessment_status === 'certified';
-                                const learnerName = activity.user?.name || 'Enrolled Learner';
-                                const learnerEmail = activity.user?.email || '';
-                                const when = formatActivityTime(activity.updated_at || activity.created_at);
+                {/* VIEW 2: FULL-WIDTH LEARNER ACTIVITY LIST */}
+                {mainView === 'activity' && (
+                    <div className="p-4 sm:p-6 space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-xs text-slate-600">
+                                Recent student enrollments, topic completions, and certification status.
+                            </p>
+                            <div className="flex items-center gap-1 bg-[#E2E8F0] p-1 rounded border border-[#CBD5E1]">
+                                <button
+                                    type="button"
+                                    onClick={() => setActivityFilter('all')}
+                                    className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                                        activityFilter === 'all'
+                                            ? 'bg-[#F8FAFC] text-[#1E293B] border border-[#CBD5E1]'
+                                            : 'text-slate-600 hover:text-[#1E293B]'
+                                    }`}
+                                >
+                                    All ({dedupedActivity.length})
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActivityFilter('pending')}
+                                    className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                                        activityFilter === 'pending'
+                                            ? 'bg-[#F8FAFC] text-[#1E293B] border border-[#CBD5E1]'
+                                            : 'text-slate-600 hover:text-[#1E293B]'
+                                    }`}
+                                >
+                                    In progress ({pendingCount})
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActivityFilter('completed')}
+                                    className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                                        activityFilter === 'completed'
+                                            ? 'bg-[#F8FAFC] text-[#1E293B] border border-[#CBD5E1]'
+                                            : 'text-slate-600 hover:text-[#1E293B]'
+                                    }`}
+                                >
+                                    Certified ({dedupedActivity.length - pendingCount})
+                                </button>
+                            </div>
+                        </div>
 
-                                return (
-                                    <li key={activity.id} className="p-3 sm:px-4 sm:py-2.5 hover:bg-[#F9FAFB] transition-colors">
-                                        {/* Line 1: Learner Name · Course Title (Left) | Progress% · Time ago (Right) */}
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div className="min-w-0 flex items-center gap-1.5 truncate">
-                                                <span
-                                                    title={learnerEmail}
-                                                    className="font-bold text-xs sm:text-sm text-[#111827] truncate hover:underline cursor-help"
-                                                >
-                                                    {learnerName}
-                                                </span>
-                                                <span className="text-gray-400">·</span>
-                                                <span className="text-xs text-gray-600 truncate font-medium">
-                                                    {activity.course?.title || 'Course'}
-                                                </span>
-                                            </div>
-                                            <div className="shrink-0 flex items-center gap-1.5 text-xs">
-                                                <span className="font-bold text-[#111827]">{progressVal}%</span>
-                                                <span className="text-gray-400">·</span>
-                                                <span className="text-gray-500 font-medium">{when}</span>
-                                            </div>
-                                        </div>
+                        {filteredActivity.length > 0 ? (
+                            <ul className="divide-y divide-[#CBD5E1] border border-[#CBD5E1] rounded bg-[#F8FAFC]">
+                                {filteredActivity.map((activity) => {
+                                    const progressVal = Math.min(100, Math.max(0, Math.round(Number(activity.progress ?? 0))));
+                                    const isDone = Boolean(activity.completed_at) || progressVal >= 100 || activity.assessment_status === 'certified';
+                                    const learnerName = activity.user?.name || 'Enrolled Learner';
+                                    const learnerEmail = activity.user?.email || '';
+                                    const when = formatActivityTime(activity.updated_at || activity.created_at);
 
-                                        {/* Line 2: Latest Chapter / Module · Status Badge (Quiz Pending / 100% Certified) */}
-                                        <div className="flex items-center justify-between gap-2 mt-1 text-xs">
-                                            <div className="min-w-0 flex items-center gap-1.5 text-gray-500 truncate">
-                                                <span className="truncate">
-                                                    {activity.latest_module_title || 'Course enrolled'}
-                                                </span>
+                                    return (
+                                        <li key={activity.id} className="px-4 py-3 hover:bg-[#F1F5F9] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span title={learnerEmail} className="font-semibold text-sm text-[#1E293B]">
+                                                        {learnerName}
+                                                    </span>
+                                                    <span className="text-slate-400">·</span>
+                                                    <span className="text-xs font-medium text-slate-700">
+                                                        {activity.course?.title || 'Course'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-slate-500 mt-0.5">
+                                                    {activity.latest_module_title || 'Enrolled in course'}
+                                                </p>
                                             </div>
-                                            <div className="shrink-0">
+
+                                            <div className="flex items-center gap-3 shrink-0 text-xs">
+                                                <span className="text-slate-500">{when}</span>
+                                                <span className="font-semibold text-[#1E293B] w-9 text-right">{progressVal}%</span>
                                                 {isDone ? (
-                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-[#D1FAE5] text-[#065F46] border border-[#10B981]">
-                                                        100% Certified
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#DCFCE7] text-[#166534] border border-[#86EFAC]">
+                                                        Certified
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]">
-                                                        Quiz Pending
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#E2E8F0] text-slate-700 border border-[#CBD5E1]">
+                                                        In progress
                                                     </span>
                                                 )}
                                             </div>
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    ) : (
-                        <div className="py-12 px-6 text-center">
-                            <p className="text-sm font-semibold text-gray-500">
-                                {activityFilter === 'pending'
-                                    ? 'No pending quizzes. All enrolled learners are caught up!'
-                                    : activityFilter === 'completed'
-                                    ? 'No certified completions recorded yet.'
-                                    : 'No learner submissions recorded yet.'}
-                            </p>
-                        </div>
-                    )}
-                </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        ) : (
+                            <div className="py-12 px-6 text-center bg-[#F8FAFC] border border-[#CBD5E1] rounded">
+                                <p className="text-sm text-slate-500">
+                                    No learner activity recorded for this filter.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </StaffLayout>
     );

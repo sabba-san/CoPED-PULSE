@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'assessment_score' => fn () => $request->session()->get('assessment_score'),
                 'assessment_passed' => fn () => $request->session()->get('assessment_passed'),
+                'assessment_results' => fn () => $request->session()->get('assessment_results'),
                 'quiz_score' => fn () => $request->session()->get('assessment_score') ?? $request->session()->get('quiz_score'),
             ],
             'ziggy' => fn (): array => [
@@ -150,7 +151,6 @@ class HandleInertiaRequests extends Middleware
                 'sender_name' => $msg->sender?->name ?? 'User',
                 'sender_role' => $msg->sender?->role ?? '',
                 'body' => $msg->body,
-                'is_whatsapp' => str_starts_with($msg->body, '[WhatsApp]'),
                 'created_at' => $msg->created_at?->toISOString(),
             ];
         })->values()->all();

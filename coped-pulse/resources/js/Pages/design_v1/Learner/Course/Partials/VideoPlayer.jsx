@@ -13,14 +13,14 @@ import {
  * Guarantees inline YouTube / Vimeo / MP4 playback inside the website.
  * Emits onEnded() when a video completes for automated progress tracking.
  */
-export default function VideoPlayer({ module, mediaUrl, activeTitle = null, onEnded = null }) {
+export default function VideoPlayer({ module, mediaUrl, activeTitle = null, contentType = null, onEnded = null }) {
     const safe = safeUrl(mediaUrl);
     if (!safe) return null;
 
     const ytId = getYouTubeId(safe);
     const vimeoId = getVimeoId(safe);
     const isVideo = isVideoFile(safe);
-    const isPdf = isPdfFile(safe);
+    const isPdf = isPdfFile(safe, contentType);
     const titleText = activeTitle || module?.title || 'Lesson Unit';
     const iframeRef = useRef(null);
 
@@ -96,6 +96,60 @@ export default function VideoPlayer({ module, mediaUrl, activeTitle = null, onEn
     const ytEmbedUrl = ytId
         ? formatEmbedUrl(safe, typeof window !== 'undefined' ? window.location.origin : '')
         : null;
+
+    if (isPdf) {
+        return (
+            <div key={safe} className="mt-4 animate-fade-in space-y-2">
+                {/* Top PDF Utility Strip with Download Button */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 bg-[#111827] text-white rounded-t-md text-xs font-bold border-2 border-b-0 border-[#111827] gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white px-2 py-0.5 rounded shrink-0">
+                            PDF DOCUMENT
+                        </span>
+                        <span className="text-gray-200 truncate max-w-xs sm:max-w-md">
+                            {titleText}
+                        </span>
+                    </div>
+                    <a
+                        href={safe}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-[#10B981] hover:bg-emerald-600 text-white text-xs font-extrabold rounded transition-colors shrink-0"
+                    >
+                        <span>⬇</span>
+                        <span>Download PDF Document</span>
+                    </a>
+                </div>
+
+                {/* Main PDF Frame */}
+                <div className="overflow-hidden border-2 border-[#111827] bg-[#F3F4F6]">
+                    <iframe
+                        src={safe}
+                        title={titleText}
+                        className="w-full h-[60vh] sm:h-[70vh] border-0 bg-white"
+                    />
+                </div>
+
+                {/* Bottom PDF Download Action Strip */}
+                <div className="p-3 bg-[#F9FAFB] border-2 border-t-0 border-[#111827] rounded-b-md flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="text-xs text-gray-600 font-medium">
+                        Need offline access? Download the verified lecture PDF to your device.
+                    </span>
+                    <a
+                        href={safe}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#111827] hover:bg-gray-800 text-white text-xs font-extrabold rounded transition-colors shrink-0"
+                    >
+                        <span>⬇</span>
+                        <span>Download PDF Document</span>
+                    </a>
+                </div>
+            </div>
+        );
+    }
 
     if (!isMedia) {
         return (
