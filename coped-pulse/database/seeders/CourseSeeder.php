@@ -556,17 +556,17 @@ class CourseSeeder extends Seeder
                 'description' => 'Formulating measurable Course Learning Outcomes using Bloom\'s Taxonomy and aligning teaching-learning activities with Program Educational Objectives (PEOs).',
                 'duration' => 1800,
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=ayeFYhg8y7A',
+                'media_url' => 'https://www.youtube.com/watch?v=OLsNldDYdRw',
             ]
         );
 
         $obeMod1->lessons()->updateOrCreate(
             ['module_id' => $obeMod1->id, 'order' => 1],
             [
-                'title' => 'Video Lecture: Introduction to Constructive Alignment (John Biggs)',
+                'title' => 'Video Lecture: Introduction to Constructive Alignment (University of Helsinki)',
                 'content' => 'Core principles of aligning intended learning outcomes, teaching methods, and assessment tasks.',
                 'content_type' => 'video',
-                'content_url' => 'https://www.youtube.com/watch?v=ayeFYhg8y7A',
+                'content_url' => 'https://www.youtube.com/watch?v=OLsNldDYdRw',
                 'duration' => 900,
             ]
         );
@@ -589,7 +589,7 @@ class CourseSeeder extends Seeder
                 'description' => 'Building valid assessment rubrics, mastery quizzes, and continuous quality improvement (CQI) feedback loops in an institutional LMS.',
                 'duration' => 2100,
                 'content_type' => 'link',
-                'media_url' => 'https://www.youtube.com/watch?v=JI-YgKMVlZc',
+                'media_url' => 'https://www.youtube.com/watch?v=rJxFXjfB_B4',
             ]
         );
 
@@ -599,7 +599,7 @@ class CourseSeeder extends Seeder
                 'title' => 'Video Lecture: Formative vs. Summative Evaluation Strategies',
                 'content' => 'Designing diagnostic, formative, and summative assessments to measure student mastery.',
                 'content_type' => 'video',
-                'content_url' => 'https://www.youtube.com/watch?v=JI-YgKMVlZc',
+                'content_url' => 'https://www.youtube.com/watch?v=rJxFXjfB_B4',
                 'duration' => 1200,
             ]
         );

@@ -206,16 +206,26 @@ export default function VideoPlayer({ module, mediaUrl, activeTitle = null, cont
     return (
         <div key={safe} className="mt-4 animate-fade-in space-y-2">
             {/* Top Player Utility Strip */}
-            <div className="flex items-center justify-between px-3 py-2 bg-[#111827] text-white rounded-t-md text-xs font-bold border-2 border-b-0 border-[#111827]">
-                <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse-dot inline-block" />
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#10B981]">
+            <div className="flex items-center justify-between px-3 py-2 bg-[#111827] text-white rounded-t-md text-xs font-bold border-2 border-b-0 border-[#111827] gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse-dot inline-block shrink-0" />
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#10B981] shrink-0">
                         INLINE PLAYBACK
                     </span>
+                    <span className="text-gray-300 truncate max-w-xs sm:max-w-md">
+                        {titleText}
+                    </span>
                 </div>
-                <span className="text-gray-300 truncate max-w-xs sm:max-w-md">
-                    {titleText}
-                </span>
+                {ytId && (
+                    <a
+                        href={`https://www.youtube.com/watch?v=${ytId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-semibold text-gray-300 hover:text-white underline shrink-0"
+                    >
+                        Open on YouTube ↗
+                    </a>
+                )}
             </div>
 
             {/* Main Stage Frame */}
@@ -227,7 +237,8 @@ export default function VideoPlayer({ module, mediaUrl, activeTitle = null, cont
                             id={`yt-player-${ytId}`}
                             src={ytEmbedUrl}
                             title={titleText}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerPolicy="strict-origin-when-cross-origin"
                             allowFullScreen
                             className="h-full w-full border-0"
                         />
