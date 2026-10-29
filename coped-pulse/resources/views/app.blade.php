@@ -11,6 +11,7 @@
         <title>@yield('title', config('app.name'))</title>
         @routes
         @fonts
+        @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.jsx'])
     </head>
     <body class="font-sans antialiased">

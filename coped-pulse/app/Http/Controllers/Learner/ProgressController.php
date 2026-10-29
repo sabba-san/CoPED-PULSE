@@ -168,13 +168,29 @@ class ProgressController extends Controller
             return;
         }
 
-        $total = $course->modules()->count();
-        $done = ModuleCompletion::where('user_id', $enrollment->user_id)
+        $totalModules = $course->modules()->count();
+        $doneModules = ModuleCompletion::where('user_id', $enrollment->user_id)
             ->where('course_id', $course->id)
             ->count();
 
+        $totalLessons = Schema::hasTable('lessons')
+            ? \App\Models\Lesson::whereIn('module_id', $course->modules()->pluck('id'))->count()
+            : 0;
+        $doneLessons = Schema::hasTable('lesson_completions')
+            ? LessonCompletion::where('user_id', $enrollment->user_id)
+                ->where('course_id', $course->id)
+                ->count()
+            : 0;
+
+        $ratio = $totalLessons > 0
+            ? ($doneLessons / $totalLessons)
+            : ($totalModules > 0 ? ($doneModules / $totalModules) : 0);
+
+        $hasAssessments = $course->assessments()->whereNull('module_id')->count() > 0;
+        $maxWeight = $hasAssessments ? 80 : 100;
+
         $enrollment->update([
-            'progress' => $total ? round($done / $total * 100, 2) : 0,
+            'progress' => round(min(1, $ratio) * $maxWeight, 2),
         ]);
     }
 }

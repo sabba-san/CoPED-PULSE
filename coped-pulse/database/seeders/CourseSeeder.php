@@ -14,10 +14,17 @@ class CourseSeeder extends Seeder
             ?? User::where('role', 'staff')->first()
             ?? User::first();
 
+        if (! $staffA) {
+            $staffA = User::factory()->staff()->create([
+                'email' => 'instruct@gmail.com',
+                'name' => 'Default Instructor',
+            ]);
+        }
+
         $staffB = User::where('email', 'instructor@coped.org')->first()
             ?? $staffA;
 
-        $staffId = $staffA ? $staffA->id : 1;
+        $staffId = $staffA->id;
         $staffBId = $staffB ? $staffB->id : $staffId;
 
         // -------------------------------------------------------------
@@ -630,6 +637,255 @@ class CourseSeeder extends Seeder
                 'option_c' => 'To monitor student learning continuously and provide actionable feedback for improvement',
                 'option_d' => 'To archive old course syllabi',
                 'correct_option' => 'c',
+            ]);
+        }
+
+        // -------------------------------------------------------------
+        // 10. Flagship Course: Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional
+        // Complete with embedded video links, reading articles, per-module mini-quizzes, and final certification exam.
+        // -------------------------------------------------------------
+        $genAiCourse = Course::updateOrCreate(
+            ['title' => 'Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional'],
+            [
+                'description' => 'Program pensijilan komprehensif mengenai teknologi AI generatif, seni reka bentuk prompt berstruktur, integrasi Retrieval-Augmented Generation (RAG), dan etika kecerdasan buatan untuk meningkatkan produktiviti sektor awam dan swasta.',
+                'instructor_id' => $staffId,
+                'status' => 'published',
+                'academic_year' => '2026 / 2027 · Professional Track',
+                'category_logo' => 'ai',
+                'billing_type' => 'free',
+                'price' => 0.00,
+                'cert_title' => 'CoPED Certified Generative AI & Prompt Engineering Specialist',
+                'cert_url' => 'https://coped.org/cert/genai-prompt-engineering',
+                'bundle_title' => 'Complete GenAI & Prompt Engineering Study Guide + Cheatsheets',
+                'bundle_url' => 'https://drive.google.com/drive/folders/coped-genai-bundle-demo',
+            ]
+        );
+
+        // Module 1: Foundations of LLMs & Prompting
+        $genAiMod1 = $genAiCourse->modules()->updateOrCreate(
+            ['course_id' => $genAiCourse->id, 'order' => 1],
+            [
+                'title' => 'Modul 1: Asas Model Bahasa Besar (LLM) & Seni Kejuruteraan Prompt',
+                'description' => 'Ketahui seni bina asas Large Language Models (LLM), konsep tokenisasi, tetingkap konteks (context window), dan prinsip kejuruteraan prompt berkesan untuk tugasan profesional.',
+                'duration' => 1800,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=zjkBMFhNj_g',
+                'transcript' => "### Panduan Pembelajaran Modul 1: Asas Model Bahasa Besar (LLM) & Kejuruteraan Prompt\n\nModel Bahasa Besar (LLM) merupakan model pembelajaran mesin lanjutan yang dilatih menggunakan korpus teks berskala bilion token. Berbeza dengan pengaturcaraan tradisional yang berasaskan peraturan tetap, LLM meramal kebarangkalian token seterusnya berdasarkan konteks yang diberikan.\n\n#### Konsep Teras Pembelajaran\n1. **Tokenisasi**: Cara teks dipecahkan kepada sub-kata atau unit nombor sebelum diproses oleh model transformer.\n2. **Tetingkap Konteks (Context Window)**: Had jumlah token (input dan output) yang boleh diingati oleh model dalam satu sesi interaksi.\n3. **Suhu (Temperature) & Top-P**: Parameter inferens yang mengawal tahap kreativiti berbanding ketepatan deterministik jawapan model.\n\n#### Kerangka Kejuruteraan Prompt Profesional (C-L-E-A-R)\n- **C (Context)**: Berikan latar belakang peranan dan senario kerja spesifik.\n- **L (Length & Format)**: Nyatakan format output yang dikehendaki (jadual eksekutif, senarai bulet, format JSON).\n- **E (Examples)**: Sertakan contoh input-output untuk memandu nada jawapan (Few-shot prompting).\n- **A (Action)**: Gunakan arahan kata kerja yang tegas (Analisis, Ringkaskan, Ekstrak, Rangka).\n- **R (Restrictions)**: Nyatakan pantang larang dan had patah perkataan untuk mengelakkan jawapan meleret.",
+            ]
+        );
+
+        $genAiMod1->lessons()->updateOrCreate(
+            ['module_id' => $genAiMod1->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 1.1: Kuliah Video: Mekanik Dalaman LLM & Parameter Inferens',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=zjkBMFhNj_g',
+                'duration' => 900,
+                'content' => "Artikel Kuliah 1.1: Memahami Mekanik LLM & Mekanisme Self-Attention\n\nDalam video kuliah ini, kita meneliti bagaimana model transformer memproses hubungan semantik antara perkataan menggunakan mekanisme 'Self-Attention'. Pembelajaran ini penting untuk memahami mengapa pemilihan perkataan dalam prompt memberikan kesan langsung terhadap output yang dijana.\n\nFokus Utama Kuliah:\n- Struktur transformer decoder-only.\n- Bagaimana temperature mempengaruhi kebarangkalian pemilihan token.\n- Strategi pengurusan tetingkap konteks agar tidak melebihi kuota memori model.",
+                'transcript' => 'Transkrip Video Kuliah: Pengenalan kepada mekanisme transformer, tokenisasi, dan inferens model bahasa.',
+            ]
+        );
+
+        $genAiMod1->lessons()->updateOrCreate(
+            ['module_id' => $genAiMod1->id, 'order' => 2],
+            [
+                'title' => 'Subtopik 1.2: Panduan Artikel: Teknik Few-Shot & Chain-of-Thought (CoT) Prompting',
+                'content_type' => 'text',
+                'content_url' => 'https://www.youtube.com/watch?v=jC4v5AS4RIM',
+                'duration' => 900,
+                'content' => "Panduan Artikel & Kajian Kes 1.2: Teknik Few-Shot dan Chain-of-Thought (CoT)\n\nZero-shot prompting merujuk kepada situasi di mana model diminta melaksanakan tugasan tanpa sebarang contoh awal. Walau bagaimanapun, untuk tugasan analitikal kompleks, teknik Few-Shot dan Chain-of-Thought (CoT) terbukti meningkatkan ketepatan jawapan sehingga 40%.\n\nContoh Prompt Chain-of-Thought:\n'Fikirkan langkah demi langkah sebelum memberikan kesimpulan akhir. Senaraikan hujah pro dan kontra terlebih dahulu berserta justifikasi fakta.'\n\nAmalan Terbaik Kejuruteraan Prompt:\n1. Berikan arahan sistem (System Prompt) yang menetapkan persona pakar industri.\n2. Nyatakan langkah penaakulan secara eksplisit.\n3. Uji konsistensi jawapan dengan menjalankan beberapa variasi prompt.",
+                'transcript' => 'Panduan bertulis menyeluruh teknik prompt kejuruteraan lanjutan.',
+            ]
+        );
+
+        // Mini-quizzes for Module 1 (module_id set)
+        if ($genAiCourse->assessments()->where('module_id', $genAiMod1->id)->count() === 0) {
+            $genAiCourse->assessments()->create([
+                'module_id' => $genAiMod1->id,
+                'question' => 'Dalam kejuruteraan prompt, apakah perbezaan utama antara "Zero-Shot" prompting dan "Few-Shot" prompting?',
+                'option_a' => 'Zero-shot tidak memerlukan sebarang sambungan internet, manakala few-shot memerlukannya.',
+                'option_b' => 'Zero-shot meminta model menjawab tanpa contoh terdahulu, manakala few-shot membekalkan beberapa contoh input-output untuk memandu model.',
+                'option_c' => 'Zero-shot hanya berfungsi untuk imej, manakala few-shot untuk teks.',
+                'option_d' => 'Few-shot menghasilkan jawapan secara rawak tanpa sebarang konteks.',
+                'correct_option' => 'b',
+            ]);
+
+            $genAiCourse->assessments()->create([
+                'module_id' => $genAiMod1->id,
+                'question' => 'Mengapakah teknik Chain-of-Thought (CoT) berkesan untuk tugasan penaakulan logik dalam LLM?',
+                'option_a' => 'Kerana ia memaksa model menjana langkah-langkah penaakulan perantaraan sebelum tiba ke jawapan akhir.',
+                'option_b' => 'Kerana ia memadam memori perbualan terdahulu untuk menjimatkan kos API.',
+                'option_c' => 'Kerana ia menterjemahkan teks ke dalam kod biner secara automatik.',
+                'option_d' => 'Kerana ia menaikkan kelajuan pemprosesan CPU komputer secara fizikal.',
+                'correct_option' => 'a',
+            ]);
+        }
+
+        // Module 2: RAG & Vector Databases
+        $genAiMod2 = $genAiCourse->modules()->updateOrCreate(
+            ['course_id' => $genAiCourse->id, 'order' => 2],
+            [
+                'title' => 'Modul 2: Teknik Lanjutan: RAG (Retrieval-Augmented Generation) & Pangkalan Data Vektor',
+                'description' => 'Pelajari bagaimana menggabungkan data dalaman organisasi dengan keupayaan LLM melalui seni bina Retrieval-Augmented Generation (RAG) bagi menghapuskan halusinasi maklumat.',
+                'duration' => 2100,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=T-D1OfcDW1M',
+                'transcript' => "### Panduan Pembelajaran Modul 2: Seni Bina Retrieval-Augmented Generation (RAG)\n\nHalusinasi merupakan cabaran utama apabila LLM menjana maklumat yang kelihatan meyakinkan tetapi sebenarnya salah secara fakta. RAG menyelesaikan masalah ini dengan menyediakan rujukan dokumen sahih semasa masa nyata sebelum model menjawab.\n\n#### Kitaran Kerja RAG Perusahaan\n1. **Penyediaan Dokumen (Ingestion & Chunking)**: Dokumen teks rasmi (PDF SOP, pekeliling, arkib dasar) dipecahkan kepada ketulan (chunks) bersaiz 500-1000 token dengan pertindihan (overlap).\n2. **Pengekodan Vektor (Vector Embeddings)**: Setiap ketulan teks ditukar kepada vektor nombor berdimensi tinggi menggunakan model embedding khusus.\n3. **Carian Semantik (Vector Search)**: Apabila pengguna mengemukakan soalan, pertanyaan ditukar kepada vektor dan dicari ketulan teks paling berkaitan menggunakan metrik 'Cosine Similarity'.\n4. **Penjanaan Berpandukan Konteks (Augmentation & Generation)**: Teks rujukan berkaitan dimasukkan ke dalam prompt sistem sebagai konteks sahih untuk model merangka jawapan.",
+            ]
+        );
+
+        $genAiMod2->lessons()->updateOrCreate(
+            ['module_id' => $genAiMod2->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 2.1: Kuliah Video: Seni Bina RAG & Aliran Kerja Pangkalan Data Vektor',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=T-D1OfcDW1M',
+                'duration' => 1100,
+                'content' => "Artikel Kuliah 2.1: RAG untuk Perusahaan & Pengurusan Pengetahuan\n\nVideo ini menerangkan bagaimana organisasi memanfaatkan dokumen rasmi, arkib dasar, dan SOP tanpa perlu melatih semula (fine-tune) model asas yang memakan kos berjuta ringgit. RAG membolehkan maklumat dikemaskini secara serta-merta hanya dengan menambah dokumen ke pangkalan data vektor.\n\nKomponen Kritikal:\n- Model embedding dwibahasa.\n- Pangkalan data vektor (seperti Pinecone, Milvus, pgvector).\n- Saluran integrasi API model penjanaan.",
+                'transcript' => 'Transkrip Video Kuliah: Aliran data RAG daripada dokumen asal sehingga pembentukan jawapan akhir.',
+            ]
+        );
+
+        $genAiMod2->lessons()->updateOrCreate(
+            ['module_id' => $genAiMod2->id, 'order' => 2],
+            [
+                'title' => 'Subtopik 2.2: Panduan Artikel: Strategi Chunking & Pengurangan Halusinasi AI',
+                'content_type' => 'text',
+                'content_url' => 'https://www.youtube.com/watch?v=OLsNldDYdRw',
+                'duration' => 1000,
+                'content' => "Panduan Artikel 2.2: Strategi Chunking dan Evaluasi Ketepatan Fakta\n\nMemilih saiz ketulan (chunk size) yang tepat adalah penentu kejayaan sistem RAG:\n- **Ketulan Terlalu Kecil**: Kehilangan konteks keseluruhan dan kaitan logik sesebuah perenggan dasar.\n- **Ketulan Terlalu Besar**: Memuatkan maklumat tidak berkaitan (noise) yang mengelirukan tetingkap perhatian model.\n\nStrategi Terbaik:\n1. Gunakan 'Recursive Character Text Splitter' dengan pertindihan token (token overlap 10-20%).\n2. Gunakan 'Hybrid Search' yang menggabungkan carian kata kunci (BM25) dan carian vektor semantik.\n3. Wajibkan model menyertakan petikan sumber (citation) dalam jawapan untuk audit manusia.",
+                'transcript' => 'Panduan terperinci metrik penilaian RAG dan strategi fragmentasi dokumen.',
+            ]
+        );
+
+        // Mini-quizzes for Module 2 (module_id set)
+        if ($genAiCourse->assessments()->where('module_id', $genAiMod2->id)->count() === 0) {
+            $genAiCourse->assessments()->create([
+                'module_id' => $genAiMod2->id,
+                'question' => 'Apakah fungsi utama model Embedding dalam seni bina Retrieval-Augmented Generation (RAG)?',
+                'option_a' => 'Menukar teks kepada representasi vektor berangka yang menangkap makna semantik perkataan.',
+                'option_b' => 'Memadam fail lama daripada pelayan secara berkala.',
+                'option_c' => 'Mengecilkan saiz fon dokumen agar muat pada skrin telefon.',
+                'option_d' => 'Menggantikan kad grafik komputer dengan cip khas.',
+                'correct_option' => 'a',
+            ]);
+
+            $genAiCourse->assessments()->create([
+                'module_id' => $genAiMod2->id,
+                'question' => 'Bagaimanakah RAG membantu mengurangkan isu halusinasi pada Model Bahasa Besar (LLM)?',
+                'option_a' => 'Dengan menutup sambungan internet semasa model menjawab.',
+                'option_b' => 'Dengan membekalkan dokumen fakta berkaitan sebagai konteks rujukan sebelum model menjana jawapan.',
+                'option_c' => 'Dengan memadam sejarah perbualan pengguna selepas 5 minit.',
+                'option_d' => 'Dengan menghadkan jawapan kepada 10 patah perkataan sahaja.',
+                'correct_option' => 'b',
+            ]);
+        }
+
+        // Module 3: AI Safety, Ethics & Governance
+        $genAiMod3 = $genAiCourse->modules()->updateOrCreate(
+            ['course_id' => $genAiCourse->id, 'order' => 3],
+            [
+                'title' => 'Modul 3: Keselamatan Prompt Injection, Etika & Tadbir Urus AI Sektor Awam',
+                'description' => 'Kuasai keselamatan siber generatif AI termasuk serangan Prompt Injection, Jailbreaking, kebocoran data sulit, dan prinsip etika pematuhan piawaian tadbir urus kecerdasan buatan.',
+                'duration' => 1900,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=bEj4bO62sQk',
+                'transcript' => "### Panduan Pembelajaran Modul 3: Keselamatan Siber AI & Garis Panduan Etika\n\nPenggunaan AI dalam sektor awam dan korporat menuntut piawaian keselamatan maklumat dan ketelusan etika yang tinggi. Ancaman terhadap sistem AI moden bukan sahaja berbentuk pencerobohan pelayan tradisional, tetapi juga manipulasi semantik melalui prompt adversarial.\n\n#### Bentuk Ancaman Utama AI Generatif\n1. **Direct Prompt Injection (Jailbreaking)**: Percubaan pengguna untuk memintas arahan sistem (system prompt) bagi menjana maklumat larangan atau kandungan berbahaya.\n2. **Indirect Prompt Injection**: Penyerang menyuntik teks hasad ke dalam laman web atau dokumen yang kemudiannya dibaca oleh model AI semasa proses RAG atau carian web automatik.\n3. **Kebocoran Data Sensitif**: Memasukkan maklumat rahsia rasmi, data peribadi pelanggan (PII), atau kod perisian sulit ke dalam model awam tanpa penyulitan.\n\n#### Kerangka Tadbir Urus & Etika AI\n- **Ketelusan & Akauntabiliti**: Keputusan berasaskan AI mesti mempunyai jejak audit manusia (Human-in-the-loop).\n- **Keadilan & Bebas Berat Sebelah**: Menguji dataset latihan bagi mengelakkan diskriminasi atau berat sebelah demografi.\n- **Perlindungan Privasi**: Mematuhi Akta Perlindungan Data Peribadi (PDPA) dan arahan keselamatan ICT jabatan.",
+            ]
+        );
+
+        $genAiMod3->lessons()->updateOrCreate(
+            ['module_id' => $genAiMod3->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 3.1: Kuliah Video: Memahami Serangan Prompt Injection & Kaedah Pertahanan',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=bEj4bO62sQk',
+                'duration' => 950,
+                'content' => "Artikel Kuliah 3.1: Keselamatan Siber AI & Pertahanan Prompt Injection\n\nKuliah ini membincangkan vektor serangan 'Ignore all previous instructions' dan bagaimana pembangun boleh membina lapisan pertahanan input sanitization dan output guardrails menggunakan kerangka seperti NeMo Guardrails atau Llama Guard.\n\nLangkah-langkah Pertahanan:\n- Asingkan arahan sistem daripada input pengguna menggunakan format token khas.\n- Pasang lapisan penapis pengesahan sebelum dan selepas inferens model.\n- Hadkan hak capaian (privilege least authority) bagi ejen AI yang mempunyai alat pelaksanaan kod.",
+                'transcript' => 'Transkrip Video Kuliah: Analisis ancaman prompt injection dan kaedah pertahanan berlapis.',
+            ]
+        );
+
+        $genAiMod3->lessons()->updateOrCreate(
+            ['module_id' => $genAiMod3->id, 'order' => 2],
+            [
+                'title' => 'Subtopik 3.2: Panduan Artikel: Garis Panduan Tadbir Urus & Etika AI Sektor Awam',
+                'content_type' => 'text',
+                'content_url' => 'https://www.youtube.com/watch?v=rJxFXjfB_B4',
+                'duration' => 950,
+                'content' => "Panduan Artikel 3.2: Tadbir Urus dan Etika AI Kebangsaan\n\nPematuhan terhadap garis panduan etika AI kebangsaan menekankan 7 prinsip teras:\n1. Kebolehpercayaan dan keteguhan teknikal (Technical Robustness).\n2. Privasi dan tadbir urus data yang telus.\n3. Ketelusan dan kebolehan penjelasan (Explainable AI).\n4. Kepelbagaian, tanpa diskriminasi dan kesaksamaan sosial.\n5. Kesejahteraan sosial dan perlindungan alam sekitar.\n6. Akauntabiliti dan pengawasan manusia (Human-in-the-loop).\n7. Mengutamakan nilai kemanusiaan dan impak positif kepada masyarakat.",
+                'transcript' => 'Dokumentasi komprehensif etika dan tadbir urus kecerdasan buatan.',
+            ]
+        );
+
+        // Mini-quizzes for Module 3 (module_id set)
+        if ($genAiCourse->assessments()->where('module_id', $genAiMod3->id)->count() === 0) {
+            $genAiCourse->assessments()->create([
+                'module_id' => $genAiMod3->id,
+                'question' => 'Apakah yang dimaksudkan dengan serangan "Indirect Prompt Injection" pada aplikasi berasaskan AI?',
+                'option_a' => 'Penyerang mematikan bekalan kuasa ke pusat data secara fizikal.',
+                'option_b' => 'Penyerang memasukkan arahan tersembunyi ke dalam dokumen luaran yang dibaca oleh AI, menyebabkan AI melakukan tindakan tidak dibenarkan.',
+                'option_c' => 'Pengguna terlupa kata laluan log masuk ke dalam emel peribadi.',
+                'option_d' => 'Kabel monitor komputer terputus semasa pemprosesan prompt.',
+                'correct_option' => 'b',
+            ]);
+
+            $genAiCourse->assessments()->create([
+                'module_id' => $genAiMod3->id,
+                'question' => 'Dalam prinsip tadbir urus etika AI, apakah peranan pendekatan "Human-in-the-Loop" (HITL)?',
+                'option_a' => 'Memastikan keputusan berisiko tinggi disemak dan disahkan oleh manusia yang bertanggungjawab sebelum dikuatkuasakan.',
+                'option_b' => 'Menghapuskan keperluan pegawai manusia dalam semua urusan pentadbiran.',
+                'option_c' => 'Mewajibkan pekerja sentiasa menaip teks secara manual tanpa bantuan komputer.',
+                'option_d' => 'Mengurangkan gaji kakitangan IT secara automatik.',
+                'correct_option' => 'a',
+            ]);
+        }
+
+        // Final Course Assessment (module_id = null): 5 questions, 100% required to pass & earn certificate
+        if ($genAiCourse->assessments()->whereNull('module_id')->count() === 0) {
+            $genAiCourse->assessments()->create([
+                'question' => 'Apakah parameter inferens LLM yang perlu dilaraskan ke nilai rendah (contoh: 0.1 - 0.2) jika pengguna menginginkan output yang sangat konsisten, faktual, dan deterministik?',
+                'option_a' => 'Temperature',
+                'option_b' => 'Screen Resolution',
+                'option_c' => 'Baud Rate',
+                'option_d' => 'Audio Volume',
+                'correct_option' => 'a',
+            ]);
+
+            $genAiCourse->assessments()->create([
+                'question' => 'Antara teknik berikut, yang manakah paling tepat digunakan untuk membimbing LLM memahami format laporan rasmi jabatan dengan memberikan 2 hingga 3 contoh lengkap dalam prompt?',
+                'option_a' => 'Zero-Shot Prompting',
+                'option_b' => 'Few-Shot Prompting',
+                'option_c' => 'Hardware Overclocking',
+                'option_d' => 'Database Defragmentation',
+                'correct_option' => 'b',
+            ]);
+
+            $genAiCourse->assessments()->create([
+                'question' => 'Mengapakah organisasi memilih kaedah RAG berbanding melatih semula (pre-training) model asas dari awal apabila perlu mengakses dokumen dalaman terkini?',
+                'option_a' => 'RAG lebih pantas, menjimatkan kos perkakasan berbilion ringgit, dan membolehkan maklumat dikemaskini secara masa nyata dalam pangkalan data vektor.',
+                'option_b' => 'RAG menghapuskan keperluan sebarang peranti komputer dalam pejabat.',
+                'option_c' => 'Pre-training hanya sah digunakan pada sistem operasi lama.',
+                'option_d' => 'RAG tidak memerlukan sambungan rangkaian data.',
+                'correct_option' => 'a',
+            ]);
+
+            $genAiCourse->assessments()->create([
+                'question' => 'Dalam pangkalan data vektor untuk RAG, apakah fungsi metrik "Cosine Similarity"?',
+                'option_a' => 'Mengukur sudut antara dua vektor bagi menentukan darjah persamaan semantik antara pertanyaan pengguna dan ketulan dokumen.',
+                'option_b' => 'Mengira jumlah bateri yang digunakan oleh tetikus wayarles.',
+                'option_c' => 'Memadam rekod fail pendua pada cakera keras.',
+                'option_d' => 'Menyulitkan fail PDF menjadi arkib kata laluan ZIP.',
+                'correct_option' => 'a',
+            ]);
+
+            $genAiCourse->assessments()->create([
+                'question' => 'Apakah amalan keselamatan terbaik bagi mencegah kebocoran data sulit kerajaan semasa menggunakan alat AI awam?',
+                'option_a' => 'Jangan masukkan maklumat rahsia rasmi atau data peribadi (PII) ke dalam prompt model awam, dan gunakan model on-premise atau private cloud berpagar.',
+                'option_b' => 'Tukar nama fail kepada huruf besar sebelum memuat naik maklumat ke internet.',
+                'option_c' => 'Gunakan mod inkognito pelayar web tanpa sebarang perlindungan data lain.',
+                'option_d' => 'Kongsikan kata laluan pentadbir dengan semua pengguna di media sosial.',
+                'correct_option' => 'a',
             ]);
         }
     }

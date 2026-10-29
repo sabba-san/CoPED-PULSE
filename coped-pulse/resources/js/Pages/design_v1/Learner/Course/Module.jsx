@@ -6,6 +6,7 @@ import RightSidebar from './Partials/RightSidebar';
 import VideoPlayer from './Partials/VideoPlayer';
 import DiveDeeper from './Partials/DiveDeeper';
 import FeedbackBar from './Partials/FeedbackBar';
+import FormattedGuide from '@/Components/FormattedGuide';
 
 import { safeUrl } from '@/Utils/mediaUtils';
 
@@ -36,6 +37,7 @@ export default function Module({
 
     const [selectedMediaUrl, setSelectedMediaUrl] = useState(null);
     const [selectedMediaTitle, setSelectedMediaTitle] = useState(null);
+    const [selectedLesson, setSelectedLesson] = useState(null);
 
     const activeMediaUrl = selectedMediaUrl
         ?? safeUrl(module.media_url)
@@ -44,6 +46,9 @@ export default function Module({
     const deepTranscript = module.transcript
         ?? (module.lessons || []).find((l) => l.transcript)?.transcript
         ?? null;
+    const activeArticleContent = selectedLesson
+        ? (selectedLesson.content || selectedLesson.transcript || module.transcript || module.description)
+        : (module.transcript || module.description);
 
     const [sidebarTab, setSidebarTab] = useState('notes');
     const [deepOpen, setDeepOpen] = useState(false);
@@ -62,6 +67,8 @@ export default function Module({
 
     const onVideoEnd = () => {
         if (isModuleDone) return;
+        const hasSubtopics = Array.isArray(module.lessons) && module.lessons.length > 0;
+        if (moduleQuizzes.length > 0 || hasSubtopics) return;
         setAutoCompletedNotice(true);
         router.post(route('learner.course.module.complete', [course.id, module.id]), {}, {
             preserveScroll: true,
@@ -96,6 +103,12 @@ export default function Module({
             total: moduleQuizzes.length,
             score: moduleQuizzes.length > 0 ? Math.round((correct / moduleQuizzes.length) * 100) : 0,
         });
+        if (!isModuleDone) {
+            setAutoCompletedNotice(true);
+            router.post(route('learner.course.module.complete', [course.id, module.id]), {}, {
+                preserveScroll: true,
+            });
+        }
     };
 
     const resetMiniQuiz = () => {
@@ -104,10 +117,10 @@ export default function Module({
     };
 
     return (
-        <LearnerLayout>
+        <LearnerLayout wide>
             <Head title={module.title} />
 
-            <div className="max-w-6xl mx-auto space-y-6">
+            <div className="w-full space-y-6">
                 <div>
                     <Link
                         href={route('learner.course.learn', course.id)}
@@ -176,6 +189,29 @@ export default function Module({
                             />
                         </div>
 
+                        {/* Lesson Article & Reading Guide */}
+                        {activeArticleContent && (
+                            <div className="mt-4 bg-[#FAFBFD] border-2 border-[#E5E7EB] rounded-lg p-5 space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#E5E7EB]">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded">
+                                            📖 ARTICLE & STUDY GUIDE
+                                        </span>
+                                        <span className="text-xs font-bold text-gray-500">
+                                            ~{Math.max(1, Math.ceil(activeArticleContent.split(/\s+/).length / 180))} min read
+                                        </span>
+                                    </div>
+                                    <span className="text-[11px] font-semibold text-gray-500">
+                                        Verified Curriculum Reading Material
+                                    </span>
+                                </div>
+                                <h3 className="font-display font-extrabold text-base text-[#111827]">
+                                    {selectedLesson ? `Article: ${selectedLesson.title}` : `Chapter Reading Guide: ${module.title}`}
+                                </h3>
+                                <FormattedGuide text={activeArticleContent} />
+                            </div>
+                        )}
+
                         {/* Quick Module Completion Action */}
                         <div className="mt-3 pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t-2 border-[#E5E7EB]">
                             <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
@@ -219,6 +255,7 @@ export default function Module({
                                                     if (lessonSafe) {
                                                         setSelectedMediaUrl(lessonSafe);
                                                         setSelectedMediaTitle(`${module.title} · ${lesson.title}`);
+                                                        setSelectedLesson(lesson);
                                                         document.getElementById('module-player-stage')?.scrollIntoView({ behavior: 'smooth' });
                                                     }
                                                 }}
@@ -289,7 +326,7 @@ export default function Module({
                                         const isCorrect = miniChecked && picked?.toLowerCase() === String(q.correct_option || '').toLowerCase();
                                         return (
                                             <div key={q.id} className="bg-white rounded-md border-2 border-[#E5E7EB] p-4">
-                                                <p className="text-sm font-bold text-[#111827]">
+                                                <p className="text-sm sm:text-base font-extrabold text-[#111827] leading-snug">
                                                     <span className="text-[#10B981] mr-1">Q{qIdx + 1}.</span>
                                                     {q.question}
                                                 </p>

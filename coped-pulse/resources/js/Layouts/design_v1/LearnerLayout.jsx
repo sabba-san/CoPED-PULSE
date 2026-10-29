@@ -4,12 +4,15 @@ import logo from '@/images/logo.png';
 import ChatNotificationBell from '@/Components/ChatNotificationBell';
 import UserProfileDropdown from '@/Components/UserProfileDropdown';
 
-export default function LearnerLayout({ children }) {
+export default function LearnerLayout({ children, wide = false }) {
     const { url, props } = usePage();
     const flash = props?.flash;
     const { unreadChatSummary } = props;
     const totalUnread = unreadChatSummary?.total_unread || 0;
     const [mobileAlertsOpen, setMobileAlertsOpen] = useState(false);
+    const containerClass = wide
+        ? 'w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-10'
+        : 'w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8';
 
     const navLinks = [
         { name: 'Browse Catalog', href: route('learner.catalog'), active: url.startsWith('/learner/catalog') },
@@ -20,7 +23,7 @@ export default function LearnerLayout({ children }) {
         <div className="min-h-screen bg-[#F9FAFB] text-[#111827] font-sans w-full max-w-[100vw] overflow-x-hidden">
             {/* Top Navigation */}
             <nav className="sticky top-0 z-50 bg-white border-b-2 border-[#E5E7EB] print:hidden w-full max-w-full">
-                <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+                <div className={containerClass}>
                     <div className="flex justify-between h-14 sm:h-16 items-center w-full max-w-full gap-2">
                         <div className="flex items-center space-x-3 sm:space-x-8">
                             <Link href={route('portal')} className="flex items-center space-x-2 sm:space-x-3 shrink-0" aria-label="CoPED PULSE Home">
@@ -57,7 +60,7 @@ export default function LearnerLayout({ children }) {
 
             {/* Global Flash Messages (hidden when printing) */}
             {flash?.success && (
-                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 print:hidden">
+                <div className={`${containerClass} pt-4 sm:pt-6 print:hidden`}>
                     <div className="bg-emerald-50 border-2 border-[#10B981] text-[#065F46] rounded-md px-4 sm:px-5 py-3 text-sm font-bold flex items-center gap-2">
                         <span className="w-5 h-5 bg-[#10B981] text-white rounded-full flex items-center justify-center text-xs font-black shrink-0">✓</span>
                         <span>{flash.success}</span>
@@ -65,7 +68,7 @@ export default function LearnerLayout({ children }) {
                 </div>
             )}
             {flash?.error && (
-                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 print:hidden">
+                <div className={`${containerClass} pt-4 sm:pt-6 print:hidden`}>
                     <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] text-[#111827] rounded-md px-4 sm:px-5 py-3 text-sm font-bold flex items-center gap-2">
                         <span className="w-5 h-5 bg-[#F59E0B] text-[#111827] rounded-full flex items-center justify-center text-xs font-black shrink-0">!</span>
                         <span>{flash.error}</span>
@@ -74,7 +77,7 @@ export default function LearnerLayout({ children }) {
             )}
 
             {/* Main Content Area */}
-            <main className="max-w-7xl mx-auto py-6 sm:py-8 px-3 sm:px-6 lg:px-8 pb-20 md:pb-8 print:p-0 print:m-0 print:max-w-none">
+            <main className={`${containerClass} py-6 sm:py-8 pb-20 md:pb-8 print:p-0 print:m-0 print:max-w-none`}>
                 {children}
             </main>
 
