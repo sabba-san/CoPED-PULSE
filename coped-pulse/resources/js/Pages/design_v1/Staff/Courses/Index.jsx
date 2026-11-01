@@ -90,13 +90,13 @@ export default function Index({
                     Dashboard
                 </Link>
                 <span>/</span>
-                <span className="text-[#111827] font-medium">My courses</span>
+                <span className="text-[#111827] font-semibold">My courses</span>
             </div>
 
             {/* Top Header */}
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#D1D5DB]">
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0]">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#111827] tracking-tight font-display">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight font-display">
                         {isCoordinator ? 'Course Administration' : 'My Courses'}
                     </h1>
                     <p className="mt-1 text-xs sm:text-sm text-gray-600">
@@ -108,7 +108,7 @@ export default function Index({
                 <div>
                     <Link
                         href={route('staff.courses.create')}
-                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-semibold rounded text-white bg-[#111827] hover:bg-gray-800 transition-colors"
+                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2.5 text-xs sm:text-sm font-bold rounded-lg text-white bg-[#111827] hover:bg-gray-800 transition-transform active:scale-[0.98]"
                     >
                         + Create new course
                     </Link>
@@ -116,16 +116,16 @@ export default function Index({
             </div>
 
             {/* Control Bar: Filter Tabs + Instructor Filter + Search Input */}
-            <div className="bg-[#EDF1F7] border border-[#CBD5E1] rounded-t p-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-0">
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-t-xl p-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-0">
                 <div className="flex items-center flex-wrap gap-2">
-                    <div className="flex items-center gap-1 bg-[#E2E8F0] p-1 rounded border border-[#CBD5E1]">
+                    <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-[#E2E8F0]">
                         <button
                             type="button"
                             onClick={() => setFilterTab('all')}
-                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${
                                 filterTab === 'all'
-                                    ? 'bg-[#F8FAFC] text-[#1E293B] border border-[#CBD5E1]'
-                                    : 'text-slate-600 hover:text-[#1E293B]'
+                                    ? 'bg-[#111827] text-white'
+                                    : 'text-gray-600 hover:text-[#111827]'
                             }`}
                         >
                             All ({allCourses.length})
@@ -133,10 +133,10 @@ export default function Index({
                         <button
                             type="button"
                             onClick={() => setFilterTab('live')}
-                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${
                                 filterTab === 'live'
-                                    ? 'bg-[#F8FAFC] text-[#1E293B] border border-[#CBD5E1]'
-                                    : 'text-slate-600 hover:text-[#1E293B]'
+                                    ? 'bg-[#111827] text-white'
+                                    : 'text-gray-600 hover:text-[#111827]'
                             }`}
                         >
                             Published ({liveCount})
@@ -144,10 +144,10 @@ export default function Index({
                         <button
                             type="button"
                             onClick={() => setFilterTab('draft')}
-                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${
                                 filterTab === 'draft'
-                                    ? 'bg-[#F8FAFC] text-[#1E293B] border border-[#CBD5E1]'
-                                    : 'text-slate-600 hover:text-[#1E293B]'
+                                    ? 'bg-[#111827] text-white'
+                                    : 'text-gray-600 hover:text-[#111827]'
                             }`}
                         >
                             Drafts ({draftCount})
@@ -155,8 +155,8 @@ export default function Index({
                     </div>
 
                     {isCoordinator && instructors.length > 0 && (
-                        <div className="flex items-center gap-1.5 pl-2 border-l border-[#CBD5E1]">
-                            <label htmlFor="instructor-filter" className="text-xs font-medium text-slate-600 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 pl-2 border-l border-[#E2E8F0]">
+                            <label htmlFor="instructor-filter" className="text-xs font-semibold text-gray-600 whitespace-nowrap">
                                 Lecturer:
                             </label>
                             <select
@@ -170,7 +170,7 @@ export default function Index({
                                         { preserveState: true }
                                     );
                                 }}
-                                className="text-xs font-medium bg-[#F8FAFC] border border-[#CBD5E1] rounded px-2.5 py-1.5 text-[#1E293B] focus:outline-none focus:border-[#1E293B]"
+                                className="text-xs font-semibold bg-white border border-[#CBD5E1] rounded-lg px-2.5 py-1.5 text-[#111827] focus:outline-none focus:border-[#111827]"
                             >
                                 <option value="">All Lecturers ({instructors.length})</option>
                                 {instructors.map((ins) => (
@@ -190,13 +190,13 @@ export default function Index({
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search courses by title..."
-                        className="w-full text-xs font-medium bg-[#F8FAFC] border border-[#CBD5E1] rounded px-3 py-2 pr-8 text-[#1E293B] placeholder-slate-400 focus:outline-none focus:border-[#1E293B] transition-colors"
+                        className="w-full text-xs font-medium bg-white border border-[#CBD5E1] rounded-lg px-3 py-2 pr-8 text-[#111827] placeholder-gray-400 focus:outline-none focus:border-[#111827] transition-colors"
                     />
                     {searchQuery && (
                         <button
                             type="button"
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#1E293B] font-bold text-xs leading-none"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] font-bold text-xs leading-none"
                             aria-label="Clear search"
                         >
                             &times;
@@ -206,7 +206,7 @@ export default function Index({
             </div>
 
             {/* Table Container */}
-            <div className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-b overflow-hidden">
+            <div className="bg-white border border-[#E2E8F0] rounded-b-xl overflow-hidden">
                 {allCourses.length === 0 ? (
                     /* Initial Empty State */
                     <div className="text-center py-16 px-4">
@@ -218,7 +218,7 @@ export default function Index({
                         </p>
                         <Link
                             href={route('staff.courses.create')}
-                            className="inline-flex items-center px-5 py-2.5 text-xs font-bold rounded-md text-white bg-[#10B981] hover:bg-emerald-600 transition-colors"
+                            className="inline-flex items-center px-5 py-2.5 text-xs font-bold rounded-lg text-white bg-[#10B981] hover:bg-emerald-600 transition-colors"
                         >
                             + Create your first course
                         </Link>
@@ -238,16 +238,16 @@ export default function Index({
                                 setFilterTab('all');
                                 setSearchQuery('');
                             }}
-                            className="inline-flex items-center px-4 py-1.5 text-xs font-bold rounded border-2 border-[#111827] text-[#111827] hover:bg-[#F3F4F6] transition-colors"
+                            className="inline-flex items-center px-4 py-1.5 text-xs font-bold rounded-lg border border-[#111827] text-[#111827] hover:bg-[#F3F4F6] transition-colors"
                         >
                             Clear search &amp; filters
                         </button>
                     </div>
                 ) : (
                     /* Management Table */
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y-2 divide-[#E5E7EB]">
-                            <thead className="bg-[#F9FAFB] border-b-2 border-[#E5E7EB]">
+                    <div className="overflow-x-auto min-h-[260px] pb-8">
+                        <table className="min-w-full divide-y divide-[#E2E8F0]">
+                            <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
                                 <tr>
                                     <th
                                         scope="col"
@@ -291,7 +291,7 @@ export default function Index({
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y-2 divide-[#E5E7EB]">
+                            <tbody className="bg-white divide-y divide-[#E2E8F0]">
                                 {sortedCourses.map((course) => (
                                     <CourseRow
                                         key={course.id}
@@ -318,17 +318,17 @@ export default function Index({
                             <Link
                                 key={i}
                                 href={link.url}
-                                className={`px-3.5 py-1.5 rounded text-xs font-bold transition-colors ${
+                                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                                     link.active
                                         ? 'bg-[#111827] text-white'
-                                        : 'bg-white text-gray-700 border-2 border-[#E5E7EB] hover:bg-[#F3F4F6]'
+                                        : 'bg-white text-gray-700 border border-[#E2E8F0] hover:bg-[#F3F4F6]'
                                 }`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         ) : (
                             <span
                                 key={i}
-                                className="px-3.5 py-1.5 rounded text-xs font-bold bg-[#F3F4F6] text-gray-400 border-2 border-transparent"
+                                className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#F3F4F6] text-gray-400 border border-transparent"
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         )
