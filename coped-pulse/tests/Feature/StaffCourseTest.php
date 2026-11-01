@@ -59,6 +59,27 @@ class StaffCourseTest extends TestCase
         ]);
     }
 
+    public function test_staff_can_store_course_with_school_mode(): void
+    {
+        $staff = $this->staff();
+
+        $response = $this->actingAs($staff)->post(route('staff.courses.store'), [
+            'title' => 'Sains Darjah 1',
+            'description' => 'KSSR Primary Science module.',
+            'status' => 'draft',
+            'course_mode' => 'school',
+            'redirect_to_hub' => true,
+        ]);
+
+        $course = Course::where('title', 'Sains Darjah 1')->firstOrFail();
+        $response->assertRedirect(route('staff.courses.edit', $course->id));
+        $this->assertDatabaseHas('courses', [
+            'id' => $course->id,
+            'title' => 'Sains Darjah 1',
+            'course_mode' => 'school',
+        ]);
+    }
+
     public function test_wizard_store_redirects_to_action_hub(): void
     {
         $staff = $this->staff();
@@ -125,6 +146,27 @@ class StaffCourseTest extends TestCase
             'id' => $course->id,
             'title' => 'Updated Title',
             'status' => 'published',
+        ]);
+    }
+
+    public function test_staff_can_update_course_mode(): void
+    {
+        $staff = $this->staff();
+        $course = Course::factory()->draft()->forInstructor($staff)->create([
+            'title' => 'Math Subject',
+            'course_mode' => 'certification',
+        ]);
+
+        $response = $this->actingAs($staff)->put(route('staff.courses.update', $course), [
+            'title' => 'Math Subject Updated',
+            'status' => 'published',
+            'course_mode' => 'school',
+        ]);
+
+        $response->assertRedirect(route('staff.courses.index'));
+        $this->assertDatabaseHas('courses', [
+            'id' => $course->id,
+            'course_mode' => 'school',
         ]);
     }
 

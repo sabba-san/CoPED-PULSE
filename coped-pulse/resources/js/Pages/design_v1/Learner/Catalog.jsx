@@ -218,6 +218,11 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                             const isCommercial = course.billing_type !== 'free' && Number(course.price || 0) > 0;
                             const themeConfig = LOGO_CONFIG[course.category_logo] || LOGO_CONFIG.charcoal || LOGO_CONFIG.general;
                             const EmblemIcon = themeConfig?.icon;
+                            const isKssrCourse = Boolean(
+                                course.title?.includes('Tahun') ||
+                                    course.title?.includes('KSSR') ||
+                                    course.academic_year?.includes('KSSR')
+                            );
 
                             return (
                                 <div
@@ -230,7 +235,11 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                             handleEnrollClick(course);
                                         }
                                     }}
-                                    className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden flex flex-col justify-between transition-all duration-200 hover:scale-[1.01] hover:border-black cursor-pointer"
+                                    className={`rounded-lg overflow-hidden flex flex-col justify-between transition-all duration-200 hover:scale-[1.01] hover:border-black cursor-pointer ${
+                                        isKssrCourse
+                                            ? 'bg-[#FEF9C3]/40 border-2 border-[#111827]'
+                                            : 'bg-white border-2 border-[#E5E7EB]'
+                                    }`}
                                 >
                                     {/* Mobile View (< sm): Ultra-compact horizontal layout */}
                                     <div className="block sm:hidden p-3.5 space-y-2.5">
@@ -346,7 +355,18 @@ export default function Catalog({ courses = [], enrolledCourseIds = [], filters 
                                             {/* Body */}
                                             <div className="p-6 space-y-4">
                                                 <div>
-                                                    <h2 className="font-display font-bold text-lg text-[#111827] line-clamp-2">
+                                                    {isKssrCourse && (
+                                                        <span className="inline-block mb-1.5 px-2 py-0.5 rounded bg-[#0284C7] text-white border border-[#111827] text-[10px] font-black uppercase tracking-wider">
+                                                            🌈 KSSR Rendah · Mod Ceria
+                                                        </span>
+                                                    )}
+                                                    <h2
+                                                        className={`font-display text-[#111827] line-clamp-2 ${
+                                                            isKssrCourse
+                                                                ? 'font-extrabold text-lg sm:text-xl'
+                                                                : 'font-bold text-lg'
+                                                        }`}
+                                                    >
                                                         {course.title}
                                                     </h2>
                                                     <p className="text-sm text-gray-600 mt-1">

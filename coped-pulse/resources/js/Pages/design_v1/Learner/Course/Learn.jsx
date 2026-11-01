@@ -15,19 +15,85 @@ import {
 } from '@/Components/flat/icons';
 
 import VideoPlayer from './Partials/VideoPlayer';
+import MathPlayground from './Partials/MathPlayground';
 import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
 import FormattedGuide from '@/Components/FormattedGuide';
 import { safeUrl, formatEmbedUrl, getYouTubeId, isVideoUrl, isPdfFile } from '@/Utils/mediaUtils';
 
-const CHAPTER_STEPS = [
-    { key: 'watch', id: 'watch', label: 'Watch & Materials', shortLabel: 'Watch' },
-    { key: 'guide', id: 'guide', label: 'Study Guide & Notes', shortLabel: 'Guide' },
-    { key: 'quiz', id: 'quiz', label: 'Mini-Quiz & Complete', shortLabel: 'Quiz' },
+const CERT_CHAPTER_STEPS = [
+    { key: 'watch', id: 'watch', label: '1. Watch & Materials', shortLabel: '1. Watch' },
+    { key: 'guide', id: 'guide', label: '2. Study Guide & Notes', shortLabel: '2. Guide' },
+    { key: 'quiz', id: 'quiz', label: '3. Mini-Quiz & Complete', shortLabel: '3. Quiz' },
 ];
 
-const BTN_SECONDARY = 'w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-white border-2 border-[#E5E7EB] hover:border-[#111827] text-[#111827] font-bold text-xs px-4 py-2.5 rounded-md transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:hover:border-[#E5E7EB] disabled:cursor-not-allowed';
-const BTN_PRIMARY = 'w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
-const BTN_SUCCESS = 'w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-md transition-transform active:scale-[0.98] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed';
+const SCHOOL_CHAPTER_STEPS = [
+    { key: 'watch', id: 'watch', label: '▶ 1. Video', shortLabel: '▶ Video' },
+    { key: 'interact', id: 'interact', label: '🎮 2. Aktiviti Interaktif', shortLabel: '🎮 Aktiviti' },
+    { key: 'guide', id: 'guide', label: '📖 3. Nota Ringkas', shortLabel: '📖 Nota' },
+    { key: 'quiz', id: 'quiz', label: '📝 4. Latihan Kertas & Kuiz', shortLabel: '📝 Latihan & Kuiz' },
+];
+
+const buildDemoWorksheetSvg = (yearLevel) => {
+    const lines =
+        yearLevel === 2
+            ? [
+                  'LATIHAN KERTAS MATEMATIK TAHUN 2 (BENTUK LAZIM)',
+                  'Soalan: RM90.00 - RM54.60 - RM27.00 = ___',
+                  'Langkah 1:   RM 90 . 00',
+                  '           - RM 54 . 60',
+                  '           ------------',
+                  '             RM 35 . 40   (Pinjam RM1 = 100 sen)',
+                  'Langkah 2:   RM 35 . 40',
+                  '           - RM 27 . 00',
+                  '           ------------',
+                  'Jawapan:     RM  8 . 40   [Disemak Betul]',
+              ]
+            : yearLevel === 3
+            ? [
+                  'LATIHAN KERTAS MATEMATIK TAHUN 3 (BENTUK LAZIM)',
+                  'Soalan: 6 x 6 m 80 cm = ___ m ___ cm',
+                  'Langkah 1:    6 m   80 cm',
+                  '           x            6',
+                  '           --------------',
+                  '             36 m  480 cm',
+                  'Langkah 2 (Tukar Unit 1 m = 100 cm):',
+                  '             480 cm = 4 m 80 cm',
+                  '             36 m + 4 m 80 cm = 40 m 80 cm',
+                  'Jawapan:     40 m 80 cm   [Disemak Betul]',
+              ]
+            : [
+                  'LATIHAN KERTAS MATEMATIK TAHUN 1 (BENTUK LAZIM)',
+                  'Soalan: (a) 39 + 47 = ___    (b) 63 - 7 = ___',
+                  '(a) Kumpul Semula Puluh & Sa:   (b) Pinjam 1 Puluh = 10 Sa:',
+                  '      +1                              5  13',
+                  '      3 9 (3 puluh 9 sa)              6  3',
+                  '    + 4 7 (4 puluh 7 sa)            -    7',
+                  '    -----                           ------',
+                  '      8 6 (16 sa -> 1P 6S)            5  6',
+                  '',
+                  'Jawapan Akhir: 86 dan 56   [Disemak Betul]',
+              ];
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="680" height="320" viewBox="0 0 680 320">
+        <rect width="680" height="320" fill="#FFFBEB" stroke="#CBD5E1" stroke-width="2"/>
+        <line x1="56" y1="0" x2="56" y2="320" stroke="#EF4444" stroke-width="2"/>
+        ${lines
+            .map(
+                (txt, idx) =>
+                    `<line x1="0" y1="${42 + idx * 28}" x2="680" y2="${42 + idx * 28}" stroke="#93C5FD" stroke-width="1"/>
+                     <text x="70" y="${36 + idx * 28}" font-family="monospace" font-size="15" font-weight="bold" fill="#1E3A8A">${txt
+                         .replace(/&/g, '&amp;')
+                         .replace(/</g, '&lt;')
+                         .replace(/>/g, '&gt;')}</text>`
+            )
+            .join('')}
+    </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
+const BTN_SECONDARY = 'w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center gap-2 bg-white border border-[#CBD5E1] hover:border-[#2563EB] text-[#0F172A] font-bold text-xs px-4 py-2 rounded-lg transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed';
+const BTN_PRIMARY = 'w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs px-5 py-2 rounded-lg transition-transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
+const BTN_SUCCESS = 'w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2 rounded-lg transition-transform active:scale-[0.98] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed';
 
 // Keeps the stage anchored near the viewport top after step / tab transitions.
 const scrollToAnchor = (id) => requestAnimationFrame(() => {
@@ -563,9 +629,55 @@ export default function Learn({
         ? doneLessonSet.has(selectedLesson.id)
         : isModuleFullyDone(activeModule);
 
-    // 3-step chapter sequence: 'watch' | 'guide' | 'quiz'
+    // Detect School Interactive & Gamified Mode (course_mode === 'school' or KSSR fallback)
+    const isKssrCourse = Boolean(
+        course?.course_mode === 'school' ||
+            course?.title?.includes('Tahun') ||
+            course?.title?.includes('KSSR') ||
+            course?.academic_year?.includes('KSSR')
+    );
+
+    const activeChapterSteps = isKssrCourse ? SCHOOL_CHAPTER_STEPS : CERT_CHAPTER_STEPS;
+
+    // Step sequence: 'watch' | 'interact' (school) | 'guide' | 'quiz'
     const [chapterStep, setChapterStep] = useState('watch');
-    const activeStepIndex = CHAPTER_STEPS.findIndex((s) => s.id === chapterStep);
+    const activeStepIndex = activeChapterSteps.findIndex((s) => s.id === chapterStep);
+
+    // Collapsible Quick Notes drawer & Step 4 Quiz/Paper Sub-Toggle
+    const [showNotesDrawer, setShowNotesDrawer] = useState(false);
+    const [quizSubTab, setQuizSubTab] = useState('mini'); // 'mini' | 'paper'
+
+    // Live Gamification XP, Level & Toast State
+    const [bonusXp, setBonusXp] = useState(0);
+    const [xpToast, setXpToast] = useState(null);
+    const xpToastTimerRef = useRef(null);
+
+    useEffect(() => {
+        try {
+            const savedXp = Number(localStorage.getItem(`coped_xp_${course.id}`) || 0);
+            if (!Number.isNaN(savedXp) && savedXp > 0) {
+                setBonusXp(savedXp);
+            }
+        } catch {}
+        return () => {
+            if (xpToastTimerRef.current) clearTimeout(xpToastTimerRef.current);
+        };
+    }, [course.id]);
+
+    const awardXp = (amount, label = '') => {
+        setBonusXp((prev) => {
+            const next = prev + amount;
+            try {
+                localStorage.setItem(`coped_xp_${course.id}`, String(next));
+            } catch {}
+            return next;
+        });
+        if (xpToastTimerRef.current) clearTimeout(xpToastTimerRef.current);
+        setXpToast({ amount, label });
+        xpToastTimerRef.current = setTimeout(() => {
+            setXpToast(null);
+        }, 3500);
+    };
 
     const goToStep = (step) => {
         setChapterStep(step);
@@ -661,6 +773,9 @@ export default function Learn({
             total: activeModuleQuizzes.length,
             score: activeModuleQuizzes.length > 0 ? Math.round((correct / activeModuleQuizzes.length) * 100) : 0,
         });
+        if (correct > 0) {
+            awardXp(correct * 15, `Kuiz Pantas: ${correct}/${activeModuleQuizzes.length} Betul!`);
+        }
         // Auto-tick only the currently viewed subtopic (or chapter if it has 0 subtopics)
         markCurrentSubtopicOrModuleComplete(false);
     };
@@ -674,6 +789,268 @@ export default function Learn({
         setMiniChecked(null);
     };
 
+    const kssrYearLevel = useMemo(() => {
+        const text = `${course?.title || ''} ${course?.academic_year || ''} ${course?.description || ''} ${course?.category || ''}`;
+        if (/tahun\s*2|standard\s*2|darjah\s*2/i.test(text)) return 2;
+        if (/tahun\s*3|standard\s*3|darjah\s*3/i.test(text)) return 3;
+        return 1;
+    }, [course?.title, course?.academic_year, course?.description, course?.category]);
+
+    // Penilaian Hibrid (Paper Worksheet & Scan/Photo Upload) State
+    const hybridTask = useMemo(() => {
+        if (kssrYearLevel === 2) {
+            return {
+                badge: 'Tahun 2 · Wang Hingga RM100',
+                prompt: 'Tunjukkan jalan kerja pengiraan baki wang dalam bentuk lazim di atas kertas: RM90.00 - RM54.60 - RM27.00 = ___',
+                placeholder: 'Contoh: RM8.40',
+                demoAnswer: 'RM8.40',
+                validate: (val) => String(val || '').replace(/\s+/g, '').toLowerCase().includes('8.4'),
+            };
+        }
+        if (kssrYearLevel === 3) {
+            return {
+                badge: 'Tahun 3 · Pertukaran Unit & Darab Panjang',
+                prompt: 'Tunjukkan langkah pertukaran unit dan jalan kerja darab di atas kertas: 6 x 6 m 80 cm = ___ m ___ cm',
+                placeholder: 'Contoh: 40 m 80 cm',
+                demoAnswer: '40 m 80 cm',
+                validate: (val) => {
+                    const clean = String(val || '').toLowerCase();
+                    return (clean.includes('40') && clean.includes('80')) || clean.includes('4080');
+                },
+            };
+        }
+        return {
+            badge: 'Tahun 1 · Bentuk Lazim (Kumpul Semula Puluh & Sa)',
+            prompt: 'Selesaikan dalam bentuk lazim di atas kertas (tunjukkan langkah kumpul semula Puluh dan Sa): 39 + 47 = ___ dan 63 - 7 = ___',
+            placeholder: 'Contoh: 86 dan 56',
+            demoAnswer: '86 dan 56',
+            validate: (val) => {
+                const clean = String(val || '');
+                return clean.includes('86') || clean.includes('56');
+            },
+        };
+    }, [kssrYearLevel]);
+
+    const [hybridAnswer, setHybridAnswer] = useState('');
+    const [hybridScanPreview, setHybridScanPreview] = useState(null);
+    const [hybridScanName, setHybridScanName] = useState('');
+    const [hybridError, setHybridError] = useState('');
+    const [hybridSubmitted, setHybridSubmitted] = useState(false);
+
+    // Live Total XP & Level Computation
+    const totalXp = useMemo(() => {
+        return (
+            completedModuleIds.length * 50 +
+            completedLessonIds.length * 25 +
+            (isQuizPassed ? 200 : 0) +
+            (hybridSubmitted ? 50 : 0) +
+            bonusXp
+        );
+    }, [completedModuleIds.length, completedLessonIds.length, isQuizPassed, hybridSubmitted, bonusXp]);
+
+    const currentLevel = Math.floor(totalXp / 150) + 1;
+    const xpInLevel = totalXp % 150;
+    const xpProgressPct = Math.min(100, Math.round((xpInLevel / 150) * 100));
+
+    const handleHybridFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+        if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/')) {
+            setHybridError('Sila muat naik fail gambar (JPG/PNG/WEBP) atau PDF sahaja.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setHybridError('Saiz fail melebihi had 5 MB. Sila pilih gambar yang lebih kecil.');
+            return;
+        }
+        setHybridError('');
+        setHybridSubmitted(false);
+        setHybridScanName(file.name);
+        if (file.type === 'application/pdf') {
+            setHybridScanPreview(buildDemoWorksheetSvg(kssrYearLevel));
+        } else {
+            setHybridScanPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleLoadDemoWorksheet = () => {
+        setHybridError('');
+        setHybridSubmitted(false);
+        setHybridAnswer(hybridTask.demoAnswer);
+        setHybridScanName(`Imbasan_Kertas_Bentuk_Lazim_Tahun_${kssrYearLevel}.svg`);
+        setHybridScanPreview(buildDemoWorksheetSvg(kssrYearLevel));
+    };
+
+    const handleVerifyHybridWorksheet = () => {
+        if (!hybridAnswer.trim()) {
+            setHybridError('Sila taip jawapan akhir daripada kertas jalan kerja anda di Kotak Input 1.');
+            return;
+        }
+        if (!hybridScanPreview) {
+            setHybridError('Sila muat naik gambar kertas jalan kerja atau klik butang Contoh Imbasan Kertas Murid (Demo).');
+            return;
+        }
+        if (!hybridTask.validate(hybridAnswer)) {
+            setHybridError(`Jawapan akhir belum tepat. Semak semula pengiraan bentuk lazim anda (Petunjuk: ${hybridTask.demoAnswer}).`);
+            setHybridSubmitted(false);
+            return;
+        }
+        setHybridError('');
+        if (!hybridSubmitted) {
+            awardXp(50, 'Imbasan Kertas Bentuk Lazim Disahkan! (+50 XP)');
+        }
+        setHybridSubmitted(true);
+        markCurrentSubtopicOrModuleComplete(false);
+    };
+
+    const renderHybridPaperCard = () => (
+        <div
+            id="penilaian-hibrid-card"
+            className="bg-[#FFFBEB] border border-[#FCD34D] rounded-xl p-4 sm:p-5 space-y-4"
+        >
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#FDE68A]">
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-lg bg-[#D97706] text-white text-xs font-black uppercase tracking-wider">
+                        📝 Tugasan Kertas &amp; Imbasan
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-lg bg-white text-[#92400E] border border-[#FCD34D] text-xs font-extrabold">
+                        Penilaian Hibrid · {hybridTask.badge}
+                    </span>
+                </div>
+                <button
+                    type="button"
+                    onClick={handleLoadDemoWorksheet}
+                    className="px-3 py-1.5 rounded-lg bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-black transition-colors"
+                >
+                    ⚡ Gunakan Contoh Imbasan Kertas Murid (Demo)
+                </button>
+            </div>
+
+            {/* 1. Assigned Textbook Problem */}
+            <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] space-y-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#D97706] block">
+                    Soalan Jalan Kerja Bentuk Lazim (Kertas Latihan):
+                </span>
+                <p className="text-base sm:text-lg font-extrabold text-[#0F172A] leading-snug">
+                    {hybridTask.prompt}
+                </p>
+            </div>
+
+            {/* 2. Step-by-Step Hybrid Submission Flow */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Input 1: Final Numerical Answer */}
+                <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] space-y-2">
+                    <label
+                        htmlFor="hybrid-final-answer"
+                        className="text-xs sm:text-sm font-extrabold text-[#0F172A] block"
+                    >
+                        Langkah 1: Taip Jawapan Akhir daripada Kertas Anda
+                    </label>
+                    <input
+                        id="hybrid-final-answer"
+                        type="text"
+                        value={hybridAnswer}
+                        onChange={(e) => {
+                            setHybridAnswer(e.target.value);
+                            setHybridSubmitted(false);
+                        }}
+                        placeholder={hybridTask.placeholder}
+                        className="w-full px-3.5 py-2 rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] text-base font-extrabold text-[#0F172A] focus:outline-none focus:border-[#2563EB] focus:bg-white"
+                    />
+                    <p className="text-[11px] font-semibold text-gray-500">
+                        Kira di atas kertas latihan dahulu, kemudian masukkan jawapan akhir di sini.
+                    </p>
+                </div>
+
+                {/* Input 2: Upload Scan / Photo of Handwritten Working */}
+                <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] space-y-2 flex flex-col justify-between">
+                    <div className="space-y-2">
+                        <span className="text-xs sm:text-sm font-extrabold text-[#0F172A] block">
+                            Langkah 2: Muat Naik Gambar / Imbasan Kertas Jalan Kerja
+                        </span>
+                        <label className="w-full min-h-[42px] px-4 py-2 rounded-lg bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] hover:text-white border border-[#D97706] text-xs sm:text-sm font-black cursor-pointer inline-flex items-center justify-center gap-2 transition-colors text-center">
+                            <span>📷 Tangkap Gambar / Muat Naik Kertas Jalan Kerja</span>
+                            <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                capture="environment"
+                                onChange={handleHybridFileChange}
+                                className="sr-only"
+                            />
+                        </label>
+                    </div>
+                    {hybridScanName && (
+                        <p className="text-xs font-extrabold text-[#059669] truncate">
+                            📎 Fail dipilih: {hybridScanName}
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {/* Instant Worksheet Preview */}
+            {hybridScanPreview && (
+                <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] space-y-2">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase tracking-wider text-[#0F172A]">
+                            🔍 Pratonton Imbasan Kertas Jalan Kerja Murid:
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setHybridScanPreview(null);
+                                setHybridScanName('');
+                                setHybridSubmitted(false);
+                            }}
+                            className="text-xs font-extrabold text-red-600 hover:underline"
+                        >
+                            Padam Imbasan
+                        </button>
+                    </div>
+                    <div className="border border-[#CBD5E1] rounded-lg overflow-hidden bg-[#FFFBEB] max-h-56 flex items-center justify-center">
+                        <img
+                            src={hybridScanPreview}
+                            alt="Pratonton Kertas Jalan Kerja Bentuk Lazim"
+                            className="max-h-52 w-auto object-contain"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {hybridError && (
+                <div className="p-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-xs sm:text-sm font-extrabold text-[#991B1B]">
+                    ⚠ {hybridError}
+                </div>
+            )}
+
+            {/* Submit & Verify Button */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <span className="text-xs font-semibold text-gray-600">
+                    Sistem menyemak imbasan jalan kerja bentuk lazim dan ketepatan jawapan akhir.
+                </span>
+                <button
+                    type="button"
+                    onClick={handleVerifyHybridWorksheet}
+                    className="px-5 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs sm:text-sm font-black transition-transform active:scale-[0.98]"
+                >
+                    ✓ Hantar &amp; Semak Jalan Kerja
+                </button>
+            </div>
+
+            {/* 3. Automated & Rubric Evaluation Result */}
+            {hybridSubmitted && (
+                <div className="p-3.5 rounded-xl bg-[#ECFDF5] border border-[#10B981] space-y-1">
+                    <p className="text-xs font-black uppercase tracking-wider text-[#065F46]">
+                        🌟 Keputusan Penilaian Hibrid (Disahkan Sistem):
+                    </p>
+                    <p className="text-sm font-extrabold text-[#065F46]">
+                        ✓ Imbasan Kertas Kerja Diterima (Bentuk Lazim Disahkan) · +50 XP Bintang Matematik!
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <LearnerLayout wide>
             <Head title={`Learn: ${course.title}`} />
@@ -682,12 +1059,12 @@ export default function Learn({
                 <div
                     role="status"
                     aria-live="polite"
-                    className={`fixed top-20 right-4 z-50 px-4 py-3 rounded-lg flex items-center gap-3 text-xs sm:text-sm font-extrabold max-w-md ${
+                    className={`fixed top-20 right-4 z-50 px-4 py-3 rounded-xl flex items-center gap-3 text-xs sm:text-sm font-extrabold max-w-md border ${
                         quizToast.type === 'pass'
-                            ? 'bg-[#ECFDF5] border-2 border-[#10B981] text-[#065F46]'
+                            ? 'bg-[#ECFDF5] border-[#10B981] text-[#065F46]'
                             : quizToast.type === 'fail'
-                            ? 'bg-[#FEF2F2] border-2 border-[#EF4444] text-[#991B1B]'
-                            : 'bg-[#EFF6FF] border-2 border-[#2563EB] text-[#1E40AF]'
+                            ? 'bg-[#FEF2F2] border-[#EF4444] text-[#991B1B]'
+                            : 'bg-[#EFF6FF] border-[#2563EB] text-[#1E40AF]'
                     }`}
                 >
                     <span className="flex-1">{quizToast.message}</span>
@@ -702,44 +1079,80 @@ export default function Learn({
                 </div>
             )}
 
-            <div className="space-y-6">
-                {/* Course Top Header */}
-                <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-3.5 sm:p-6 space-y-3 sm:space-y-4 w-full min-w-0 overflow-hidden">
-                    {/* Institutional Breadcrumb */}
-                    <div className="flex items-center gap-2 text-[11px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider overflow-hidden">
-                        <Link href={route('portal')} className="text-[#111827] hover:underline shrink-0">
-                            ← My Portal
-                        </Link>
-                        <span>/</span>
-                        <span className="text-gray-400 truncate max-w-[200px] sm:max-w-md">{course.title}</span>
+            {xpToast && (
+                <div
+                    role="status"
+                    aria-live="polite"
+                    className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl bg-[#ECFDF5] border-2 border-[#10B981] text-[#065F46] flex items-center gap-3 animate-bounce"
+                >
+                    <span className="w-8 h-8 rounded-lg bg-[#10B981] text-white font-black text-xs flex items-center justify-center shrink-0">
+                        +{xpToast.amount}
+                    </span>
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-wider text-[#047857]">
+                            ⭐ Ganjaran XP Diperoleh!
+                        </p>
+                        <p className="text-xs font-bold text-[#065F46]">
+                            {xpToast.label || `+${xpToast.amount} XP ditambah ke tahap anda!`}
+                        </p>
                     </div>
+                </div>
+            )}
 
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 w-full min-w-0">
-                        <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 w-full min-w-0 overflow-hidden">
+            <div className="space-y-4">
+                {/* Compact Khan-Academy Style Top Header Bar */}
+                <div className="py-3.5 px-4 sm:px-5 bg-white border border-[#E2E8F0] rounded-xl space-y-3 w-full min-w-0 overflow-hidden">
+                    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3.5 w-full min-w-0">
+                        {/* Left Column: Back Link, Course Title & KPM PDF Pill */}
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
                             {course.category_logo && (
-                                <div className="hidden sm:block shrink-0">
-                                    <CourseLogoBadge category={course.category_logo} size="tile" className="!w-44 rounded-md" />
+                                <div className="hidden md:block shrink-0">
+                                    <CourseLogoBadge category={course.category_logo} size="tile" className="!w-28 rounded-lg" />
                                 </div>
                             )}
-                            <div className="min-w-0 flex-1 w-full space-y-1">
-                                <h1 className="font-display text-lg sm:text-2xl md:text-3xl font-extrabold text-[#111827] break-words">
-                                    {course.title}
-                                </h1>
-                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
-                                    <p className="text-xs sm:text-sm text-gray-600">
-                                        Instructed by {course.instructor?.name || 'Faculty Instructor'}
-                                    </p>
+                            <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#64748B]">
+                                    <Link href={route('portal')} className="text-[#0F172A] hover:text-[#2563EB] hover:underline shrink-0">
+                                        ← My Portal
+                                    </Link>
+                                    <span>·</span>
+                                    <span className="truncate">Instructed by {course.instructor?.name || 'Faculty Instructor'}</span>
                                     {course.academic_year && (
-                                        <span className="text-[10px] sm:text-xs font-bold text-gray-600 bg-[#F3F4F6] border border-[#E5E7EB] px-1.5 sm:px-2 py-0.5 rounded">
+                                        <span className="text-[10px] font-bold text-[#1E40AF] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md">
                                             📅 {course.academic_year}
                                         </span>
+                                    )}
+                                    {isKssrCourse && (
+                                        <span className="px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-extrabold uppercase tracking-wider">
+                                            🎮 Mod Interaktif KSSR · Tahun {kssrYearLevel}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                    <h1 className="font-display text-base sm:text-xl font-extrabold text-[#0F172A] break-words leading-snug">
+                                        {course.title}
+                                    </h1>
+                                    {course.bundle_url && (
+                                        <a
+                                            href={course.bundle_url}
+                                            download
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#065F46] bg-[#ECFDF5] hover:bg-[#D1FAE5] border border-[#A7F3D0] px-2.5 py-0.5 rounded-lg transition-colors"
+                                        >
+                                            <span className="truncate">
+                                                📥 {course.bundle_title || 'Muat Turun Buku Teks KPM (PDF)'}
+                                            </span>
+                                            <span className="text-[10px] shrink-0">⬇</span>
+                                        </a>
                                     )}
                                     {course.cert_title && (
                                         <a
                                             href={course.cert_url || '#'}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold text-[#1D4ED8] bg-[#EFF6FF] border border-[#93C5FD] hover:bg-[#DBEAFE] px-1.5 sm:px-2 py-0.5 rounded transition-colors max-w-full"
+                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1D4ED8] bg-[#EFF6FF] border border-[#BFDBFE] hover:bg-[#DBEAFE] px-2 py-0.5 rounded-lg transition-colors"
                                         >
                                             <span className="truncate">🎓 Leads to: {course.cert_title}</span>
                                             <span className="text-[10px] shrink-0">↗</span>
@@ -749,52 +1162,133 @@ export default function Learn({
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
-                            <span
-                                className={`px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-extrabold rounded border-2 ${
-                                    isCompleted
-                                        ? 'bg-emerald-50 text-[#10B981] border-[#10B981]'
-                                        : 'bg-blue-50 text-[#3B82F6] border-[#3B82F6]'
-                                }`}
-                            >
-                                {isCompleted ? 'COMPLETED' : 'IN PROGRESS'}
-                            </span>
-                            {assessments.length > 0 && !isCompleted && (
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('assessment')}
-                                    className="w-full sm:w-auto min-h-[36px] sm:min-h-[44px] bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded transition-transform active:scale-[0.98]"
-                                >
-                                    Take Final Assessment
-                                </button>
-                            )}
-                        </div>
-                    </div>
+                        {/* Right Column: Gamification XP/Level/Mastery Bar (School Mode) OR Institutional Progress Bar (Certification Mode) */}
+                        {isKssrCourse ? (
+                            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3.5 py-2 shrink-0">
+                                {/* Streak Pill */}
+                                <span className="bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full text-xs font-extrabold inline-flex items-center gap-1">
+                                    <span>🔥</span>
+                                    <span>1 Week Streak</span>
+                                </span>
 
-                    {/* Progress Bar */}
-                    <div className="space-y-1 pt-2 border-t-2 border-[#E5E7EB]">
-                        <div className="flex items-center justify-between text-xs font-bold text-[#111827]">
-                            <span>Overall Course Progress</span>
-                            <span>{progressPct}%</span>
-                        </div>
-                        <div
-                            className="w-full bg-[#F3F4F6] border border-[#E5E7EB] h-2 rounded-full overflow-hidden"
-                            role="progressbar"
-                            aria-valuenow={progressPct}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                        >
-                            <div
-                                className="h-full bg-[#10B981] rounded-full transition-all duration-500"
-                                style={{ width: `${progressPct}%` }}
-                            />
-                        </div>
+                                {/* Level & Animated XP Bar */}
+                                <div className="flex flex-col gap-1 min-w-[140px]">
+                                    <div className="flex items-center justify-between text-[11px] font-extrabold">
+                                        <span className="text-[#1E40AF]">⭐ Level {currentLevel}</span>
+                                        <span className="text-[#2563EB]">{xpInLevel} / 150 XP</span>
+                                    </div>
+                                    <div
+                                        className="w-36 h-2 bg-[#DBEAFE] border border-[#BFDBFE] rounded-full overflow-hidden"
+                                        role="progressbar"
+                                        aria-valuenow={xpProgressPct}
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                    >
+                                        <div
+                                            className="h-full bg-[#2563EB] rounded-full transition-all duration-500"
+                                            style={{ width: `${xpProgressPct}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Khan Academy Unit Mastery Squares */}
+                                <div className="flex items-center gap-1.5 pl-2 border-l border-[#E2E8F0]">
+                                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#64748B] mr-0.5 hidden sm:inline">
+                                        👑 Mastery:
+                                    </span>
+                                    {modules.map((m, mIdx) => {
+                                        const modDone = isModuleFullyDone(m);
+                                        const modActive = m.id === activeModuleId;
+                                        return (
+                                            <button
+                                                key={m.id}
+                                                type="button"
+                                                onClick={() => goToModule(m.id)}
+                                                title={`Unit ${mIdx + 1}: ${m.title} (${modDone ? 'Mastered' : modActive ? 'In Progress' : 'Not Started'})`}
+                                                className={`w-7 h-7 rounded-lg text-[11px] font-black flex items-center justify-center border transition-colors ${
+                                                    modDone
+                                                        ? 'bg-[#7C3AED] text-white border-[#6D28D9]'
+                                                        : modActive
+                                                        ? 'bg-[#2563EB] text-white border-[#1D4ED8]'
+                                                        : 'bg-white text-[#64748B] border-[#CBD5E1] hover:border-[#2563EB]'
+                                                }`}
+                                            >
+                                                {modDone ? '👑' : `U${mIdx + 1}`}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Status & Final Exam CTA */}
+                                <div className="flex items-center gap-2 pl-2 border-l border-[#E2E8F0]">
+                                    <span
+                                        className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md border ${
+                                            isCompleted
+                                                ? 'bg-emerald-50 text-[#059669] border-[#A7F3D0]'
+                                                : 'bg-blue-50 text-[#2563EB] border-[#BFDBFE]'
+                                        }`}
+                                    >
+                                        {isCompleted ? 'COMPLETED' : `${progressPct}%`}
+                                    </span>
+                                    {assessments.length > 0 && !isCompleted && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('assessment')}
+                                            className="bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors"
+                                        >
+                                            Take Final Assessment
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-wrap items-center gap-3 shrink-0">
+                                <div className="w-44 space-y-1">
+                                    <div className="flex items-center justify-between text-[11px] font-bold text-[#0F172A]">
+                                        <span>Overall Course Progress</span>
+                                        <span>{progressPct}%</span>
+                                    </div>
+                                    <div
+                                        className="w-full bg-[#F1F5F9] border border-[#E2E8F0] h-2 rounded-full overflow-hidden"
+                                        role="progressbar"
+                                        aria-valuenow={progressPct}
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                    >
+                                        <div
+                                            className="h-full bg-[#10B981] rounded-full transition-all duration-500"
+                                            style={{ width: `${progressPct}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <span
+                                    className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg border ${
+                                        isCompleted
+                                            ? 'bg-emerald-50 text-[#10B981] border-[#A7F3D0]'
+                                            : 'bg-blue-50 text-[#2563EB] border-[#BFDBFE]'
+                                    }`}
+                                >
+                                    {isCompleted ? 'COMPLETED' : 'IN PROGRESS'}
+                                </span>
+
+                                {assessments.length > 0 && !isCompleted && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab('assessment')}
+                                        className="bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs px-3.5 py-2 rounded-lg transition-colors"
+                                    >
+                                        Take Final Assessment
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Celebration Banner */}
                     {isCompleted && (
-                        <div className="bg-[#10B981] text-white p-3.5 sm:p-4 rounded-md font-bold text-xs sm:text-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
+                        <div className="bg-[#10B981] text-white p-3 rounded-xl font-bold text-xs sm:text-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5">
                                 <CircleCheckIcon className="w-5 h-5 text-white shrink-0" />
                                 <span>
                                     Course Completed! You have passed the Final Assessment with 100%. Your verified record is issued.
@@ -802,7 +1296,7 @@ export default function Learn({
                             </div>
                             <Link
                                 href={route('learner.course.certificate', course.id)}
-                                className="inline-flex items-center justify-center gap-1.5 bg-[#111827] hover:bg-white hover:text-[#111827] text-white font-bold text-xs px-3.5 sm:px-4 py-1.5 sm:py-2 rounded shrink-0 transition-colors duration-200"
+                                className="inline-flex items-center justify-center gap-1.5 bg-[#0F172A] hover:bg-white hover:text-[#0F172A] text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shrink-0 transition-colors"
                             >
                                 <span>🎓 View &amp; Download Certificate PDF</span>
                             </Link>
@@ -810,8 +1304,8 @@ export default function Learn({
                     )}
                 </div>
 
-                {/* edX Horizontal Sub-Navigation Tabs */}
-                <div className="w-full max-w-full overflow-x-auto no-scrollbar flex items-center justify-start gap-1 sm:gap-4 border-b-2 border-[#E5E7EB] bg-white px-2.5 sm:px-6">
+                {/* Horizontal Course Sub-Navigation Tabs */}
+                <div className="w-full max-w-full overflow-x-auto no-scrollbar flex items-center justify-start gap-1 sm:gap-3 border border-[#E2E8F0] rounded-xl bg-white px-3 sm:px-5">
                     {[
                         { id: 'course', shortLabel: 'Course', label: 'Course' },
                         { id: 'dates', shortLabel: 'Dates', label: 'Dates' },
@@ -827,10 +1321,10 @@ export default function Learn({
                                 role="tab"
                                 aria-selected={active}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`text-xs sm:text-sm whitespace-nowrap transition-colors py-2.5 sm:py-3 px-2 sm:px-3 min-h-[40px] sm:min-h-[44px] flex items-center shrink-0 ${
+                                className={`text-xs sm:text-sm whitespace-nowrap transition-colors py-2.5 px-2.5 sm:px-3 min-h-[40px] flex items-center shrink-0 ${
                                     active
-                                        ? 'border-b-4 border-[#111827] font-bold text-[#111827]'
-                                        : 'text-gray-500 hover:text-[#111827] font-semibold border-b-4 border-transparent'
+                                        ? 'border-b-2 border-[#2563EB] font-extrabold text-[#2563EB]'
+                                        : 'text-[#64748B] hover:text-[#0F172A] font-semibold border-b-2 border-transparent'
                                 }`}
                             >
                                 <span className="sm:hidden">{tab.shortLabel}</span>
@@ -840,14 +1334,13 @@ export default function Learn({
                     })}
                 </div>
 
-                {/* Tab 1: Course (3-Zone Theater Player + Curriculum) */}
+                {/* Tab 1: Course (Single-Screen Workspace + Curriculum Sidebar) */}
                 {activeTab === 'course' && (
-                    <div className="space-y-6">
-                        {/* Theater Grid (Video-First on Mobile: order-1 for Stage, order-2 for Curriculum) */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                             {/* Left Curriculum Outline (order-2 lg:order-1 lg:col-span-3) */}
                             <div
-                                className={`order-2 lg:order-1 lg:col-span-3 space-y-4 ${
+                                className={`order-2 lg:order-1 lg:col-span-3 space-y-3 ${
                                     desktopSidebarOpen ? '' : 'lg:hidden'
                                 }`}
                             >
@@ -856,32 +1349,32 @@ export default function Learn({
                                     <button
                                         type="button"
                                         onClick={() => setMobileCurriculumOpen((v) => !v)}
-                                        className="w-full flex items-center justify-between px-4 py-2.5 bg-white border-2 border-[#E5E7EB] rounded-md text-xs font-extrabold text-[#111827] hover:border-[#111827] transition-colors min-h-[44px]"
+                                        className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-xs font-extrabold text-[#0F172A] hover:border-[#2563EB] transition-colors min-h-[42px]"
                                     >
                                         <span className="flex items-center gap-2">
                                             <span>📑</span>
                                             <span>Course Curriculum ({modules.length} Modules)</span>
                                         </span>
-                                        <span className="text-gray-500 font-bold">{mobileCurriculumOpen ? '▲ Hide' : '▼ View Curriculum'}</span>
+                                        <span className="text-[#64748B] font-bold">{mobileCurriculumOpen ? '▲ Hide' : '▼ View Curriculum'}</span>
                                     </button>
                                 </div>
 
-                                <div className={`${mobileCurriculumOpen ? 'block' : 'hidden'} lg:block bg-white border-2 border-[#E5E7EB] rounded-lg p-4`}>
-                                    <div className="flex items-center justify-between pb-3 mb-3 border-b-2 border-[#E5E7EB]">
-                                        <h3 className="font-display font-extrabold text-sm text-[#111827] uppercase tracking-wider">
+                                <div className={`${mobileCurriculumOpen ? 'block' : 'hidden'} lg:block bg-white border border-[#E2E8F0] rounded-xl p-4`}>
+                                    <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-[#E2E8F0]">
+                                        <h3 className="font-display font-extrabold text-xs text-[#0F172A] uppercase tracking-wider">
                                             Curriculum ({modules.length} Modules)
                                         </h3>
-                                        <span className="text-xs text-gray-500 font-semibold">
+                                        <span className="text-[11px] text-[#64748B] font-semibold">
                                             Click to open
                                         </span>
                                     </div>
 
                                     {modules.length === 0 ? (
-                                        <p className="text-xs text-gray-500 py-4 text-center">
+                                        <p className="text-xs text-[#64748B] py-4 text-center">
                                             No modules added to this course yet.
                                         </p>
                                     ) : (
-                                        <div className="space-y-2.5">
+                                        <div className="space-y-2">
                                             {modules.map((m, idx) => {
                                                 const isActive = m.id === activeModuleId;
                                                 const mLessons = m.lessons || [];
@@ -894,10 +1387,10 @@ export default function Learn({
                                                         {/* Parent Chapter Bar */}
                                                         <div
                                                             onClick={() => goToModule(m.id)}
-                                                            className={`p-3 rounded-md border-2 transition-colors cursor-pointer flex items-start gap-3 ${
+                                                            className={`p-2.5 rounded-xl transition-colors cursor-pointer flex items-start gap-2.5 ${
                                                                 isActive
-                                                                    ? 'border-[#111827] bg-[#F3F4F6]'
-                                                                    : 'border-[#E5E7EB] bg-white hover:border-gray-400'
+                                                                    ? 'border-2 border-[#2563EB] bg-[#EFF6FF]/60'
+                                                                    : 'border border-[#E2E8F0] bg-white hover:border-[#CBD5E1]'
                                                             }`}
                                                         >
                                                             {/* Module Checkbox / Status Indicator */}
@@ -924,12 +1417,12 @@ export default function Learn({
                                                                         ? 'Mark incomplete'
                                                                         : 'Mark complete'
                                                                 }
-                                                                className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                                                className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
                                                                     isChecked
                                                                         ? 'bg-[#10B981] border-[#10B981] text-white'
                                                                         : doneSubCount > 0
                                                                         ? 'bg-emerald-50 border-[#10B981] text-[#065F46]'
-                                                                        : 'bg-white border-gray-400 hover:border-[#111827]'
+                                                                        : 'bg-white border-[#CBD5E1] hover:border-[#2563EB]'
                                                                 }`}
                                                             >
                                                                 {isChecked ? (
@@ -941,15 +1434,15 @@ export default function Learn({
 
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center justify-between gap-1">
-                                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
                                                                         Chapter {idx + 1}
                                                                     </span>
                                                                     {isChecked ? (
-                                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pop">
+                                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
                                                                             ✓ DONE
                                                                         </span>
                                                                     ) : mLessons.length > 0 ? (
-                                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-gray-100 text-gray-700 border border-gray-300">
+                                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0]">
                                                                             {doneSubCount}/{mLessons.length} DONE
                                                                         </span>
                                                                     ) : (
@@ -957,7 +1450,7 @@ export default function Learn({
                                                                             className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider border ${
                                                                                 isEmbed
                                                                                     ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                                                                    : 'bg-gray-100 text-gray-700 border-gray-300'
+                                                                                    : 'bg-gray-100 text-gray-700 border-gray-200'
                                                                             }`}
                                                                         >
                                                                             {isEmbed ? 'EMBED' : 'LINK'}
@@ -966,7 +1459,7 @@ export default function Learn({
                                                                 </div>
                                                                 <p
                                                                     className={`text-xs font-bold truncate mt-0.5 ${
-                                                                        isActive ? 'text-[#111827]' : 'text-gray-800'
+                                                                        isActive ? 'text-[#1E40AF]' : 'text-[#0F172A]'
                                                                     }`}
                                                                 >
                                                                     {m.title}
@@ -976,7 +1469,7 @@ export default function Learn({
 
                                                         {/* Subtopics Tree Stack Under Chapter Bar */}
                                                         {mLessons.length > 0 && (
-                                                            <div className="ml-4 pl-3 border-l-2 border-[#111827] space-y-1.5">
+                                                            <div className="ml-3.5 pl-2.5 border-l border-[#CBD5E1] space-y-1">
                                                                 {mLessons.map((lesson, lIdx) => {
                                                                     const isSubDone = doneLessonSet.has(lesson.id);
                                                                     const isCurrentLesson = isActive && selectedLesson?.id === lesson.id;
@@ -989,10 +1482,10 @@ export default function Learn({
                                                                         <div
                                                                             key={lesson.id}
                                                                             onClick={() => selectSubtopic(m.id, lesson)}
-                                                                            className={`p-2 rounded border-2 transition-colors cursor-pointer flex items-center justify-between gap-2 ${
+                                                                            className={`p-2 rounded-lg transition-colors cursor-pointer flex items-center justify-between gap-2 ${
                                                                                 isCurrentLesson
-                                                                                    ? 'border-[#111827] bg-blue-50 text-[#111827]'
-                                                                                    : 'border-[#E5E7EB] bg-white hover:border-gray-400 text-gray-700'
+                                                                                    ? 'border-2 border-[#2563EB] bg-[#EFF6FF] text-[#0F172A]'
+                                                                                    : 'border border-[#E2E8F0] bg-white hover:border-[#CBD5E1] text-[#334155]'
                                                                             }`}
                                                                         >
                                                                             <div className="flex items-center gap-2 min-w-0">
@@ -1000,21 +1493,21 @@ export default function Learn({
                                                                                     type="button"
                                                                                     onClick={(e) => toggleLessonCheck(m.id, lesson.id, e)}
                                                                                     title={isSubDone ? 'Untick subtopic' : 'Tick subtopic complete'}
-                                                                                    className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                                                                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
                                                                                         isSubDone
                                                                                             ? 'bg-[#10B981] border-[#10B981] text-white'
-                                                                                            : 'bg-white border-gray-400 hover:border-[#111827]'
+                                                                                            : 'bg-white border-[#CBD5E1] hover:border-[#2563EB]'
                                                                                     }`}
                                                                                 >
                                                                                     {isSubDone && <CheckIcon className="w-3 h-3 text-white" />}
                                                                                 </button>
                                                                                 <div className="min-w-0">
-                                                                                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-gray-500 block">
+                                                                                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#64748B] block">
                                                                                         Subtopic {idx + 1}.{lIdx + 1}
                                                                                     </span>
                                                                                     <span
                                                                                         className={`text-[11px] truncate block ${
-                                                                                            isCurrentLesson ? 'font-extrabold text-[#111827]' : 'font-semibold text-gray-800'
+                                                                                            isCurrentLesson ? 'font-extrabold text-[#1E40AF]' : 'font-semibold text-[#334155]'
                                                                                         }`}
                                                                                     >
                                                                                         {lesson.title}
@@ -1024,12 +1517,12 @@ export default function Learn({
                                                                             <span
                                                                                 className={`shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${
                                                                                     isSubDone
-                                                                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                                                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                                                                                         : isPdf
                                                                                         ? 'bg-rose-50 text-rose-700 border-rose-200'
                                                                                         : isVideo
                                                                                         ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                                                                        : 'bg-gray-100 text-gray-700 border-gray-300'
+                                                                                        : 'bg-gray-100 text-gray-700 border-gray-200'
                                                                                 }`}
                                                                             >
                                                                                 {isSubDone ? '✓' : pillLabel}
@@ -1042,19 +1535,16 @@ export default function Learn({
                                                     </div>
                                                 );
                                             })}
-                                            <p className="text-[11px] text-gray-500 font-medium px-1 pt-1.5 border-t border-[#E5E7EB]">
-                                                Click any subtopic in the tree to view its material, or tick off individual subtopics as you complete them.
-                                            </p>
                                         </div>
                                     )}
 
                                     {/* Bottom Assessment Jump Button */}
                                     {assessments.length > 0 && (
-                                        <div className="mt-4 pt-3 border-t-2 border-[#E5E7EB]">
+                                        <div className="mt-3 pt-3 border-t border-[#E2E8F0]">
                                             <button
                                                 type="button"
                                                 onClick={() => setActiveTab('assessment')}
-                                                className="w-full bg-[#111827] hover:bg-gray-800 text-white font-bold text-xs py-2.5 px-3 rounded flex items-center justify-between transition-transform active:scale-[0.98]"
+                                                className="w-full bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs py-2.5 px-3 rounded-lg flex items-center justify-between transition-colors"
                                             >
                                                 <span>Final Assessment ({assessments.length} Questions)</span>
                                                 <ArrowRightIcon className="w-3.5 h-3.5" />
@@ -1063,20 +1553,20 @@ export default function Learn({
                                     )}
 
                                     {/* Official Certificate Tree Item */}
-                                    <div className="mt-3 pt-3 border-t-2 border-[#E5E7EB]">
+                                    <div className="mt-2.5 pt-2.5 border-t border-[#E2E8F0]">
                                         {isCompleted ? (
                                             <Link
                                                 href={route('learner.course.certificate', course.id)}
-                                                className="w-full p-2.5 rounded-md border-2 border-[#10B981] bg-emerald-50 hover:bg-emerald-100 text-[#10B981] font-bold text-xs flex items-center justify-between transition-colors"
+                                                className="w-full p-2.5 rounded-lg border border-[#10B981] bg-emerald-50 hover:bg-emerald-100 text-[#065F46] font-bold text-xs flex items-center justify-between transition-colors"
                                             >
                                                 <div className="flex items-center gap-2 min-w-0">
                                                     <span className="text-sm">🎓</span>
                                                     <span className="truncate">Official Certificate</span>
                                                 </div>
-                                                <span className="text-[10px] font-extrabold uppercase shrink-0">View & Download 1-Page PDF →</span>
+                                                <span className="text-[10px] font-extrabold uppercase shrink-0">View &amp; Download 1-Page PDF →</span>
                                             </Link>
                                         ) : (
-                                            <div className="w-full p-2.5 rounded-md border-2 border-dashed border-[#E5E7EB] bg-[#F9FAFB] text-gray-500 font-semibold text-xs flex items-center gap-2">
+                                            <div className="w-full p-2.5 rounded-lg border border-dashed border-[#CBD5E1] bg-[#F8FAFC] text-[#64748B] font-semibold text-xs flex items-center gap-2">
                                                 <span className="text-sm">🔒</span>
                                                 <span className="text-[11px] leading-tight">Pass Final Exam (100%) to unlock certificate</span>
                                             </div>
@@ -1085,27 +1575,28 @@ export default function Learn({
                                 </div>
                             </div>
 
-                            {/* Center/Right Learning Stage (order-1 on Mobile, order-2 on Desktop) */}
+                            {/* Center/Right Single-Screen Learning Stage */}
                             <div
                                 className={`order-1 lg:order-2 ${
                                     desktopSidebarOpen ? 'lg:col-span-9' : 'lg:col-span-12'
-                                } space-y-6`}
+                                } space-y-4`}
                             >
                                 {activeModule ? (
                                     <div
                                         id="course-stage-top"
-                                        className="scroll-mt-24 bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden"
+                                        className="scroll-mt-20 bg-white border border-[#E2E8F0] rounded-xl overflow-hidden"
                                     >
-                                        {/* 3-Step Sequential Progress Header Bar */}
+                                        {/* Step Tab Bar (4 Steps for School Mode, 3 Steps for Certification Mode) */}
                                         <div
-                                            className="grid grid-cols-3 border-b-2 border-[#111827] bg-[#F8FAFC] divide-x-2 divide-[#111827]"
+                                            className={`grid ${
+                                                isKssrCourse ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'
+                                            } border-b border-[#E2E8F0] bg-[#F8FAFC] divide-x divide-[#E2E8F0]`}
                                             role="tablist"
                                             aria-label="Chapter learning steps"
                                         >
-                                            {CHAPTER_STEPS.map((step, sIdx) => {
+                                            {activeChapterSteps.map((step, sIdx) => {
                                                 const isActiveStep = chapterStep === step.key;
-                                                const activeStepIdx = CHAPTER_STEPS.findIndex((s) => s.key === chapterStep);
-                                                const isPastStep = sIdx < activeStepIdx;
+                                                const isPastStep = sIdx < activeStepIndex;
 
                                                 return (
                                                     <button
@@ -1114,26 +1605,26 @@ export default function Learn({
                                                         role="tab"
                                                         aria-selected={isActiveStep}
                                                         onClick={() => goToStep(step.key)}
-                                                        className={`px-4 py-3.5 text-left sm:text-center transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-center gap-2 ${
+                                                        className={`px-3 py-3 text-left sm:text-center transition-colors flex items-center justify-center gap-2 ${
                                                             isActiveStep
-                                                                ? 'bg-[#111827] text-white font-extrabold'
+                                                                ? 'bg-[#EFF6FF] text-[#1D4ED8] border-b-2 border-b-[#2563EB] font-extrabold'
                                                                 : isPastStep
-                                                                ? 'bg-[#ECFDF5] text-[#065F46] hover:bg-emerald-100 font-bold'
-                                                                : 'bg-[#F8FAFC] text-gray-600 hover:bg-gray-100 font-bold'
+                                                                ? 'bg-[#ECFDF5]/60 text-[#065F46] hover:bg-[#ECFDF5] font-bold'
+                                                                : 'bg-[#F8FAFC] text-[#475569] hover:bg-[#F1F5F9] font-bold'
                                                         }`}
                                                     >
                                                         <span
-                                                            className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 border ${
+                                                            className={`w-5 h-5 rounded-full text-[11px] font-black flex items-center justify-center shrink-0 border ${
                                                                 isActiveStep
-                                                                    ? 'bg-[#10B981] text-white border-[#10B981]'
+                                                                    ? 'bg-[#2563EB] text-white border-[#2563EB]'
                                                                     : isPastStep
                                                                     ? 'bg-[#10B981] text-white border-[#10B981]'
-                                                                    : 'bg-white text-[#111827] border-gray-300'
+                                                                    : 'bg-white text-[#475569] border-[#CBD5E1]'
                                                             }`}
                                                         >
                                                             {isPastStep ? '✓' : sIdx + 1}
                                                         </span>
-                                                        <span className="text-xs sm:text-sm leading-tight">
+                                                        <span className="text-xs sm:text-sm leading-tight truncate">
                                                             <span className="hidden sm:inline">{step.label}</span>
                                                             <span className="sm:hidden">{step.shortLabel}</span>
                                                         </span>
@@ -1142,17 +1633,20 @@ export default function Learn({
                                             })}
                                         </div>
 
-                                        <div className="p-6 sm:p-8 space-y-6">
-                                            {/* Module Header */}
-                                            <div className="space-y-2 pb-5 border-b-2 border-[#E5E7EB]">
+                                        <div className="p-4 sm:p-6 space-y-4">
+                                            {/* Compact 1-Line Module & Subtopic Header */}
+                                            <div className="space-y-2 pb-3 border-b border-[#E2E8F0]">
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                                                        <span className="text-[11px] font-extrabold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md uppercase tracking-wider">
                                                             Chapter {activeIndex + 1} of {modules.length}
-                                                            {selectedLesson && activeLessonIndex >= 0
-                                                                ? ` · Subtopic ${activeLessonIndex + 1} of ${activeLessons.length}`
-                                                                : ''}
                                                         </span>
+                                                        <h2 className="font-display font-extrabold text-base sm:text-xl text-[#0F172A] truncate">
+                                                            {activeModule.title}
+                                                        </h2>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 shrink-0">
                                                         <button
                                                             type="button"
                                                             onClick={toggleCurrentViewComplete}
@@ -1161,10 +1655,10 @@ export default function Learn({
                                                                     ? 'Click to untick current subtopic'
                                                                     : 'Click to tick current subtopic complete'
                                                             }
-                                                            className={`px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase border transition-colors cursor-pointer ${
+                                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold uppercase border transition-colors cursor-pointer ${
                                                                 isCurrentViewDone
                                                                     ? 'bg-[#ECFDF5] text-[#065F46] border-[#10B981] hover:bg-emerald-100'
-                                                                    : 'bg-white text-gray-700 border-gray-300 hover:border-[#111827]'
+                                                                    : 'bg-white text-[#475569] border-[#CBD5E1] hover:border-[#2563EB]'
                                                             }`}
                                                         >
                                                             {isCurrentViewDone
@@ -1173,49 +1667,57 @@ export default function Learn({
                                                                     : '✓ Completed'
                                                                 : '☐ Tick Complete'}
                                                         </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setDesktopSidebarOpen((v) => !v)}
+                                                            className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#E2E8F0] hover:border-[#2563EB] bg-[#F8FAFC] text-[11px] font-bold text-[#0F172A] transition-colors cursor-pointer"
+                                                        >
+                                                            <span>{desktopSidebarOpen ? '◀ Expand Page' : '▶ Show Curriculum'}</span>
+                                                        </button>
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setDesktopSidebarOpen((v) => !v)}
-                                                        className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1 rounded border-2 border-[#E5E7EB] hover:border-[#111827] bg-[#F8FAFC] text-[11px] font-extrabold uppercase text-[#111827] transition-colors cursor-pointer"
-                                                    >
-                                                        <span>{desktopSidebarOpen ? '◀ Expand Page' : '▶ Show Curriculum'}</span>
-                                                    </button>
                                                 </div>
-                                                <h2 className="font-display font-extrabold text-2xl sm:text-3xl text-[#111827]">
-                                                    {activeModule.title}
-                                                </h2>
-                                                {selectedLesson && (
-                                                    <p className="text-xs sm:text-sm font-extrabold text-[#2563EB]">
-                                                        Active Subtopic: {selectedLesson.title}
-                                                    </p>
-                                                )}
-                                                {activeModule.description && (
-                                                    <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
-                                                        {activeModule.description}
-                                                    </p>
+
+                                                {/* Quick Subtopic Switcher Pills */}
+                                                {activeLessons.length > 0 && (
+                                                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                                        {activeLessons.map((lesson, lIdx) => {
+                                                            const isSelectedSub = selectedLesson?.id === lesson.id;
+                                                            const isSubDone = doneLessonSet.has(lesson.id);
+                                                            return (
+                                                                <button
+                                                                    key={lesson.id}
+                                                                    type="button"
+                                                                    onClick={() => selectSubtopic(activeModule.id, lesson)}
+                                                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 ${
+                                                                        isSelectedSub
+                                                                            ? 'border-2 border-[#2563EB] bg-[#EFF6FF] text-[#1E40AF] font-extrabold'
+                                                                            : 'border border-[#E2E8F0] bg-[#F8FAFC] text-[#475569] hover:border-[#CBD5E1]'
+                                                                    }`}
+                                                                >
+                                                                    <span>{isSubDone ? '✓' : `${activeIndex + 1}.${lIdx + 1}`}</span>
+                                                                    <span className="truncate max-w-[200px] sm:max-w-xs">{lesson.title}</span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 )}
                                             </div>
 
                                             {/* Auto-Completed Flat Toast Banner */}
                                             {autoCompletedNotice && autoCompletedNotice.moduleId === activeModule.id && (
-                                                <div className="bg-[#10B981] text-white p-4 rounded-md font-bold text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in border-2 border-[#10B981]">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="w-7 h-7 rounded-full bg-white text-[#10B981] flex items-center justify-center font-black text-sm shrink-0">
+                                                <div className="bg-[#ECFDF5] text-[#065F46] p-3 rounded-xl font-bold text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-[#10B981]">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className="w-6 h-6 rounded-full bg-[#10B981] text-white flex items-center justify-center font-black text-xs shrink-0">
                                                             ✓
                                                         </span>
                                                         <div>
-                                                            <p className="font-extrabold text-sm text-white">
+                                                            <p className="font-extrabold text-xs text-[#065F46]">
                                                                 {autoCompletedNotice.lessonId
-                                                                    ? autoCompletedNotice.manual
-                                                                        ? 'Subtopic Marked Complete!'
-                                                                        : 'Subtopic Completed Automatically!'
-                                                                    : autoCompletedNotice.manual
-                                                                    ? 'Chapter Marked Complete!'
-                                                                    : 'Chapter Completed Automatically!'}
+                                                                    ? 'Subtopic Marked Complete! (+25 XP)'
+                                                                    : 'Chapter Marked Complete! (+50 XP)'}
                                                             </p>
-                                                            <p className="text-xs text-emerald-100 font-medium">
-                                                                "{autoCompletedNotice.title}" has been ticked off. Progress updated in your records.
+                                                            <p className="text-[11px] text-[#047857]">
+                                                                "{autoCompletedNotice.title}" has been ticked off.
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1230,7 +1732,7 @@ export default function Learn({
                                                                 }
                                                                 setAutoCompletedNotice(null);
                                                             }}
-                                                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#111827] hover:bg-gray-800 text-white rounded text-xs font-extrabold shrink-0 transition-transform active:scale-[0.98]"
+                                                            className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-[#10B981] hover:bg-[#059669] text-white rounded-lg text-xs font-extrabold shrink-0"
                                                         >
                                                             <span>
                                                                 {nextLesson
@@ -1246,7 +1748,6 @@ export default function Learn({
                                             {/* STEP 1: WATCH & MATERIALS */}
                                             {chapterStep === 'watch' && (
                                                 <div id="course-media-stage" className="scroll-mt-6 space-y-4">
-                                                    {/* Video Player / PDF Viewer */}
                                                     {activeSafeUrl ? (
                                                         <VideoPlayer
                                                             key={`${activeSafeUrl}_${activeContentType}`}
@@ -1254,22 +1755,25 @@ export default function Learn({
                                                             mediaUrl={activeSafeUrl}
                                                             activeTitle={activeMediaTitle}
                                                             contentType={activeContentType}
+                                                            popupQuiz={activeModuleQuizzes[0] || assessments[0] || null}
+                                                            isKidTheme={isKssrCourse}
+                                                            onCheckpointPass={(amt, lbl) => awardXp(amt, lbl)}
                                                             onEnded={() => handleAutoVideoComplete(activeModule)}
                                                         />
                                                     ) : (
-                                                        <div className="bg-white border-2 border-[#E5E7EB] rounded-md p-8 text-center space-y-2">
+                                                        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-8 text-center space-y-2">
                                                             <BookOpenIcon className="w-10 h-10 text-gray-400 mx-auto" />
-                                                            <h3 className="font-display font-bold text-base text-[#111827]">
-                                                                Lecture Notes & Content
+                                                            <h3 className="font-display font-bold text-base text-[#0F172A]">
+                                                                Lecture Notes &amp; Content
                                                             </h3>
-                                                            <p className="text-xs text-gray-500 max-w-md mx-auto">
-                                                                No external media URL attached to this chapter. Proceed to Step 2 to read the study guide and take notes.
+                                                            <p className="text-xs text-[#64748B] max-w-md mx-auto">
+                                                                No external media URL attached to this chapter. Proceed to the next step to continue learning.
                                                             </p>
                                                         </div>
                                                     )}
 
-                                                    {/* Step 1 Bottom Sequential Bar */}
-                                                    <div className="pt-4 border-t-2 border-[#E5E7EB] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                                    {/* Step 1 Sticky Footer Bar */}
+                                                    <div className="pt-3 border-t border-[#E2E8F0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                                                         <button
                                                             type="button"
                                                             disabled={!prevModule}
@@ -1280,317 +1784,405 @@ export default function Learn({
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => goToStep('guide')}
+                                                            onClick={() => goToStep(isKssrCourse ? 'interact' : 'guide')}
                                                             className={BTN_PRIMARY}
                                                         >
-                                                            <span>Next: Study Guide & Notes →</span>
+                                                            <span>
+                                                                {isKssrCourse
+                                                                    ? 'Next: 🎮 Aktiviti Interaktif →'
+                                                                    : 'Next: Study Guide & Notes →'}
+                                                            </span>
                                                         </button>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {/* STEP 2: STUDY GUIDE & NOTES (Wide Spacious Reading Layout) */}
-                                            {chapterStep === 'guide' && (
-                                                <div className="space-y-6">
-                                                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-                                                        {/* Left 8 Cols: Spacious Full-Height Article & Study Guide */}
-                                                        <div className="xl:col-span-8 bg-[#FAFBFD] border-2 border-[#E5E7EB] rounded-lg p-6 sm:p-8 flex flex-col">
-                                                            <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b-2 border-[#E5E7EB]">
-                                                                <div className="flex items-center gap-2.5">
-                                                                    <span className="text-xs font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200 px-2.5 py-1 rounded">
-                                                                        📖 ARTICLE & STUDY GUIDE
-                                                                    </span>
-                                                                    {activeArticleContent && (
-                                                                        <span className="text-xs font-bold text-gray-500">
-                                                                            ~{Math.max(1, Math.ceil(activeArticleContent.split(/\s+/).length / 180))} min read
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <span className="text-xs font-semibold text-gray-500">
-                                                                    Verified Curriculum Material
-                                                                </span>
-                                                            </div>
+                                            {/* STEP 2 (SCHOOL MODE): INTERACTIVE TEXTBOOK MANIPULATIVES */}
+                                            {chapterStep === 'interact' && (
+                                                <div className="space-y-4">
+                                                    <MathPlayground
+                                                        yearLevel={kssrYearLevel}
+                                                        moduleIndex={activeIndex}
+                                                        onEarnXp={awardXp}
+                                                        onCompleteStep={() => goToStep('guide')}
+                                                    />
 
-                                                            <h3 className="font-display font-extrabold text-lg sm:text-xl text-[#111827] mt-4 mb-3">
-                                                                {activeArticleTitle}
-                                                            </h3>
-
-                                                            <div className="pt-1">
-                                                                {activeArticleContent ? (
-                                                                    <FormattedGuide text={activeArticleContent} />
-                                                                ) : (
-                                                                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
-                                                                        {activeModule.description || 'Review the video materials in Step 1 and record your key takeaways in the Quick Study Notes panel.'}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Right 4 Cols: Quick Study Notes */}
-                                                        <div className="xl:col-span-4 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
-                                                            <div className="flex items-center justify-between gap-2">
-                                                                <h3 className="font-display font-extrabold text-base text-[#111827]">
-                                                                    Quick Study Notes
-                                                                </h3>
-                                                                <div className="flex items-center gap-2">
-                                                                    {notesStatusText ? (
-                                                                        <span className="text-xs text-[#10B981] font-bold">
-                                                                            {notesStatusText}
-                                                                        </span>
-                                                                    ) : (
-                                                                        notesSavedNotice && (
-                                                                            <span className="text-xs text-[#10B981] font-bold">
-                                                                                Saved locally ✓
-                                                                            </span>
-                                                                        )
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <textarea
-                                                                rows={12}
-                                                                value={courseNotes}
-                                                                onChange={handleNotesChange}
-                                                                placeholder="Type your key takeaways here while reading the study guide..."
-                                                                className="w-full p-3.5 bg-white border-2 border-[#E5E7EB] rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:outline-none focus:border-[#111827]"
-                                                            />
-                                                            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={saveNotesExplicit}
-                                                                    disabled={isSavingNotes}
-                                                                    className="px-4 py-2 bg-[#111827] hover:bg-gray-800 text-white font-extrabold text-xs rounded transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
-                                                                >
-                                                                    {isSavingNotes ? 'Saving...' : 'Save Notes'}
-                                                                </button>
-                                                                <span className="text-xs text-gray-500">
-                                                                    Auto-saves on keystroke
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Step 2 Bottom Sequential Bar */}
-                                                    <div className="pt-4 border-t-2 border-[#E5E7EB] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                                    <div className="pt-3 border-t border-[#E2E8F0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                                                         <button
                                                             type="button"
                                                             onClick={() => goToStep('watch')}
                                                             className={BTN_SECONDARY}
                                                         >
-                                                            <span>← Back to Video</span>
+                                                            <span>← Kembali ke Video</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => goToStep('guide')}
+                                                            className={BTN_PRIMARY}
+                                                        >
+                                                            <span>Seterusnya: 📖 Nota Ringkas →</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* STEP 3 (OR STEP 2 IN CERT MODE): SINGLE-SCREEN STUDY GUIDE + COLLAPSIBLE QUICK NOTES DRAWER */}
+                                            {chapterStep === 'guide' && (
+                                                <div className="space-y-4">
+                                                    <div className="rounded-xl border border-[#E2E8F0] bg-[#FAFBFD] p-4 sm:p-6 space-y-4">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#E2E8F0]">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[11px] font-black uppercase tracking-wider bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] px-2.5 py-1 rounded-lg">
+                                                                    📖 {isKssrCourse ? 'NOTA RINGKAS BUKU TEKS KPM' : 'ARTICLE & STUDY GUIDE'}
+                                                                </span>
+                                                                {activeArticleContent && (
+                                                                    <span className="text-xs font-bold text-[#64748B]">
+                                                                        ~{Math.max(1, Math.ceil(activeArticleContent.split(/\s+/).length / 180))} min read
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowNotesDrawer((v) => !v)}
+                                                                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold border transition-colors inline-flex items-center gap-1.5 ${
+                                                                    showNotesDrawer
+                                                                        ? 'bg-[#2563EB] text-white border-[#2563EB]'
+                                                                        : 'bg-white text-[#0F172A] border-[#CBD5E1] hover:border-[#2563EB]'
+                                                                }`}
+                                                            >
+                                                                <span>📝</span>
+                                                                <span>{showNotesDrawer ? 'Hide Quick Notes' : 'Quick Study Notes'}</span>
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Collapsible Quick Study Notes Drawer */}
+                                                        {showNotesDrawer && (
+                                                            <div className="bg-white border border-[#CBD5E1] rounded-xl p-4 space-y-3">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <h4 className="font-display font-extrabold text-sm text-[#0F172A]">
+                                                                        Quick Study Notes
+                                                                    </h4>
+                                                                    <div className="flex items-center gap-2">
+                                                                        {notesStatusText ? (
+                                                                            <span className="text-xs text-[#10B981] font-bold">
+                                                                                {notesStatusText}
+                                                                            </span>
+                                                                        ) : (
+                                                                            notesSavedNotice && (
+                                                                                <span className="text-xs text-[#10B981] font-bold">
+                                                                                    Saved locally ✓
+                                                                                </span>
+                                                                            )
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <textarea
+                                                                    rows={4}
+                                                                    value={courseNotes}
+                                                                    onChange={handleNotesChange}
+                                                                    placeholder="Type your key takeaways here while reading the study guide..."
+                                                                    className="w-full p-3 bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg text-sm text-[#0F172A] placeholder:text-gray-400 focus:outline-none focus:border-[#2563EB] focus:bg-white"
+                                                                />
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={saveNotesExplicit}
+                                                                        disabled={isSavingNotes}
+                                                                        className="px-3.5 py-1.5 bg-[#0F172A] hover:bg-[#1E293B] text-white font-extrabold text-xs rounded-lg transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        {isSavingNotes ? 'Saving...' : 'Save Notes'}
+                                                                    </button>
+                                                                    <span className="text-[11px] text-[#64748B]">
+                                                                        Auto-saves on keystroke
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Single-Viewport Scrollable Study Guide Body */}
+                                                        <div className="max-h-[54vh] overflow-y-auto pr-1 space-y-3">
+                                                            <h3 className="font-display font-extrabold text-base sm:text-lg text-[#0F172A]">
+                                                                {activeArticleTitle}
+                                                            </h3>
+                                                            {activeArticleContent ? (
+                                                                <FormattedGuide
+                                                                    text={activeArticleContent}
+                                                                    className={
+                                                                        isKssrCourse
+                                                                            ? '!text-base font-semibold text-[#0F172A]'
+                                                                            : ''
+                                                                    }
+                                                                />
+                                                            ) : (
+                                                                <p className="text-sm text-[#475569] leading-relaxed">
+                                                                    {activeModule.description || 'Review the materials in Step 1 and record your key takeaways in Quick Study Notes.'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Step Guide Bottom Bar */}
+                                                    <div className="pt-3 border-t border-[#E2E8F0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => goToStep(isKssrCourse ? 'interact' : 'watch')}
+                                                            className={BTN_SECONDARY}
+                                                        >
+                                                            <span>
+                                                                {isKssrCourse ? '← Kembali ke Aktiviti' : '← Back to Video'}
+                                                            </span>
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => goToStep('quiz')}
                                                             className={BTN_PRIMARY}
                                                         >
-                                                            <span>Next: Take Chapter Mini-Quiz →</span>
+                                                            <span>
+                                                                {isKssrCourse
+                                                                    ? 'Next: 📝 Latihan Kertas & Kuiz →'
+                                                                    : 'Next: Take Chapter Mini-Quiz →'}
+                                                            </span>
                                                         </button>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {/* STEP 3: MINI-QUIZ & COMPLETE */}
+                                            {/* STEP 4 (OR STEP 3 IN CERT MODE): PRACTICE QUIZ & HYBRID PAPER SCAN */}
                                             {chapterStep === 'quiz' && (
-                                                <div className="space-y-5">
-                                                    {activeModuleQuizzes.length > 0 ? (
-                                                        <div className="bg-emerald-50/40 border-2 border-[#A7F3D0] rounded-lg p-5 sm:p-6 space-y-4">
-                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#A7F3D0]">
-                                                                <div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2.5 py-0.5 rounded">
-                                                                            MINI-QUIZ PRACTICE
-                                                                        </span>
-                                                                        <span className="text-xs font-bold text-emerald-950">
-                                                                            {activeModuleQuizzes.length} {activeModuleQuizzes.length === 1 ? 'Question' : 'Questions'}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-xs text-gray-600 mt-1">
-                                                                        Formative self-check for {activeModule?.title}. Select an answer for each question to test your understanding.
-                                                                    </p>
-                                                                </div>
-                                                                {miniChecked && (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span
-                                                                            className={`text-xs font-extrabold px-2.5 py-1 rounded border ${
-                                                                                miniChecked.score === 100
-                                                                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                                                                    : 'bg-amber-100 text-amber-800 border-amber-300'
-                                                                            }`}
-                                                                        >
-                                                                            Score: {miniChecked.correct} / {miniChecked.total} ({miniChecked.score}%)
-                                                                        </span>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={resetMiniQuiz}
-                                                                            className="text-xs font-bold text-gray-600 hover:text-gray-900 underline"
-                                                                        >
-                                                                            ↻ Try Again
-                                                                        </button>
-                                                                    </div>
-                                                                )}
+                                                <div className="space-y-4">
+                                                    {/* Sub-Toggle for School Mode so Mini-Quiz and Paper Scan never stack vertically */}
+                                                    {isKssrCourse && (
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 p-1.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
+                                                            <div className="grid grid-cols-2 gap-1.5 w-full sm:w-auto flex-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setQuizSubTab('mini')}
+                                                                    className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition-colors flex items-center justify-center gap-2 ${
+                                                                        quizSubTab === 'mini'
+                                                                            ? 'bg-[#2563EB] text-white'
+                                                                            : 'bg-white text-[#475569] border border-[#E2E8F0] hover:text-[#0F172A]'
+                                                                    }`}
+                                                                >
+                                                                    <span>✏️ Kuiz Pantas ({activeModuleQuizzes.length} Soalan)</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setQuizSubTab('paper')}
+                                                                    className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition-colors flex items-center justify-center gap-2 ${
+                                                                        quizSubTab === 'paper'
+                                                                            ? 'bg-[#D97706] text-white'
+                                                                            : 'bg-white text-[#475569] border border-[#E2E8F0] hover:text-[#0F172A]'
+                                                                    }`}
+                                                                >
+                                                                    <span>📷 Imbasan Kertas Bentuk Lazim (+50 XP)</span>
+                                                                </button>
                                                             </div>
-
-                                                            <div className="space-y-4">
-                                                                {activeModuleQuizzes.map((mq, qIdx) => {
-                                                                    const picked = miniAnswers[mq.id] || null;
-                                                                    const isCorrect =
-                                                                        miniChecked &&
-                                                                        picked?.toLowerCase() === String(mq.correct_option || '').toLowerCase();
-
-                                                                    return (
-                                                                        <div
-                                                                            key={mq.id}
-                                                                            className={`p-5 rounded-md border-2 bg-white transition-colors ${
-                                                                                miniChecked
-                                                                                    ? isCorrect
-                                                                                        ? 'border-[#10B981] bg-emerald-50/30'
-                                                                                        : 'border-rose-400 bg-rose-50/20'
-                                                                                    : 'border-[#E5E7EB]'
-                                                                            }`}
-                                                                        >
-                                                                            <div className="flex items-start justify-between gap-3 mb-3">
-                                                                                <p className="text-sm sm:text-base font-extrabold text-[#111827] leading-snug">
-                                                                                    <span className="text-gray-500 font-mono mr-1.5">Q{qIdx + 1}.</span>{' '}
-                                                                                    {mq.question}
-                                                                                </p>
-                                                                                {miniChecked && (
-                                                                                    <span
-                                                                                        className={`text-xs font-black uppercase px-2.5 py-0.5 rounded shrink-0 ${
-                                                                                            isCorrect
-                                                                                                ? 'bg-emerald-100 text-emerald-800'
-                                                                                                : 'bg-rose-100 text-rose-800'
-                                                                                        }`}
-                                                                                    >
-                                                                                        {isCorrect ? '✓ Correct' : '✕ Review'}
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-
-                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2.5">
-                                                                                {['a', 'b', 'c', 'd'].map((optKey) => {
-                                                                                    const optVal = mq[`option_${optKey}`];
-                                                                                    if (!optVal) return null;
-                                                                                    const isSelected = picked === optKey;
-                                                                                    const isThisCorrect =
-                                                                                        miniChecked &&
-                                                                                        String(mq.correct_option || '').toLowerCase() === optKey;
-
-                                                                                    let optStyle =
-                                                                                        'border-[#E5E7EB] bg-white text-gray-700 hover:border-gray-400';
-                                                                                    if (isSelected) {
-                                                                                        optStyle =
-                                                                                            'border-[#3B82F6] bg-blue-50 text-[#111827] font-bold';
-                                                                                    }
-                                                                                    if (miniChecked) {
-                                                                                        if (isThisCorrect) {
-                                                                                            optStyle =
-                                                                                                'border-[#10B981] bg-emerald-100/70 text-[#065F46] font-bold';
-                                                                                        } else if (isSelected && !isCorrect) {
-                                                                                            optStyle =
-                                                                                                'border-rose-500 bg-rose-100/70 text-rose-900 font-bold';
-                                                                                        }
-                                                                                    }
-
-                                                                                    return (
-                                                                                        <label
-                                                                                            key={optKey}
-                                                                                            className={`flex items-start gap-3 p-3.5 rounded-md border-2 cursor-pointer text-xs sm:text-sm transition-colors ${optStyle}`}
-                                                                                        >
-                                                                                            <input
-                                                                                                type="radio"
-                                                                                                name={`mini_quiz_${mq.id}`}
-                                                                                                value={optKey}
-                                                                                                checked={isSelected}
-                                                                                                onChange={() => setMiniAnswer(mq.id, optKey)}
-                                                                                                className="mt-1 text-[#10B981] focus:ring-0"
-                                                                                            />
-                                                                                            <span className="flex-1 break-words leading-relaxed">
-                                                                                                <strong className="uppercase font-mono mr-1">
-                                                                                                    {optKey}.
-                                                                                                </strong>{' '}
-                                                                                                {optVal}
-                                                                                            </span>
-                                                                                        </label>
-                                                                                    );
-                                                                                })}
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-
-                                                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                                                                <span className="text-[11px] text-gray-500">
-                                                                    {miniChecked
-                                                                        ? 'Review the highlighted answers above, or click Retry to test again.'
-                                                                        : 'Practice quiz does not affect your final certificate eligibility.'}
-                                                                </span>
-                                                                <div className="flex items-center gap-2">
-                                                                    {miniChecked ? (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={resetMiniQuiz}
-                                                                            className="px-4 py-2 bg-white border-2 border-gray-300 hover:border-[#111827] text-[#111827] text-xs font-bold rounded transition-colors"
-                                                                        >
-                                                                            ↻ Retry Quiz
-                                                                        </button>
-                                                                    ) : (
-                                                                        <button
-                                                                            type="button"
-                                                                            disabled={!activeModuleQuizzes.every((mq) => miniAnswers[mq.id])}
-                                                                            onClick={checkMiniQuiz}
-                                                                            className="px-5 py-2 bg-[#10B981] hover:bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-extrabold rounded transition-colors"
-                                                                        >
-                                                                            Check Answers
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="bg-[#F8FAFC] border-2 border-[#E5E7EB] rounded-lg p-6 text-center space-y-1.5">
-                                                            <p className="font-display font-extrabold text-sm text-[#111827]">
-                                                                Ready to Complete Chapter {activeIndex + 1}
-                                                            </p>
-                                                            <p className="text-xs text-gray-600">
-                                                                No practice questions for this chapter. Mark this chapter as complete below and continue.
-                                                            </p>
                                                         </div>
                                                     )}
 
-                                                    {/* Step 3 Progression Bar (Auto-ticks current subtopic on Continue) */}
-                                                    <div className="p-4 bg-[#F8FAFC] border-2 border-[#111827] rounded-lg">
-                                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => goToStep('guide')}
-                                                                className={BTN_SECONDARY}
-                                                            >
-                                                                <span>← Back to Study Guide</span>
-                                                            </button>
+                                                    {/* Sub-View A: Mini-Quiz Practice */}
+                                                    {(!isKssrCourse || quizSubTab === 'mini') && (
+                                                        activeModuleQuizzes.length > 0 ? (
+                                                            <div className="rounded-xl p-4 sm:p-5 bg-[#F8FAFC] border border-[#E2E8F0] space-y-4">
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E2E8F0]">
+                                                                    <div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-[10px] font-black uppercase tracking-wider bg-[#10B981] text-white px-2.5 py-0.5 rounded-md">
+                                                                                MINI-QUIZ PRACTICE
+                                                                            </span>
+                                                                            <span className="text-xs font-bold text-[#0F172A]">
+                                                                                {activeModuleQuizzes.length} {activeModuleQuizzes.length === 1 ? 'Question' : 'Questions'}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-xs text-[#64748B] mt-1">
+                                                                            Formative self-check for {activeModule?.title}. Select an answer for each question to test your understanding.
+                                                                        </p>
+                                                                    </div>
+                                                                    {miniChecked && (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span
+                                                                                className={`text-xs font-extrabold px-2.5 py-1 rounded-lg border ${
+                                                                                    miniChecked.score === 100
+                                                                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                                                                        : 'bg-amber-100 text-amber-800 border-amber-300'
+                                                                                }`}
+                                                                            >
+                                                                                Score: {miniChecked.correct} / {miniChecked.total} ({miniChecked.score}%)
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={resetMiniQuiz}
+                                                                                className="text-xs font-bold text-[#475569] hover:text-[#0F172A] underline"
+                                                                            >
+                                                                                ↻ Try Again
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
 
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleContinueFromChapter}
-                                                                className={BTN_PRIMARY}
-                                                            >
-                                                                <span>
-                                                                    {nextLesson
-                                                                        ? 'Continue to Next Subtopic →'
-                                                                        : nextModule
-                                                                        ? 'Continue to Next Chapter →'
-                                                                        : 'Proceed to Final Assessment →'}
-                                                                </span>
-                                                            </button>
-                                                        </div>
+                                                                <div className="space-y-3 max-h-[48vh] overflow-y-auto pr-1">
+                                                                    {activeModuleQuizzes.map((mq, qIdx) => {
+                                                                        const picked = miniAnswers[mq.id] || null;
+                                                                        const isCorrect =
+                                                                            miniChecked &&
+                                                                            picked?.toLowerCase() === String(mq.correct_option || '').toLowerCase();
+
+                                                                        return (
+                                                                            <div
+                                                                                key={mq.id}
+                                                                                className={`p-4 rounded-xl border bg-white transition-colors ${
+                                                                                    miniChecked
+                                                                                        ? isCorrect
+                                                                                            ? 'border-[#10B981] bg-emerald-50/30'
+                                                                                            : 'border-rose-400 bg-rose-50/20'
+                                                                                        : 'border-[#E2E8F0]'
+                                                                                }`}
+                                                                            >
+                                                                                <div className="flex items-start justify-between gap-3 mb-2.5">
+                                                                                    <p className="font-extrabold text-[#0F172A] leading-snug text-sm sm:text-base">
+                                                                                        <span className="text-[#64748B] font-mono mr-1.5">Q{qIdx + 1}.</span>{' '}
+                                                                                        {mq.question}
+                                                                                    </p>
+                                                                                    {miniChecked && (
+                                                                                        <span
+                                                                                            className={`text-xs font-black uppercase px-2 py-0.5 rounded shrink-0 ${
+                                                                                                isCorrect
+                                                                                                    ? 'bg-emerald-100 text-emerald-800'
+                                                                                                    : 'bg-rose-100 text-rose-800'
+                                                                                            }`}
+                                                                                        >
+                                                                                            {isCorrect ? '✓ Correct' : '✕ Review'}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+
+                                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                                                    {['a', 'b', 'c', 'd'].map((optKey) => {
+                                                                                        const optVal = mq[`option_${optKey}`];
+                                                                                        if (!optVal) return null;
+                                                                                        const isSelected = picked === optKey;
+                                                                                        const isThisCorrect =
+                                                                                            miniChecked &&
+                                                                                            String(mq.correct_option || '').toLowerCase() === optKey;
+
+                                                                                        let optStyle =
+                                                                                            'border border-[#E2E8F0] bg-white text-[#334155] hover:border-[#CBD5E1]';
+                                                                                        if (isSelected) {
+                                                                                            optStyle =
+                                                                                                'border-2 border-[#2563EB] bg-[#EFF6FF] text-[#0F172A] font-bold';
+                                                                                        }
+                                                                                        if (miniChecked) {
+                                                                                            if (isThisCorrect) {
+                                                                                                optStyle =
+                                                                                                    'border-2 border-[#10B981] bg-emerald-100/70 text-[#065F46] font-bold';
+                                                                                            } else if (isSelected && !isCorrect) {
+                                                                                                optStyle =
+                                                                                                    'border-2 border-rose-500 bg-rose-100/70 text-rose-900 font-bold';
+                                                                                            }
+                                                                                        }
+
+                                                                                        return (
+                                                                                            <label
+                                                                                                key={optKey}
+                                                                                                className={`flex items-start gap-2.5 p-3 rounded-xl cursor-pointer transition-colors text-xs sm:text-sm ${optStyle}`}
+                                                                                            >
+                                                                                                <input
+                                                                                                    type="radio"
+                                                                                                    name={`mini_quiz_${mq.id}`}
+                                                                                                    value={optKey}
+                                                                                                    checked={isSelected}
+                                                                                                    onChange={() => setMiniAnswer(mq.id, optKey)}
+                                                                                                    className="mt-0.5 text-[#2563EB] focus:ring-0"
+                                                                                                />
+                                                                                                <span className="flex-1 break-words leading-relaxed">
+                                                                                                    <strong className="uppercase font-mono mr-1">
+                                                                                                        {optKey}.
+                                                                                                    </strong>{' '}
+                                                                                                    {optVal}
+                                                                                                </span>
+                                                                                            </label>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+
+                                                                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                                                    <span className="text-[11px] text-[#64748B]">
+                                                                        {miniChecked
+                                                                            ? 'Review the highlighted answers above, or click Retry to test again.'
+                                                                            : 'Practice quiz awards +15 XP per correct answer.'}
+                                                                    </span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        {miniChecked ? (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={resetMiniQuiz}
+                                                                                className="px-4 py-2 bg-white border border-[#CBD5E1] hover:border-[#0F172A] text-[#0F172A] text-xs font-bold rounded-lg transition-colors"
+                                                                            >
+                                                                                ↻ Retry Quiz
+                                                                            </button>
+                                                                        ) : (
+                                                                            <button
+                                                                                type="button"
+                                                                                disabled={!activeModuleQuizzes.every((mq) => miniAnswers[mq.id])}
+                                                                                onClick={checkMiniQuiz}
+                                                                                className="px-5 py-2 bg-[#10B981] hover:bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-extrabold rounded-lg transition-colors"
+                                                                            >
+                                                                                Check Answers
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-6 text-center space-y-1.5">
+                                                                <p className="font-display font-extrabold text-sm text-[#0F172A]">
+                                                                    Ready to Complete Chapter {activeIndex + 1}
+                                                                </p>
+                                                                <p className="text-xs text-[#64748B]">
+                                                                    No practice questions for this chapter. Mark this chapter as complete below and continue.
+                                                                </p>
+                                                            </div>
+                                                        )
+                                                    )}
+
+                                                    {/* Sub-View B: Hybrid Paper Worksheet & Scan Upload (School Mode) */}
+                                                    {isKssrCourse && quizSubTab === 'paper' && renderHybridPaperCard()}
+
+                                                    {/* Step Footer Progression Bar */}
+                                                    <div className="pt-3 border-t border-[#E2E8F0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => goToStep('guide')}
+                                                            className={BTN_SECONDARY}
+                                                        >
+                                                            <span>← Back to Study Guide</span>
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleContinueFromChapter}
+                                                            className={BTN_PRIMARY}
+                                                        >
+                                                            <span>
+                                                                {nextLesson
+                                                                    ? 'Continue to Next Subtopic →'
+                                                                    : nextModule
+                                                                    ? 'Continue to Next Chapter →'
+                                                                    : 'Proceed to Final Assessment →'}
+                                                            </span>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="bg-white border-2 border-dashed border-[#E5E7EB] rounded-lg p-12 text-center">
-                                        <p className="text-gray-500 font-medium text-sm">
+                                    <div className="bg-white border border-dashed border-[#CBD5E1] rounded-xl p-12 text-center">
+                                        <p className="text-[#64748B] font-medium text-sm">
                                             No module selected. Choose a chapter from the curriculum on the left.
                                         </p>
                                     </div>
@@ -1600,31 +2192,31 @@ export default function Learn({
                     </div>
                 )}
 
-                {/* Tab 2: Dates (edX Vertical Milestone Timeline from 2.png) */}
+                {/* Tab 2: Dates (Vertical Milestone Timeline) */}
                 {activeTab === 'dates' && (
-                    <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-8 w-full space-y-6">
+                    <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 sm:p-8 w-full space-y-6">
                         <div>
-                            <h2 className="font-display font-extrabold text-2xl text-[#111827]">
-                                Important Dates & Milestones
+                            <h2 className="font-display font-extrabold text-2xl text-[#0F172A]">
+                                Important Dates &amp; Milestones
                             </h2>
-                            <p className="text-xs text-gray-600 mt-1">
+                            <p className="text-xs text-[#64748B] mt-1">
                                 Self-paced timeline tracking your course enrollment, study progress, and assessment deadlines.
                             </p>
                         </div>
 
                         {/* Vertical Timeline */}
-                        <div className="relative border-l-2 border-[#111827] ml-4 pl-6 space-y-8 my-6">
+                        <div className="relative border-l-2 border-[#CBD5E1] ml-4 pl-6 space-y-8 my-6">
                             {/* Milestone 1: Enrollment Date */}
                             <div className="relative">
-                                <span className="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#111827] border-2 border-white" />
+                                <span className="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#2563EB] border-2 border-white" />
                                 <div>
-                                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                    <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
                                         Enrollment Confirmed
                                     </span>
-                                    <h3 className="font-display font-bold text-base text-[#111827]">
+                                    <h3 className="font-display font-bold text-base text-[#0F172A]">
                                         {formatDate(enrollment?.created_at)}
                                     </h3>
-                                    <p className="text-xs text-gray-600 mt-0.5">
+                                    <p className="text-xs text-[#64748B] mt-0.5">
                                         Enrollment confirmed in CoPED PULSE. Self-paced course window activated.
                                     </p>
                                 </div>
@@ -1635,21 +2227,21 @@ export default function Learn({
                                 <span className="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#F59E0B] border-2 border-white" />
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
                                             Current Date
                                         </span>
-                                        <span className="bg-[#F59E0B] text-[#111827] text-[10px] font-extrabold px-2 py-0.5 rounded">
+                                        <span className="bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-extrabold px-2 py-0.5 rounded">
                                             Today
                                         </span>
                                     </div>
-                                    <h3 className="font-display font-bold text-base text-[#111827]">
+                                    <h3 className="font-display font-bold text-base text-[#0F172A]">
                                         {new Date().toLocaleDateString('en-US', {
                                             year: 'numeric',
                                             month: 'long',
                                             day: 'numeric',
                                         })}
                                     </h3>
-                                    <p className="text-xs text-gray-600 mt-0.5">
+                                    <p className="text-xs text-[#64748B] mt-0.5">
                                         Active study session. Current progress: {progressPct}% completed.
                                     </p>
                                 </div>
@@ -1663,13 +2255,13 @@ export default function Learn({
                                     }`}
                                 />
                                 <div>
-                                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                    <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
                                         Grading Gate
                                     </span>
-                                    <h3 className="font-display font-bold text-base text-[#111827]">
+                                    <h3 className="font-display font-bold text-base text-[#0F172A]">
                                         Final Assessment (100% Mastery Required)
                                     </h3>
-                                    <p className="text-xs text-gray-600 mt-0.5">
+                                    <p className="text-xs text-[#64748B] mt-0.5">
                                         {isCompleted
                                             ? 'Passed with 100% score. Requirement fulfilled.'
                                             : 'Pending completion. You may attempt the assessment at any time.'}
@@ -1678,7 +2270,7 @@ export default function Learn({
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab('assessment')}
-                                            className="mt-2 text-xs font-bold text-[#111827] underline hover:text-[#3B82F6]"
+                                            className="mt-2 text-xs font-bold text-[#2563EB] underline hover:text-[#1D4ED8]"
                                         >
                                             Go to Final Assessment →
                                         </button>
@@ -1694,13 +2286,13 @@ export default function Learn({
                                     }`}
                                 />
                                 <div>
-                                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                    <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
                                         Certificate Unlocked
                                     </span>
-                                    <h3 className="font-display font-bold text-base text-[#111827]">
+                                    <h3 className="font-display font-bold text-base text-[#0F172A]">
                                         Official Verified Record
                                     </h3>
-                                    <p className="text-xs text-gray-600 mt-0.5">
+                                    <p className="text-xs text-[#64748B] mt-0.5">
                                         {isCompleted
                                             ? `Verified record unlocked on ${formatDate(enrollment?.completed_at)}.`
                                             : 'Complete all modules and pass the Final Assessment to unlock your official record.'}
@@ -1713,38 +2305,38 @@ export default function Learn({
 
                 {/* Tab 3: Progress & Assessment (Inline Final Quiz & Score Breakdown) */}
                 {activeTab === 'assessment' && (
-                    <div className="w-full space-y-6">
+                    <div className="w-full space-y-5">
                         {/* Readiness Summary 2-Stat Box */}
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
-                            <div className="pb-4 border-b-2 border-[#E5E7EB]">
-                                <h2 className="font-display font-extrabold text-xl text-[#111827]">
+                        <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 space-y-4">
+                            <div className="pb-3.5 border-b border-[#E2E8F0]">
+                                <h2 className="font-display font-extrabold text-xl text-[#0F172A]">
                                     Certification Readiness Summary
                                 </h2>
-                                <p className="text-xs text-gray-600 mt-0.5">
+                                <p className="text-xs text-[#64748B] mt-0.5">
                                     Review chapter completion and final quiz mastery required to unlock your verified credential.
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="p-4 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md">
-                                    <span className="text-[10px] font-extrabold uppercase text-gray-500 tracking-wider block">
+                                <div className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
+                                    <span className="text-[10px] font-extrabold uppercase text-[#64748B] tracking-wider block">
                                         Chapter Completion
                                     </span>
-                                    <p className="text-lg font-black text-[#111827] mt-1">
+                                    <p className="text-lg font-black text-[#0F172A] mt-1">
                                         {completedModuleIds.length} / {modules.length} Completed
                                     </p>
-                                    <p className="text-xs text-gray-600 mt-0.5">
+                                    <p className="text-xs text-[#64748B] mt-0.5">
                                         {completedModuleIds.length === modules.length
                                             ? 'All course chapters reviewed and checked off.'
                                             : 'Review each chapter thoroughly before taking the quiz.'}
                                     </p>
                                 </div>
 
-                                <div className="p-4 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md">
-                                    <span className="text-[10px] font-extrabold uppercase text-gray-500 tracking-wider block">
+                                <div className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
+                                    <span className="text-[10px] font-extrabold uppercase text-[#64748B] tracking-wider block">
                                         Final Assessment Status
                                     </span>
-                                    <p className="text-lg font-black text-[#111827] mt-1 flex items-center gap-2">
+                                    <p className="text-lg font-black text-[#0F172A] mt-1 flex items-center gap-2">
                                         {isQuizPassed ? (
                                             <span className="text-[#10B981]">
                                                 Passed · {totalQuestions} / {totalQuestions} Correct
@@ -1754,12 +2346,12 @@ export default function Learn({
                                                 {correctCount} / {totalQuestions} Correct · Needs Review
                                             </span>
                                         ) : (
-                                            <span className="text-[#111827]">
+                                            <span className="text-[#0F172A]">
                                                 Not Attempted ({totalQuestions} Questions)
                                             </span>
                                         )}
                                     </p>
-                                    <p className="text-xs text-gray-600 mt-0.5">
+                                    <p className="text-xs text-[#64748B] mt-0.5">
                                         {isQuizPassed
                                             ? 'All questions answered correctly. Your certificate is unlocked.'
                                             : hasSubmittedQuiz
@@ -1771,17 +2363,17 @@ export default function Learn({
                         </div>
 
                         {/* Interactive Final Assessment Form (1-Question-at-a-Time Stepper) */}
-                        <div id="final-assessment-section" className="scroll-mt-24 bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden">
-                            <div className="flex flex-wrap items-center justify-between gap-3 p-5 border-b-2 border-[#111827] bg-[#F8FAFC]">
+                        <div id="final-assessment-section" className="scroll-mt-24 bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+                            <div className="flex flex-wrap items-center justify-between gap-3 p-5 border-b border-[#E2E8F0] bg-[#F8FAFC]">
                                 <div className="space-y-2">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <h3 className="font-display font-extrabold text-lg text-[#111827]">
+                                        <h3 className="font-display font-extrabold text-lg text-[#0F172A]">
                                             Final Assessment
                                         </h3>
-                                        <span className="bg-[#111827] text-white text-[11px] font-black px-2 py-0.5 rounded">
+                                        <span className="bg-[#2563EB] text-white text-[11px] font-black px-2.5 py-0.5 rounded-md">
                                             100% Mastery
                                         </span>
-                                        <span className="text-xs text-gray-600 font-semibold">
+                                        <span className="text-xs text-[#64748B] font-semibold">
                                             {assessments.length} {assessments.length === 1 ? 'question' : 'questions'} · 1 question at a time
                                         </span>
                                     </div>
@@ -1794,21 +2386,21 @@ export default function Learn({
                                                     ? quizResult?.correct_ids?.includes(item.id)
                                                     : null;
 
-                                                let pillClass = 'bg-white border-[#D1D5DB] text-[#111827] hover:border-[#111827]';
+                                                let pillClass = 'bg-white border border-[#CBD5E1] text-[#0F172A] hover:border-[#2563EB]';
                                                 if (hasSubmittedQuiz) {
                                                     if (itemCorrect) {
                                                         pillClass = isActive
-                                                            ? 'bg-[#10B981] border-[#111827] text-white'
-                                                            : 'bg-[#ECFDF5] border-[#10B981] text-[#047857]';
+                                                            ? 'bg-[#10B981] border-2 border-[#059669] text-white'
+                                                            : 'bg-[#ECFDF5] border border-[#10B981] text-[#047857]';
                                                     } else {
                                                         pillClass = isActive
-                                                            ? 'bg-[#EF4444] border-[#111827] text-white'
-                                                            : 'bg-[#FEF2F2] border-[#EF4444] text-[#B91C1C]';
+                                                            ? 'bg-[#EF4444] border-2 border-[#B91C1C] text-white'
+                                                            : 'bg-[#FEF2F2] border border-[#EF4444] text-[#B91C1C]';
                                                     }
                                                 } else if (isActive) {
-                                                    pillClass = 'bg-[#111827] border-[#111827] text-white';
+                                                    pillClass = 'bg-[#2563EB] border-2 border-[#1D4ED8] text-white';
                                                 } else if (isAnswered) {
-                                                    pillClass = 'bg-[#EFF6FF] border-[#2563EB] text-[#1D4ED8]';
+                                                    pillClass = 'bg-[#EFF6FF] border border-[#2563EB] text-[#1D4ED8]';
                                                 }
 
                                                 return (
@@ -1816,7 +2408,7 @@ export default function Learn({
                                                         key={item.id}
                                                         type="button"
                                                         onClick={() => goToQuestion(idx)}
-                                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded border-2 text-xs font-extrabold transition-colors ${pillClass}`}
+                                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-colors ${pillClass}`}
                                                     >
                                                         <span>Q{idx + 1}</span>
                                                         {hasSubmittedQuiz ? (
@@ -1825,7 +2417,7 @@ export default function Learn({
                                                             isAnswered && (
                                                                 <span
                                                                     className={`w-1.5 h-1.5 rounded-full ${
-                                                                        isActive ? 'bg-[#10B981]' : 'bg-[#2563EB]'
+                                                                        isActive ? 'bg-white' : 'bg-[#2563EB]'
                                                                     }`}
                                                                 />
                                                             )
@@ -1840,18 +2432,18 @@ export default function Learn({
                                     <button
                                         type="button"
                                         onClick={handleRestartQuiz}
-                                        className="px-3.5 py-2 rounded border-2 border-[#111827] bg-white hover:bg-[#F3F4F6] text-[#111827] text-xs font-extrabold transition-colors shrink-0"
+                                        className="px-3.5 py-2 rounded-lg border border-[#CBD5E1] bg-white hover:bg-[#F8FAFC] text-[#0F172A] text-xs font-extrabold transition-colors shrink-0"
                                     >
                                         ↻ Restart Quiz
                                     </button>
                                 )}
                             </div>
 
-                            <div className="p-6">
+                            <div className="p-5 sm:p-6">
                                 {!q ? (
-                                    <div className="py-12 text-center border-2 border-dashed border-[#E5E7EB] rounded-md">
+                                    <div className="py-12 text-center border border-dashed border-[#CBD5E1] rounded-xl">
                                         <ClipboardCheckIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                                        <p className="text-sm text-gray-500 font-medium">
+                                        <p className="text-sm text-[#64748B] font-medium">
                                             No assessment questions available for this course yet.
                                         </p>
                                     </div>
@@ -1865,27 +2457,27 @@ export default function Learn({
                                             return (
                                                 <fieldset
                                                     key={q.id}
-                                                    className={`border-2 rounded-lg p-5 space-y-4 transition-colors ${
+                                                    className={`border rounded-xl p-5 space-y-4 transition-colors ${
                                                         hasResult
                                                             ? isCorrect
                                                                 ? 'border-[#10B981] bg-[#F0FDF4]'
                                                                 : 'border-[#EF4444] bg-[#FEF2F2]'
-                                                            : 'border-[#E5E7EB] bg-[#F9FAFB]'
+                                                            : 'border-[#E2E8F0] bg-[#F8FAFC]'
                                                     }`}
                                                 >
                                                     <legend className="sr-only">Question {qIndex + 1}</legend>
                                                     <div className="flex items-start justify-between gap-3">
                                                         <div className="flex items-start gap-3">
-                                                            <span className="text-xs font-black text-white bg-[#111827] px-2.5 py-1 rounded shrink-0 mt-0.5">
+                                                            <span className="text-xs font-black text-white bg-[#2563EB] px-2.5 py-1 rounded-lg shrink-0 mt-0.5">
                                                                 Q{qIndex + 1} of {assessments.length}
                                                             </span>
-                                                            <p className="font-extrabold text-base sm:text-lg text-[#111827] leading-snug">
+                                                            <p className="font-extrabold text-base sm:text-lg text-[#0F172A] leading-snug">
                                                                 {q.question}
                                                             </p>
                                                         </div>
                                                         {hasResult && (
                                                             <span
-                                                                className={`shrink-0 px-2.5 py-1 rounded text-xs font-extrabold border-2 ${
+                                                                className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-extrabold border ${
                                                                     isCorrect
                                                                         ? 'bg-[#ECFDF5] border-[#10B981] text-[#047857]'
                                                                         : 'bg-[#FEF2F2] border-[#EF4444] text-[#B91C1C]'
@@ -1896,24 +2488,24 @@ export default function Learn({
                                                         )}
                                                     </div>
 
-                                                    <div className="space-y-3 pt-2">
+                                                    <div className="space-y-2.5 pt-2">
                                                         {['a', 'b', 'c', 'd'].map((key) => {
                                                             const isChecked = activeAnswers[q.id] === key;
                                                             const isSubmittedChoice = results?.submitted && results.submitted[q.id] === key;
 
-                                                            let optionClass = 'border-[#E5E7EB] bg-white text-[#111827] hover:border-[#111827]';
+                                                            let optionClass = 'border border-[#E2E8F0] bg-white text-[#0F172A] hover:border-[#CBD5E1]';
                                                             let badge = null;
 
                                                             if (hasResult && isSubmittedChoice) {
                                                                 if (isCorrect) {
-                                                                    optionClass = 'border-[#10B981] bg-[#ECFDF5] text-[#047857] font-bold';
+                                                                    optionClass = 'border-2 border-[#10B981] bg-[#ECFDF5] text-[#047857] font-bold';
                                                                     badge = (
                                                                         <span className="text-xs font-extrabold text-[#047857] shrink-0">
                                                                             ✓ Correct Answer
                                                                         </span>
                                                                     );
                                                                 } else {
-                                                                    optionClass = 'border-[#EF4444] bg-[#FEF2F2] text-[#B91C1C] font-bold';
+                                                                    optionClass = 'border-2 border-[#EF4444] bg-[#FEF2F2] text-[#B91C1C] font-bold';
                                                                     badge = (
                                                                         <span className="text-xs font-extrabold text-[#B91C1C] shrink-0">
                                                                             ✗ Incorrect - Review this topic and try again
@@ -1921,13 +2513,13 @@ export default function Learn({
                                                                     );
                                                                 }
                                                             } else if (isChecked && !hasResult) {
-                                                                optionClass = 'border-[#111827] bg-[#111827] text-white';
+                                                                optionClass = 'border-2 border-[#2563EB] bg-[#EFF6FF] text-[#1E40AF] font-bold';
                                                             }
 
                                                             return (
                                                                 <label
                                                                     key={key}
-                                                                    className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-md border-2 cursor-pointer transition-colors ${optionClass}`}
+                                                                    className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors ${optionClass}`}
                                                                 >
                                                                     <div className="flex items-center gap-3 min-w-0 flex-1">
                                                                         <input
@@ -1939,19 +2531,25 @@ export default function Learn({
                                                                             className="sr-only"
                                                                         />
                                                                         <span
-                                                                            className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-black uppercase shrink-0 ${
+                                                                            className={`w-7 h-7 rounded-full border flex items-center justify-center text-xs font-black uppercase shrink-0 ${
                                                                                 isChecked && !hasResult
-                                                                                    ? 'border-white bg-white text-[#111827]'
+                                                                                    ? 'border-[#2563EB] bg-[#2563EB] text-white'
                                                                                     : hasResult && isSubmittedChoice
                                                                                     ? isCorrect
                                                                                         ? 'border-[#10B981] bg-[#10B981] text-white'
                                                                                         : 'border-[#EF4444] bg-[#EF4444] text-white'
-                                                                                    : 'border-gray-300 text-gray-700 bg-[#F3F4F6]'
+                                                                                    : 'border-[#CBD5E1] text-[#475569] bg-[#F8FAFC]'
                                                                             }`}
                                                                         >
                                                                             {key}
                                                                         </span>
-                                                                        <span className="text-sm sm:text-base font-semibold">
+                                                                        <span
+                                                                            className={
+                                                                                isKssrCourse
+                                                                                    ? 'text-base sm:text-lg font-bold'
+                                                                                    : 'text-sm sm:text-base font-semibold'
+                                                                            }
+                                                                        >
                                                                             {q[`option_${key}`]}
                                                                         </span>
                                                                     </div>
@@ -1977,7 +2575,7 @@ export default function Learn({
                                         )}
 
                                         {/* Stepper Navigation Footer */}
-                                        <div className="pt-4 border-t-2 border-[#E5E7EB] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                        <div className="pt-4 border-t border-[#E2E8F0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                                             <button
                                                 type="button"
                                                 disabled={qIndex === 0}
@@ -1987,7 +2585,7 @@ export default function Learn({
                                                 <span>← Previous Question</span>
                                             </button>
 
-                                            <div className="text-center text-xs font-extrabold text-[#111827] px-3 py-1.5 bg-[#F8FAFC] border-2 border-[#E5E7EB] rounded">
+                                            <div className="text-center text-xs font-extrabold text-[#0F172A] px-3 py-1.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg">
                                                 Answered {answeredCount} of {assessments.length}
                                             </div>
 
@@ -2005,7 +2603,7 @@ export default function Learn({
                                                 {isQuizPassed || isCompleted ? (
                                                     <Link
                                                         href={route('learner.course.certificate', course.id)}
-                                                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-[#10B981] text-white font-extrabold text-xs sm:text-sm px-5 py-2.5 rounded-md transition-colors"
+                                                        className="w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center gap-2 bg-[#0F172A] hover:bg-[#10B981] text-white font-extrabold text-xs sm:text-sm px-5 py-2 rounded-lg transition-colors"
                                                     >
                                                         <span>🎓 View &amp; Download Certificate PDF →</span>
                                                     </Link>
@@ -2034,40 +2632,40 @@ export default function Learn({
 
                 {/* Tab 4: Course Tools & Notes */}
                 {activeTab === 'notes' && (
-                    <div className="w-full space-y-6">
-                        {/* Course Tools & Guidelines Card (Moved to Top) */}
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-3">
-                            <h3 className="font-display font-bold text-base text-[#111827]">
-                                About this Course & Guidelines
+                    <div className="w-full space-y-5">
+                        {/* Course Tools & Guidelines Card */}
+                        <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 space-y-3">
+                            <h3 className="font-display font-bold text-base text-[#0F172A]">
+                                About this Course &amp; Guidelines
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                                <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded">
-                                    <p className="font-bold text-[#111827]">Instructor</p>
-                                    <p className="text-gray-600 mt-0.5">{course.instructor?.name || 'Faculty'}</p>
+                                <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg">
+                                    <p className="font-bold text-[#0F172A]">Instructor</p>
+                                    <p className="text-[#64748B] mt-0.5">{course.instructor?.name || 'Faculty'}</p>
                                 </div>
-                                <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded">
-                                    <p className="font-bold text-[#111827]">Passing Standard</p>
-                                    <p className="text-gray-600 mt-0.5">100% required on final assessment</p>
+                                <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg">
+                                    <p className="font-bold text-[#0F172A]">Passing Standard</p>
+                                    <p className="text-[#64748B] mt-0.5">100% required on final assessment</p>
                                 </div>
-                                <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded">
-                                    <p className="font-bold text-[#111827]">Curriculum Structure</p>
-                                    <p className="text-gray-600 mt-0.5">{modules.length} interactive modules</p>
+                                <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg">
+                                    <p className="font-bold text-[#0F172A]">Curriculum Structure</p>
+                                    <p className="text-[#64748B] mt-0.5">{modules.length} interactive modules</p>
                                 </div>
-                                <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded">
-                                    <p className="font-bold text-[#111827]">Institutional Partner</p>
-                                    <p className="text-gray-600 mt-0.5">Universiti Utara Malaysia · CoPED</p>
+                                <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg">
+                                    <p className="font-bold text-[#0F172A]">Institutional Partner</p>
+                                    <p className="text-[#64748B] mt-0.5">Universiti Utara Malaysia · CoPED</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Course Study Notes Card */}
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-6 space-y-4">
-                            <div className="flex items-center justify-between pb-3 border-b-2 border-[#E5E7EB]">
+                        <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 space-y-4">
+                            <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0]">
                                 <div>
-                                    <h2 className="font-display font-extrabold text-xl text-[#111827]">
+                                    <h2 className="font-display font-extrabold text-xl text-[#0F172A]">
                                         Course Study Notes
                                     </h2>
-                                    <p className="text-xs text-gray-600 mt-0.5">
+                                    <p className="text-xs text-[#64748B] mt-0.5">
                                         Personal scratchpad saved locally in your browser and synced to your account.
                                     </p>
                                 </div>
@@ -2089,7 +2687,7 @@ export default function Learn({
                                 value={courseNotes}
                                 onChange={handleNotesChange}
                                 placeholder="Type your full study notes, lecture takeaways, and questions here..."
-                                className="w-full p-4 bg-white border-2 border-[#E5E7EB] rounded-md text-sm text-[#111827] placeholder:text-gray-400 focus:outline-none focus:border-[#111827]"
+                                className="w-full p-4 bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-sm text-[#0F172A] placeholder:text-gray-400 focus:outline-none focus:border-[#2563EB] focus:bg-white"
                             />
 
                             <div className="flex items-center justify-between pt-2">
@@ -2098,11 +2696,11 @@ export default function Learn({
                                         type="button"
                                         onClick={saveNotesExplicit}
                                         disabled={isSavingNotes}
-                                        className="px-4 py-2 bg-[#111827] hover:bg-gray-800 text-white font-extrabold text-xs rounded transition-colors disabled:opacity-50"
+                                        className="px-4 py-2 bg-[#0F172A] hover:bg-[#1E293B] text-white font-extrabold text-xs rounded-lg transition-colors disabled:opacity-50"
                                     >
                                         {isSavingNotes ? 'Saving...' : 'Save Notes'}
                                     </button>
-                                    <span className="text-xs text-gray-500">Auto-saves on keystroke</span>
+                                    <span className="text-xs text-[#64748B]">Auto-saves on keystroke</span>
                                 </div>
                                 <button
                                     type="button"
@@ -2123,19 +2721,19 @@ export default function Learn({
 
                 {/* Tab 5: Chat with Instructor & Course Group */}
                 {activeTab === 'chat' && (
-                    <div className="w-full space-y-6">
+                    <div className="w-full space-y-5">
                         {/* Course Discussion Header */}
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
-                                <h3 className="text-sm font-black uppercase tracking-wider text-[#111827]">
+                                <h3 className="text-sm font-black uppercase tracking-wider text-[#0F172A]">
                                     Course Discussions &amp; Inquiries
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-0.5">
+                                <p className="text-xs text-[#64748B] mt-0.5">
                                     Ask questions directly to your instructor or collaborate with classmates in the course group chat.
                                 </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] text-xs font-bold">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] text-xs font-bold">
                                     <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse"></span>
                                     Active Discussion
                                 </span>
@@ -2143,14 +2741,14 @@ export default function Learn({
                         </div>
 
                         {/* Mode Selector: Direct Q&A vs Group Chat */}
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg p-1.5 sm:p-2 grid grid-cols-2 gap-2 w-full min-w-0">
+                        <div className="bg-white border border-[#E2E8F0] rounded-xl p-1.5 sm:p-2 grid grid-cols-2 gap-2 w-full min-w-0">
                             <button
                                 type="button"
                                 onClick={() => setChatMode('direct')}
-                                className={`w-full min-w-0 px-2 sm:px-4 py-2 sm:py-2.5 rounded-md text-xs font-extrabold border-2 transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 ${
+                                className={`w-full min-w-0 px-2 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-extrabold transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 ${
                                     chatMode === 'direct'
-                                        ? 'bg-[#111827] text-white border-[#111827]'
-                                        : 'bg-white text-gray-700 border-[#E5E7EB] hover:border-[#111827]'
+                                        ? 'bg-[#2563EB] text-white'
+                                        : 'bg-white text-[#475569] border border-[#E2E8F0] hover:border-[#CBD5E1]'
                                 }`}
                             >
                                 <div className="flex items-center gap-1.5 min-w-0">
@@ -2158,7 +2756,7 @@ export default function Learn({
                                     <span className="truncate">Instructor Q&amp;A</span>
                                 </div>
                                 <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
-                                    chatMode === 'direct' ? 'bg-gray-800 text-gray-200' : 'bg-blue-50 text-blue-700'
+                                    chatMode === 'direct' ? 'bg-blue-700 text-blue-100' : 'bg-blue-50 text-blue-700'
                                 }`}>
                                     Private
                                 </span>
@@ -2167,10 +2765,10 @@ export default function Learn({
                             <button
                                 type="button"
                                 onClick={() => setChatMode('group')}
-                                className={`w-full min-w-0 px-2 sm:px-4 py-2 sm:py-2.5 rounded-md text-xs font-extrabold border-2 transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 ${
+                                className={`w-full min-w-0 px-2 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-extrabold transition-colors flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 ${
                                     chatMode === 'group'
-                                        ? 'bg-[#111827] text-white border-[#111827]'
-                                        : 'bg-white text-gray-700 border-[#E5E7EB] hover:border-[#111827]'
+                                        ? 'bg-[#2563EB] text-white'
+                                        : 'bg-white text-[#475569] border border-[#E2E8F0] hover:border-[#CBD5E1]'
                                 }`}
                             >
                                 <div className="flex items-center gap-1.5 min-w-0">
@@ -2178,7 +2776,7 @@ export default function Learn({
                                     <span className="truncate">Class Group</span>
                                 </div>
                                 <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
-                                    chatMode === 'group' ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-700'
+                                    chatMode === 'group' ? 'bg-blue-700 text-blue-100' : 'bg-gray-100 text-gray-700'
                                 }`}>
                                     All Students
                                 </span>
@@ -2186,40 +2784,40 @@ export default function Learn({
                         </div>
 
                         {/* Chat Feed Card */}
-                        <div className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden flex flex-col">
+                        <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden flex flex-col">
                             {/* Feed Header */}
-                            <div className="p-4 border-b-2 border-[#E5E7EB] bg-[#F9FAFB] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="p-4 border-b border-[#E2E8F0] bg-[#F8FAFC] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <div className="flex items-center gap-3">
-                                    <span className="w-9 h-9 rounded-full bg-[#111827] text-white flex items-center justify-center text-sm font-bold shrink-0">
+                                    <span className="w-9 h-9 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-sm font-bold shrink-0">
                                         {chatMode === 'direct' ? '👨‍🏫' : '📢'}
                                     </span>
                                     <div>
-                                        <h3 className="text-sm font-extrabold text-[#111827]">
+                                        <h3 className="text-sm font-extrabold text-[#0F172A]">
                                             {chatMode === 'direct'
                                                 ? `Direct Message with ${course.instructor?.name || 'Instructor'}`
                                                 : 'Course Class Group Chat'}
                                         </h3>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-[#64748B]">
                                             {chatMode === 'direct'
                                                 ? 'Private 1-on-1 discussion between you and your instructor.'
                                                 : 'Classroom broadcast thread visible to all students and instructors.'}
                                         </p>
                                     </div>
                                 </div>
-                                <span className="text-[10px] font-bold text-gray-500 bg-white border border-[#E5E7EB] px-2.5 py-1 rounded-md self-start sm:self-auto">
+                                <span className="text-[10px] font-bold text-[#64748B] bg-white border border-[#E2E8F0] px-2.5 py-1 rounded-lg self-start sm:self-auto">
                                     {activeChatMessages.length} Messages
                                 </span>
                             </div>
 
                             {/* Scrollable Message History */}
-                            <div ref={chatContainerRef} className="p-4 sm:p-5 overflow-y-auto space-y-3 bg-[#F9FAFB] min-h-[380px] max-h-[460px]">
+                            <div ref={chatContainerRef} className="p-4 sm:p-5 overflow-y-auto space-y-3 bg-[#F8FAFC] min-h-[380px] max-h-[460px]">
                                 {activeChatMessages.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-2">
                                         <span className="text-3xl">💬</span>
-                                        <h4 className="text-sm font-bold text-gray-700">
+                                        <h4 className="text-sm font-bold text-[#334155]">
                                             No messages here yet.
                                         </h4>
-                                        <p className="text-xs text-gray-500 max-w-sm">
+                                        <p className="text-xs text-[#64748B] max-w-sm">
                                             {chatMode === 'direct'
                                                 ? 'Have a question about a module or quiz? Send a message directly to your lecturer.'
                                                 : 'Say hello to your fellow classmates and start the discussion!'}
@@ -2237,23 +2835,23 @@ export default function Learn({
                                                 className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                                             >
                                                 <div className="flex items-center gap-1.5 mb-1 px-1">
-                                                    <span className="text-[11px] font-extrabold text-gray-800">
+                                                    <span className="text-[11px] font-extrabold text-[#334155]">
                                                         {isMine ? 'You' : msg.sender?.name || 'User'}
                                                     </span>
                                                     {isStaff && (
-                                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-100 text-purple-800 border border-purple-300">
+                                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-100 text-purple-800 border border-purple-200">
                                                             Lecturer
                                                         </span>
                                                     )}
-                                                    <span className="text-[10px] text-gray-400">
+                                                    <span className="text-[10px] text-[#94A3B8]">
                                                         {timeAgo(msg.created_at)}
                                                     </span>
                                                 </div>
                                                 <div
-                                                    className={`max-w-md sm:max-w-lg p-3 rounded-lg border-2 text-xs leading-relaxed ${
+                                                    className={`max-w-md sm:max-w-lg p-3 rounded-xl border text-xs leading-relaxed ${
                                                         isMine
-                                                            ? 'bg-[#111827] text-white border-[#111827]'
-                                                            : 'bg-white text-[#111827] border-[#E5E7EB]'
+                                                            ? 'bg-[#2563EB] text-white border-[#1D4ED8]'
+                                                            : 'bg-white text-[#0F172A] border-[#E2E8F0]'
                                                     }`}
                                                 >
                                                     <p className="whitespace-pre-wrap break-words">{cleanBody}</p>
@@ -2265,7 +2863,7 @@ export default function Learn({
                             </div>
 
                             {/* Composer */}
-                            <form onSubmit={handleSendMessage} className="p-3.5 sm:p-4 border-t-2 border-[#E5E7EB] bg-white flex items-end gap-2.5">
+                            <form onSubmit={handleSendMessage} className="p-3.5 sm:p-4 border-t border-[#E2E8F0] bg-white flex items-end gap-2.5">
                                 <div className="flex-1">
                                     <textarea
                                         rows={2}
@@ -2282,13 +2880,13 @@ export default function Learn({
                                                 ? `Ask a question to ${course.instructor?.name || 'your lecturer'} (Press Enter to send)...`
                                                 : 'Write a message to the class (Press Enter to send)...'
                                         }
-                                        className="w-full p-2.5 bg-[#F9FAFB] border-2 border-[#E5E7EB] rounded-md text-xs text-[#111827] focus:bg-white focus:border-[#111827] focus:outline-none resize-none"
+                                        className="w-full p-2.5 bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-xs text-[#0F172A] focus:bg-white focus:border-[#2563EB] focus:outline-none resize-none"
                                     />
                                 </div>
                                 <button
                                     type="submit"
                                     disabled={!newMessage.trim() || isSending}
-                                    className="px-4 py-2.5 bg-[#111827] text-white text-xs font-extrabold rounded-md hover:bg-black transition-colors disabled:opacity-40 shrink-0 h-[46px] flex items-center gap-1.5"
+                                    className="px-4 py-2.5 bg-[#2563EB] text-white text-xs font-extrabold rounded-xl hover:bg-[#1D4ED8] transition-colors disabled:opacity-40 shrink-0 h-[46px] flex items-center gap-1.5"
                                 >
                                     <span>{isSending ? 'Sending...' : 'Send Message'}</span>
                                     <span>→</span>

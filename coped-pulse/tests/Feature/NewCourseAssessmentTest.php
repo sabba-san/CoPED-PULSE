@@ -161,5 +161,28 @@ class NewCourseAssessmentTest extends TestCase
             ->get(route('learner.course.certificate', $course));
         $certResponse->assertRedirect();
     }
+
+    public function test_seeded_kssr_primary_mathematics_courses_exist_for_tahun_1_2_and_3(): void
+    {
+        $this->seed(CourseSeeder::class);
+
+        $expectedTitles = [
+            'Matematik Tahun 1 KSSR (Jilid 1): Nombor Hingga 100, Tambah & Tolak',
+            'Matematik Tahun 2 KSSR (Jilid 2): Pecahan, Wang, Masa, Ukuran & Bentuk',
+            'Matematik Tahun 3 KSSR (Jilid 2): Wang, Masa, Ukuran Metrik, Prisma & Data',
+        ];
+
+        foreach ($expectedTitles as $title) {
+            $course = Course::where('title', $title)->with('modules.lessons')->first();
+            $this->assertNotNull($course, "KSSR course '{$title}' should be seeded.");
+            $this->assertSame('published', $course->status);
+            $this->assertSame('free', $course->billing_type);
+            $this->assertNotEmpty($course->bundle_url, "KSSR course '{$title}' should have a downloadable KPM textbook PDF URL.");
+            $this->assertSame(3, $course->modules->count(), "KSSR course '{$title}' should have 3 modules.");
+
+            $finalQuestions = $course->assessments()->whereNull('module_id')->get();
+            $this->assertSame(5, $finalQuestions->count(), "KSSR course '{$title}' should have 5 final assessment questions.");
+        }
+    }
 }
 

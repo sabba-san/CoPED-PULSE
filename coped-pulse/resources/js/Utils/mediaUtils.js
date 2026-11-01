@@ -7,7 +7,7 @@
 export function safeUrl(url) {
     if (!url || typeof url !== 'string') return null;
     const trimmed = url.trim();
-    if (trimmed.startsWith('/storage/')) return trimmed;
+    if (trimmed.startsWith('/storage/') || trimmed.startsWith('/books/')) return trimmed;
 
     try {
         const parsed = new URL(trimmed);

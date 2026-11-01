@@ -272,6 +272,9 @@ export default function Edit({
         title: course.title || '',
         description: course.description || '',
         status: course.status || 'draft',
+        course_mode:
+            course.course_mode ||
+            (course.title?.includes('KSSR') || course.academic_year?.includes('KSSR') ? 'school' : 'certification'),
         academic_year: course.academic_year || '2026 / 2027',
         category_logo: course.category_logo || 'general',
         billing_type: course.billing_type || 'free',
@@ -760,12 +763,70 @@ export default function Edit({
                                             1. Course Identity & Intake Details
                                         </h2>
                                         <p className="text-xs text-gray-500 mt-0.5">
-                                            Specify course title, intake date, theme color, and curriculum description.
+                                            Specify course template mode, title, intake date, theme color, and curriculum description.
                                         </p>
                                     </div>
                                     <span className="text-xs font-bold bg-[#111827] text-white px-2.5 py-1 rounded">
                                         Identity
                                     </span>
+                                </div>
+
+                                {/* Course Experience Template / Mode Selector */}
+                                <div>
+                                    <label className="block text-sm font-bold text-[#111827] mb-2">
+                                        Course Experience Template (Mode) <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {[
+                                            {
+                                                id: 'certification',
+                                                label: '🎓 Professional Certification (Adult Upskilling)',
+                                                description:
+                                                    'Institutional layout with video lectures, reading guides, practice quizzes, and 100% mastery PDF certification.',
+                                            },
+                                            {
+                                                id: 'school',
+                                                label: '🎮 School Interactive & Gamified (KSSR / KSSM)',
+                                                description:
+                                                    'Colourful student-friendly template with live XP/Level bar, Khan Academy mastery tiles, interactive manipulatives, in-video pop-up quizzes, and hybrid paper-scan worksheets.',
+                                            },
+                                        ].map((mOpt) => {
+                                            const selected = data.course_mode === mOpt.id;
+                                            return (
+                                                <button
+                                                    key={mOpt.id}
+                                                    type="button"
+                                                    onClick={() => setData('course_mode', mOpt.id)}
+                                                    className={`text-left p-4 rounded-xl border transition-colors flex flex-col justify-between gap-2 ${
+                                                        selected
+                                                            ? 'border-2 border-[#2563EB] bg-[#EFF6FF]'
+                                                            : 'border-[#E2E8F0] bg-white hover:border-[#94A3B8]'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-xs sm:text-sm font-extrabold text-[#111827]">
+                                                            {mOpt.label}
+                                                        </span>
+                                                        <span
+                                                            className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                                                selected
+                                                                    ? 'bg-[#2563EB] border-[#2563EB] text-white'
+                                                                    : 'bg-white border-gray-300'
+                                                            }`}
+                                                        >
+                                                            {selected ? '✓' : ''}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-600 leading-relaxed">
+                                                        {mOpt.description}
+                                                    </p>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {errors.course_mode && (
+                                        <p className="mt-2 text-red-600 text-sm font-medium">{errors.course_mode}</p>
+                                    )}
                                 </div>
 
                                 <div>

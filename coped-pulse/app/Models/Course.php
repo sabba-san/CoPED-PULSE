@@ -19,6 +19,7 @@ class Course extends Model
         'title',
         'description',
         'status',
+        'course_mode',
         'academic_year',
         'category_logo',
         'billing_type',

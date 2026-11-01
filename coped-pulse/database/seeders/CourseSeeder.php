@@ -888,5 +888,611 @@ class CourseSeeder extends Seeder
                 'correct_option' => 'a',
             ]);
         }
+
+        // -------------------------------------------------------------
+        // 11. KPM KSSR Primary Mathematics Pilot: Tahun 1 (Jilid 1)
+        // -------------------------------------------------------------
+        $kssrTahun1 = Course::updateOrCreate(
+            ['title' => 'Matematik Tahun 1 KSSR (Jilid 1): Nombor Hingga 100, Tambah & Tolak'],
+            [
+                'description' => 'Program Rintis Sekolah Rendah KSSR berdasarkan Buku Teks Rasmi KPM Matematik Tahun 1 (Jilid 1). Merangkumi konsep Nombor Hingga 100, Nilai Tempat, Bundar, serta Operasi Tambah dan Tolak dalam Bentuk Lazim.',
+                'instructor_id' => $staffId,
+                'status' => 'published',
+                'course_mode' => 'school',
+                'academic_year' => 'KSSR Rendah · Tahun 1',
+                'category_logo' => 'amber',
+                'billing_type' => 'free',
+                'price' => 0.00,
+                'cert_title' => 'Sijil Kemahiran Matematik KSSR · Tahun 1 (KPM)',
+                'cert_url' => '/books/BUKU TEKS MATEMATIK TAHUN 1 JILID 1.pdf',
+                'bundle_title' => 'Buku Teks Rasmi KPM: Matematik Tahun 1 KSSR (Jilid 1) PDF',
+                'bundle_url' => '/books/BUKU TEKS MATEMATIK TAHUN 1 JILID 1.pdf',
+            ]
+        );
+
+        $t1Mod1 = $kssrTahun1->modules()->updateOrCreate(
+            ['course_id' => $kssrTahun1->id, 'order' => 1],
+            [
+                'title' => 'Unit 1 - Nombor Hingga 100 (Banyak & Sedikit, Nilai Tempat & Bundar)',
+                'description' => 'Kenali perbandingan Banyak dan Sedikit, membilang nombor 0 hingga 100, Nilai Tempat (Puluh dan Sa), Pola Nombor, dan Bundar kepada Puluh Terdekat.',
+                'duration' => 1200,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=0TgLtF3PMOc',
+                'transcript' => "### Nota Ceria Unit 1: Nombor Hingga 100\n\nSelamat datang murid-murid Tahun 1! Dalam Unit 1 Buku Teks KPM, kita belajar mengenali nombor di sekeliling kita.\n\n#### 1. Banyak dan Sedikit & Kenali 0 Hingga 100\n- Bandingkan dua kumpulan objek secara padanan satu dengan satu untuk menentukan kumpulan yang **banyak**, **sedikit**, atau **sama banyak**.\n- Kenali dan tulis nombor daripada **0 hingga 100** dalam angka dan perkataan.\n\n#### 2. Kombinasi Nombor & Nilai Tempat (Puluh dan Sa)\n- Setiap nombor dua digit mempunyai nilai tempat **Puluh** dan **Sa**.\n- Contoh: Nombor **13** ialah **1 puluh dan 3 sa** (Nilai digit: 10 dan 3).\n- Contoh: Nombor **58** mempunyai angka **5** pada nilai tempat **Puluh** (nilai digit **50**) dan angka **8** pada nilai tempat **Sa** (nilai digit **8**).\n\n#### 3. Susunan & Pola Nombor\n- **Tertib Menaik**: Susunan nombor daripada kecil kepada besar (contoh: bilang menaik dua-dua, lima-lima `5, 10, 15, 20, 25`, atau sepuluh-sepuluh).\n- **Tertib Menurun**: Susunan nombor daripada besar kepada kecil.\n\n#### 4. Kenali Bundar kepada Puluh Terdekat\n- Jika digit Sa ialah **1, 2, 3, atau 4**, kekalkan digit Puluh dan tukar Sa menjadi 0 (Contoh: **22 dibundarkan menjadi 20**).\n- Jika digit Sa ialah **5, 6, 7, 8, atau 9**, tambah 1 pada Puluh dan tukar Sa menjadi 0 (Contoh: **65 dibundarkan menjadi 70**).",
+            ]
+        );
+
+        $t1Mod1->lessons()->updateOrCreate(
+            ['module_id' => $t1Mod1->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 1.1: Kenali Nombor 0 Hingga 100 & Kombinasi Nombor',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=0TgLtF3PMOc',
+                'duration' => 600,
+                'content' => "### Subtopik 1.1: Kenali Nombor 0 Hingga 100 & Kombinasi Nombor\n\n1. **Banyak dan Sedikit**: Bandingkan bilangan objek seperti guli, bunga, dan pensel.\n2. **Kombinasi Nombor**: Satu nombor boleh dibentuk daripada dua nombor yang lebih kecil. Contohnya, nombor **8** boleh dibentuk daripada kombinasi **5 dan 3** atau **4 dan 4**.\n3. **Membilang Kumpulan Sepuluh-Sepuluh**: Kumpulkan 10 batang aiskrim menjadi 1 ikat **Puluh** untuk membilang dengan pantas sehingga 100.",
+                'transcript' => 'Video DidikTV KSSR Matematik Tahun 1: Kenali Nombor 0 Hingga 100.',
+            ]
+        );
+
+        $t1Mod1->lessons()->updateOrCreate(
+            ['module_id' => $t1Mod1->id, 'order' => 2],
+            [
+                'title' => 'Subtopik 1.2: Nilai Tempat (Puluh & Sa), Pola Nombor & Bundar Puluh Terdekat (Buku Teks PDF)',
+                'content_type' => 'pdf',
+                'content_url' => '/books/BUKU TEKS MATEMATIK TAHUN 1 JILID 1.pdf',
+                'duration' => 600,
+                'content' => "### Subtopik 1.2: Nilai Tempat, Pola Nombor & Bundar\n\n- **Nilai Tempat & Nilai Digit**: Dalam nombor **58**, digit **5** berada di tempat **Puluh** (nilainya **50**) dan digit **8** berada di tempat **Sa** (nilainya **8**).\n- **Pola Nombor Menaik Lima-Lima**: `5, 10, 15, 20, 25`.\n- **Bundar kepada Puluh Terdekat**: Gunakan garis nombor atau bukit bundar. Nombor **22** lebih dekat dengan **20**, manakala **65** dibundarkan menjadi **70**.",
+                'transcript' => 'Rujukan Buku Teks Rasmi KPM Matematik Tahun 1 Jilid 1.',
+            ]
+        );
+
+        if ($kssrTahun1->assessments()->where('module_id', $t1Mod1->id)->count() === 0) {
+            $kssrTahun1->assessments()->create([
+                'module_id' => $t1Mod1->id,
+                'question' => 'Dalam nombor 13, berapakah nilai tempat Puluh dan Sa?',
+                'option_a' => '1 puluh dan 3 sa',
+                'option_b' => '3 puluh dan 1 sa',
+                'option_c' => '10 puluh dan 3 sa',
+                'option_d' => '0 puluh dan 13 sa',
+                'correct_option' => 'a',
+            ]);
+            $kssrTahun1->assessments()->create([
+                'module_id' => $t1Mod1->id,
+                'question' => 'Bundarkan nombor 22 kepada puluh yang terdekat.',
+                'option_a' => '10',
+                'option_b' => '20',
+                'option_c' => '30',
+                'option_d' => '25',
+                'correct_option' => 'b',
+            ]);
+        }
+
+        $t1Mod2 = $kssrTahun1->modules()->updateOrCreate(
+            ['course_id' => $kssrTahun1->id, 'order' => 2],
+            [
+                'title' => 'Unit 2 - Operasi Tambah Dalam Lingkungan 100 (Bentuk Lazim)',
+                'description' => 'Pelajari simbol tambah (+) dan sama dengan (=), Tambah Mudah, serta Tambah dengan Mengumpul Semula menggunakan Bentuk Lazim.',
+                'duration' => 1200,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=mjlsSYLLOSE',
+                'transcript' => "### Nota Ceria Unit 2 (Bahagian A): Operasi Tambah Dalam Lingkungan 100\n\n#### 1. Kenali Tambah (`+` dan `=`) & Tambah Cepat\n- **Tambah** bermaksud menyatukan dua kumpulan objek untuk mencari **jumlah semuanya**.\n- Gunakan simbol **`+`** (tambah) dan **`=`** (sama dengan).\n\n#### 2. Tambah Mudah (Tanpa Mengumpul Semula)\n- Susun nombor mengikut lajur **Puluh** dan **Sa** dalam **Bentuk Lazim**.\n- Contoh 1: `25 + 3 = 28` (Tambah Sa: `5 + 3 = 8`, turunkan `2 puluh`).\n- Contoh 2: `17 + 30 = 47` (Tambah Sa: `7 + 0 = 7`, tambah Puluh: `1 + 3 = 4`).\n\n#### 3. Tambah Lagi dengan Mengumpul Semula\n- Apabila hasil tambah di rumah **Sa** mencapai **10 atau lebih**, tukarkan **10 sa kepada 1 puluh**.\n- Contoh 1: `29 + 6 = 35` (`9 sa + 6 sa = 15 sa` -> tulis `5 sa`, kumpul `1 puluh` ke rumah Puluh: `1 + 2 = 3 puluh`).\n- Contoh 2: `18 + 34 = 52` (`8 sa + 4 sa = 12 sa` -> tulis `2 sa`, naik `1 puluh`: `1 + 1 + 3 = 5 puluh`).",
+            ]
+        );
+
+        $t1Mod2->lessons()->updateOrCreate(
+            ['module_id' => $t1Mod2->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 2.1: Tambah Mudah & Tambah Mengumpul Semula (Bentuk Lazim)',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=mjlsSYLLOSE',
+                'duration' => 900,
+                'content' => "### Langkah Demi Langkah Bentuk Lazim (Tambah)\n\n1. Pastikan digit **Sa** disusun sebaris di lajur kanan dan digit **Puluh** di lajur kiri.\n2. Selesaikan rumah **Sa** dahulu.\n3. Jika jumlah Sa melebihi 9 (contoh: `18 + 34`), kumpulkan **10 sa menjadi 1 puluh** di atas rumah Puluh: `8 + 4 = 12` (tulis 2, naik 1), kemudian `1 + 1 + 3 = 5`. Jawapan akhir ialah **52**.",
+                'transcript' => 'Video penerangan Bentuk Lazim Tambah Tahun 1.',
+            ]
+        );
+
+        if ($kssrTahun1->assessments()->where('module_id', $t1Mod2->id)->count() === 0) {
+            $kssrTahun1->assessments()->create([
+                'module_id' => $t1Mod2->id,
+                'question' => 'Berapakah hasil tambah mudah bagi 25 + 3?',
+                'option_a' => '22',
+                'option_b' => '28',
+                'option_c' => '55',
+                'option_d' => '38',
+                'correct_option' => 'b',
+            ]);
+            $kssrTahun1->assessments()->create([
+                'module_id' => $t1Mod2->id,
+                'question' => 'Apabila mengira 29 + 6 dalam bentuk lazim, apakah yang berlaku pada 15 sa?',
+                'option_a' => 'Tukar 10 sa kepada 1 puluh, tinggal 5 sa (Jawapan: 35)',
+                'option_b' => 'Buang angka 1 dan tulis 5 sahaja',
+                'option_c' => 'Tolak 6 daripada 9',
+                'option_d' => 'Menjadi 296',
+                'correct_option' => 'a',
+            ]);
+        }
+
+        $t1Mod3 = $kssrTahun1->modules()->updateOrCreate(
+            ['course_id' => $kssrTahun1->id, 'order' => 3],
+            [
+                'title' => 'Unit 2 - Operasi Tolak & Penyelesaian Masalah Harian',
+                'description' => 'Fahami konsep Baki dan Beza, Tolak Mudah, Tolak dengan Mengumpul Semula, dan Cerita Tambah serta Tolak.',
+                'duration' => 1200,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=ug0gs8kLE48',
+                'transcript' => "### Nota Ceria Unit 2 (Bahagian B): Operasi Tolak & Masalah Harian\n\n#### 1. Kenali Tolak (Baki & Beza)\n- **Tolak (`-`)** digunakan untuk mencari **baki** (apabila objek dikeluarkan/diberi) atau **beza** antara dua kuantiti.\n\n#### 2. Tolak Mudah (Tanpa Mengumpul Semula)\n- Contoh: `37 - 14 = 23`.\n- Tolak rumah Sa: `7 sa - 4 sa = 3 sa`.\n- Tolak rumah Puluh: `3 puluh - 1 puluh = 2 puluh`.\n\n#### 3. Tolak Lagi dengan Mengumpul Semula\n- Jika digit Sa di atas lebih kecil daripada digit Sa di bawah, **pinjam / tukar 1 puluh kepada 10 sa**.\n- Contoh 1: `63 - 7 = 56` (Pinjam 1 puluh daripada 6 puluh tinggal 5 puluh; `13 sa - 7 sa = 6 sa` -> Jawapan **56**).\n- Contoh 2: `50 - 24 = 26` (Tukar 1 puluh daripada 5 puluh menjadi 10 sa; `10 - 4 = 6 sa`, `4 - 2 = 2 puluh` -> Jawapan **26**).\n\n#### 4. Cerita Tambah dan Tolak\n- Gariskan maklumat penting dalam cerita matematik dan tentukan operasi yang betul.",
+            ]
+        );
+
+        $t1Mod3->lessons()->updateOrCreate(
+            ['module_id' => $t1Mod3->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 3.1: Tolak Mengumpul Semula & Cerita Matematik',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=ug0gs8kLE48',
+                'duration' => 900,
+                'content' => "### Subtopik 3.1: Tolak Mengumpul Semula\n\n- Contoh: `50 - 24 = 26`.\n- Kerana `0 sa` tidak cukup untuk ditolak `4 sa`, kita tukar **1 puluh kepada 10 sa**.\n- Rumah Puluh tinggal `4 puluh`, rumah Sa menjadi `10 sa`.\n- `10 sa - 4 sa = 6 sa` dan `4 puluh - 2 puluh = 2 puluh`. Jawapan: **26**.",
+                'transcript' => 'Video pembelajaran operasi tolak dengan mengumpul semula.',
+            ]
+        );
+
+        if ($kssrTahun1->assessments()->where('module_id', $t1Mod3->id)->count() === 0) {
+            $kssrTahun1->assessments()->create([
+                'module_id' => $t1Mod3->id,
+                'question' => 'Selesaikan operasi tolak mudah ini: 37 - 14 = ___',
+                'option_a' => '23',
+                'option_b' => '33',
+                'option_c' => '51',
+                'option_d' => '13',
+                'correct_option' => 'a',
+            ]);
+            $kssrTahun1->assessments()->create([
+                'module_id' => $t1Mod3->id,
+                'question' => 'Kira baki bagi 50 - 24 dengan mengumpul semula.',
+                'option_a' => '34',
+                'option_b' => '26',
+                'option_c' => '74',
+                'option_d' => '36',
+                'correct_option' => 'b',
+            ]);
+        }
+
+        if ($kssrTahun1->assessments()->whereNull('module_id')->count() === 0) {
+            $kssrTahun1->assessments()->create([
+                'question' => 'Apakah nilai tempat dan nilai digit bagi angka 5 dalam nombor 58?',
+                'option_a' => 'Puluh, 50',
+                'option_b' => 'Sa, 5',
+                'option_c' => 'Puluh, 5',
+                'option_d' => 'Ratus, 500',
+                'correct_option' => 'a',
+            ]);
+
+            $kssrTahun1->assessments()->create([
+                'question' => 'Bundarkan nombor 65 kepada puluh yang terdekat.',
+                'option_a' => '60',
+                'option_b' => '70',
+                'option_c' => '50',
+                'option_d' => '65',
+                'correct_option' => 'b',
+            ]);
+
+            $kssrTahun1->assessments()->create([
+                'question' => 'Lengkapkan pola nombor bilang menaik lima-lima ini: 5, 10, 15, __, 25.',
+                'option_a' => '16',
+                'option_b' => '18',
+                'option_c' => '20',
+                'option_d' => '22',
+                'correct_option' => 'c',
+            ]);
+
+            $kssrTahun1->assessments()->create([
+                'question' => 'Kira hasil tambah dengan mengumpul semula: 18 + 34 = __.',
+                'option_a' => '42',
+                'option_b' => '52',
+                'option_c' => '48',
+                'option_d' => '62',
+                'correct_option' => 'b',
+            ]);
+
+            $kssrTahun1->assessments()->create([
+                'question' => 'Akid ada 63 biji guli. Dia beri 7 biji guli kepada Amar. Berapakah baki guli Akid?',
+                'option_a' => '54',
+                'option_b' => '56',
+                'option_c' => '64',
+                'option_d' => '70',
+                'correct_option' => 'b',
+            ]);
+        }
+
+        // -------------------------------------------------------------
+        // 12. KPM KSSR Primary Mathematics Pilot: Tahun 2 (Jilid 2)
+        // -------------------------------------------------------------
+        $kssrTahun2 = Course::updateOrCreate(
+            ['title' => 'Matematik Tahun 2 KSSR (Jilid 2): Pecahan, Wang, Masa, Ukuran & Bentuk'],
+            [
+                'description' => 'Program Rintis Sekolah Rendah KSSR berdasarkan Buku Teks Rasmi KPM Matematik Tahun 2 (Jilid 2). Merangkumi Pecahan & Perpuluhan, Wang Hingga RM100, Masa & Waktu, Ukuran Metrik, Bentuk 3D/2D, dan Carta Palang.',
+                'instructor_id' => $staffId,
+                'status' => 'published',
+                'course_mode' => 'school',
+                'academic_year' => 'KSSR Rendah · Tahun 2',
+                'category_logo' => 'emerald',
+                'billing_type' => 'free',
+                'price' => 0.00,
+                'cert_title' => 'Sijil Kemahiran Matematik KSSR · Tahun 2 (KPM)',
+                'cert_url' => '/books/Buku Teks Matematik Tahun 2 Jilid 2.pdf',
+                'bundle_title' => 'Buku Teks Rasmi KPM: Matematik Tahun 2 KSSR (Jilid 2) PDF',
+                'bundle_url' => '/books/Buku Teks Matematik Tahun 2 Jilid 2.pdf',
+            ]
+        );
+
+        $t2Mod1 = $kssrTahun2->modules()->updateOrCreate(
+            ['course_id' => $kssrTahun2->id, 'order' => 1],
+            [
+                'title' => 'Unit 3 & 4 - Pecahan, Perpuluhan & Wang Hingga RM100',
+                'description' => 'Kenali Pecahan Wajar (1/2 hingga 9/10), tukar pecahan persepuluh kepada perpuluhan (0.1 hingga 0.9), dan operasi Wang hingga RM100.',
+                'duration' => 1400,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=n0FZhQ_GkKw',
+                'transcript' => "### Nota Ceria Unit 3 & 4: Pecahan, Perpuluhan & Wang Hingga RM100\n\n#### 1. Pecahan Wajar\n- Pecahan terdiri daripada **Pengangka** (nombor di atas) dan **Penyebut** (jumlah bahagian sama besar di bawah).\n- Contoh pecahan wajar: `1/2`, `1/4`, `3/4`, hingga `9/10`.\n\n#### 2. Tukar Pecahan Persepuluh kepada Perpuluhan\n- Pecahan dengan penyebut 10 boleh ditulis dalam bentuk nombor perpuluhan:\n  - `1/10 = 0.1` (sifar perpuluhan satu)\n  - `5/10 = 0.5` (sifar perpuluhan lima)\n  - `7/10 = 0.7` (sifar perpuluhan tujuh)\n\n#### 3. Banding Pecahan & Perpuluhan\n- Gunakan gambar rajah jalur atau garis nombor untuk membandingkan nilai yang lebih besar atau lebih kecil (contoh: `0.7` lebih besar daripada `0.3`).\n\n#### 4. Operasi Wang Hingga RM100 & Celik Wang\n- Pastikan titik perpuluhan antara **Ringgit (RM)** dan **Sen** disusun sebaris dalam bentuk lazim semasa menambah atau menolak wang.\n- Contoh: `RM90.00 - RM54.60 - RM27.00 = RM8.40`.",
+            ]
+        );
+
+        $t2Mod1->lessons()->updateOrCreate(
+            ['module_id' => $t2Mod1->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 1.1: Pecahan Wajar, Perpuluhan & Pengiraan Wang RM100',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=n0FZhQ_GkKw',
+                'duration' => 700,
+                'content' => "### Subtopik 1.1: Pecahan Persepuluh & Wang\n\n- **Pecahan kepada Perpuluhan**: `1/10 = 0.1`, `3/10 = 0.3`, `7/10 = 0.7`, `9/10 = 0.9`.\n- **Pengiraan Baki Wang**: Apabila menolak wang seperti `RM90.00 - RM54.60`, tulis `.00` pada nilai sen supaya mudah mengumpul semula 1 ringgit kepada 100 sen.",
+                'transcript' => 'Video pembelajaran Pecahan, Perpuluhan, dan Wang Tahun 2.',
+            ]
+        );
+
+        $t2Mod1->lessons()->updateOrCreate(
+            ['module_id' => $t2Mod1->id, 'order' => 2],
+            [
+                'title' => 'Subtopik 1.2: Rujukan Buku Teks KPM Matematik Tahun 2 Jilid 2 (PDF)',
+                'content_type' => 'pdf',
+                'content_url' => '/books/Buku Teks Matematik Tahun 2 Jilid 2.pdf',
+                'duration' => 700,
+                'content' => "### Buku Teks Rasmi KPM: Matematik Tahun 2 Jilid 2\n\nBaca dan muat turun Buku Teks Rasmi KPM Matematik Tahun 2 Jilid 2 untuk melihat ilustrasi penuh Pecahan, Perpuluhan, dan Wang.",
+                'transcript' => 'Dokumen PDF Buku Teks KPM Matematik Tahun 2 Jilid 2.',
+            ]
+        );
+
+        if ($kssrTahun2->assessments()->where('module_id', $t2Mod1->id)->count() === 0) {
+            $kssrTahun2->assessments()->create([
+                'module_id' => $t2Mod1->id,
+                'question' => 'Tukarkan pecahan persepuluh 7/10 kepada nombor perpuluhan.',
+                'option_a' => '0.07',
+                'option_b' => '0.7',
+                'option_c' => '7.0',
+                'option_d' => '1.7',
+                'correct_option' => 'b',
+            ]);
+            $kssrTahun2->assessments()->create([
+                'module_id' => $t2Mod1->id,
+                'question' => 'Antara 0.8 dan 0.4, nombor perpuluhan manakah yang lebih besar?',
+                'option_a' => '0.8',
+                'option_b' => '0.4',
+                'option_c' => 'Kedua-duanya sama besar',
+                'option_d' => 'Tiada jawapan',
+                'correct_option' => 'a',
+            ]);
+        }
+
+        $t2Mod2 = $kssrTahun2->modules()->updateOrCreate(
+            ['course_id' => $kssrTahun2->id, 'order' => 2],
+            [
+                'title' => 'Unit 5 & 6 - Masa dan Waktu & Panjang, Jisim, Isi Padu Cecair',
+                'description' => 'Kenali senggatan minit pada muka jam (suku jam, setengah jam, 1 jam) dan unit ukuran metrik (cm, m, g, kg, ml, l).',
+                'duration' => 1400,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=HrxZWNu72WI',
+                'transcript' => "### Nota Ceria Unit 5 & 6: Masa dan Waktu & Ukuran Metrik\n\n#### 1. Kenali Senggatan Minit & Perkaitan Waktu\n- Setiap selang antara dua nombor pada muka jam bernilai **5 minit**.\n- **Suku jam** = `15 minit` (jarum minit bergerak dari 12 ke 3).\n- **Setengah jam** = `30 minit` (jarum minit bergerak setengah pusingan dari 12 ke 6).\n- **1 jam** = `60 minit` (satu pusingan lengkap).\n- **1 hari** = `24 jam`.\n\n#### 2. Ukuran Metrik (Panjang, Jisim & Isi Padu Cecair)\n- **Panjang**: Sentimeter (`cm`) untuk objek pendek (pensel, buku) dan Meter (`m`) untuk objek panjang (papan tulis, bilik darjah).\n- **Jisim**: Gram (`g`) untuk objek ringan dan Kilogram (`kg`) untuk objek berat (kampit beras).\n- **Isi Padu Cecair**: Mililiter (`ml`) untuk cecair sedikit (sebotol kecil ubat vitamin, sudu sirap) dan Liter (`l`) untuk cecair banyak (botol air besar, baldi).",
+            ]
+        );
+
+        $t2Mod2->lessons()->updateOrCreate(
+            ['module_id' => $t2Mod2->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 2.1: Membaca Muka Jam Minit & Sukatan Metrik (cm, m, g, kg, ml, l)',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=HrxZWNu72WI',
+                'duration' => 800,
+                'content' => "### Subtopik 2.1: Muka Jam & Unit Sukatan\n\n- Bilang gandaan 5 pada nombor jam: Nombor 1 = 5 minit, Nombor 3 = 15 minit (suku jam), Nombor 6 = 30 minit (setengah jam).\n- Pilih unit yang sesuai: Ubat cecair dalam botol kecil disukat menggunakan **mililiter (ml)**.",
+                'transcript' => 'Video penerangan masa dan sukatan metrik Tahun 2.',
+            ]
+        );
+
+        if ($kssrTahun2->assessments()->where('module_id', $t2Mod2->id)->count() === 0) {
+            $kssrTahun2->assessments()->create([
+                'module_id' => $t2Mod2->id,
+                'question' => 'Berapa minitkah bagi suku jam apabila jarum minit bergerak dari nombor 12 ke nombor 3?',
+                'option_a' => '5 minit',
+                'option_b' => '15 minit',
+                'option_c' => '30 minit',
+                'option_d' => '45 minit',
+                'correct_option' => 'b',
+            ]);
+        }
+
+        $t2Mod3 = $kssrTahun2->modules()->updateOrCreate(
+            ['course_id' => $kssrTahun2->id, 'order' => 3],
+            [
+                'title' => 'Unit 7 & 8 - Bentuk 3D/2D & Pengumpulan Data (Carta Palang)',
+                'description' => 'Kenali ciri bentuk 3D (Kubus, Kuboid, Piramid, Kon, Silinder & Bentangan), bentuk 2D, cara kumpul data (gundal), dan membaca Carta Palang.',
+                'duration' => 1400,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=guNdJ5MtX1A',
+                'transcript' => "### Nota Ceria Unit 7 & 8: Bentuk 3D/2D & Pengumpulan Data\n\n#### 1. Ciri-Ciri Bentuk Tiga Dimensi (3D) & Bentangan\n- **Kubus**: 6 permukaan rata yang semuanya sama besar (segi empat sama), 8 bucu, dan 12 sisi lurus.\n- **Kuboid**: 6 permukaan rata berbentuk segi empat tepat/sama, 8 bucu, dan 12 sisi lurus.\n- **Piramid Tapak Segi Empat Sama**: 5 permukaan rata (1 tapak segi empat sama + 4 segi tiga), 5 bucu, dan 8 sisi lurus.\n- **Silinder**: 2 permukaan rata berbentuk bulatan, 1 permukaan melengkung, tiada bucu.\n- **Kon**: 1 permukaan rata (bulatan), 1 permukaan melengkung, dan 1 bucu.\n\n#### 2. Bentuk Dua Dimensi (2D)\n- Bulatan, Segi Tiga, Segi Empat Sama (4 sisi sama panjang), dan Segi Empat Tepat.\n\n#### 3. Kumpul Data (Gundal) & Membaca Carta Palang\n- Gunakan tanda **gundal** (ikat 5-5) untuk mengira kekerapan objek.\n- Baca tajuk, paksi mendatar, dan paksi mencancang pada **Carta Palang** untuk menjawab soalan.",
+            ]
+        );
+
+        $t2Mod3->lessons()->updateOrCreate(
+            ['module_id' => $t2Mod3->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 3.1: Kenali Ciri Bentuk 3D, Bentangan & Carta Palang',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=guNdJ5MtX1A',
+                'duration' => 800,
+                'content' => "### Subtopik 3.1: Bentuk 3D & Carta Palang\n\n- **Kubus** mempunyai 6 permukaan rata sama besar, 8 bucu, dan 12 sisi lurus.\n- **Carta Palang** memaparkan bilangan data menggunakan palang mencancang atau mendatar supaya mudah dibandingkan.",
+                'transcript' => 'Video pembelajaran Bentuk 3D/2D dan Carta Palang Tahun 2.',
+            ]
+        );
+
+        if ($kssrTahun2->assessments()->where('module_id', $t2Mod3->id)->count() === 0) {
+            $kssrTahun2->assessments()->create([
+                'module_id' => $t2Mod3->id,
+                'question' => 'Bentuk 3D manakah yang mempunyai 1 permukaan rata berbentuk bulatan, 1 permukaan melengkung, dan 1 bucu?',
+                'option_a' => 'Kubus',
+                'option_b' => 'Kon',
+                'option_c' => 'Silinder',
+                'option_d' => 'Kuboid',
+                'correct_option' => 'b',
+            ]);
+        }
+
+        if ($kssrTahun2->assessments()->whereNull('module_id')->count() === 0) {
+            $kssrTahun2->assessments()->create([
+                'question' => 'Tukarkan pecahan 7/10 kepada nombor perpuluhan.',
+                'option_a' => '0.07',
+                'option_b' => '0.7',
+                'option_c' => '7.10',
+                'option_d' => '1.7',
+                'correct_option' => 'b',
+            ]);
+
+            $kssrTahun2->assessments()->create([
+                'question' => 'Siti ada RM90. Dia membeli sebiji kek berharga RM54.60 dan hadiah berharga RM27. Berapakah baki wangnya?',
+                'option_a' => 'RM8.40',
+                'option_b' => 'RM9.40',
+                'option_c' => 'RM18.40',
+                'option_d' => 'RM35.40',
+                'correct_option' => 'a',
+            ]);
+
+            $kssrTahun2->assessments()->create([
+                'question' => 'Jarum minit bergerak setengah pusingan dari nombor 12 hingga nombor 6. Berapa minitkah itu?',
+                'option_a' => '15 minit',
+                'option_b' => '30 minit',
+                'option_c' => '45 minit',
+                'option_d' => '60 minit',
+                'correct_option' => 'b',
+            ]);
+
+            $kssrTahun2->assessments()->create([
+                'question' => 'Bentuk 3D manakah yang mempunyai 6 permukaan rata yang semuanya sama besar, 8 bucu, dan 12 sisi lurus?',
+                'option_a' => 'Kubus',
+                'option_b' => 'Kon',
+                'option_c' => 'Silinder',
+                'option_d' => 'Sfera',
+                'correct_option' => 'a',
+            ]);
+
+            $kssrTahun2->assessments()->create([
+                'question' => 'Apakah unit yang paling sesuai digunakan untuk menyukat isi padu sebotol kecil ubat vitamin adik?',
+                'option_a' => 'Kilogram (kg)',
+                'option_b' => 'Meter (m)',
+                'option_c' => 'Mililiter (ml)',
+                'option_d' => 'Liter (l)',
+                'correct_option' => 'c',
+            ]);
+        }
+
+        // -------------------------------------------------------------
+        // 13. KPM KSSR Primary Mathematics Pilot: Tahun 3 (Jilid 2)
+        // -------------------------------------------------------------
+        $kssrTahun3 = Course::updateOrCreate(
+            ['title' => 'Matematik Tahun 3 KSSR (Jilid 2): Wang, Masa, Ukuran Metrik, Prisma & Data'],
+            [
+                'description' => 'Program Rintis Sekolah Rendah KSSR berdasarkan Buku Teks Rasmi KPM Matematik Tahun 3 (Jilid 2). Merangkumi Wang Hingga RM10,000 & Mata Wang ASEAN, Pertukaran Unit Masa & Metrik, Prisma & Poligon Sekata, Paksi Simetri, Kedudukan, dan Carta Pai.',
+                'instructor_id' => $staffId,
+                'status' => 'published',
+                'course_mode' => 'school',
+                'academic_year' => 'KSSR Rendah · Tahun 3',
+                'category_logo' => 'blue',
+                'billing_type' => 'free',
+                'price' => 0.00,
+                'cert_title' => 'Sijil Kemahiran Matematik KSSR · Tahun 3 (KPM)',
+                'cert_url' => '/books/Buku Teks Matematik Tahun 3 Jilid 2.pdf',
+                'bundle_title' => 'Buku Teks Rasmi KPM: Matematik Tahun 3 KSSR (Jilid 2) PDF',
+                'bundle_url' => '/books/Buku Teks Matematik Tahun 3 Jilid 2.pdf',
+            ]
+        );
+
+        $t3Mod1 = $kssrTahun3->modules()->updateOrCreate(
+            ['course_id' => $kssrTahun3->id, 'order' => 1],
+            [
+                'title' => 'Unit 4 - Wang Hingga RM10,000, Mata Wang ASEAN & Celik Wang',
+                'description' => 'Operasi tambah, tolak, darab, dan bahagi wang hingga RM10,000, mengenali mata wang negara ASEAN, serta pengurusan simpanan dan pelaburan.',
+                'duration' => 1500,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=Wn7e9nB3k8w',
+                'transcript' => "### Nota Ceria Unit 4: Wang Hingga RM10,000, Mata Wang ASEAN & Celik Wang\n\n#### 1. Operasi Wang Hingga RM10,000\n- Lakukan operasi tambah, tolak, darab, dan bahagi melibatkan nilai wang sehingga **RM10,000** dalam bentuk lazim.\n\n#### 2. Kenal Mata Wang Negara ASEAN\n- **Malaysia**: Ringgit (RM)\n- **Singapura & Brunei**: Dolar (\$)\n- **Thailand**: Baht (฿)\n- **Indonesia**: Rupiah (Rp)\n- **Filipina**: Peso (₱)\n- **Vietnam**: Dong (₫)\n- **Laos**: Kip (₭)\n- **Kemboja**: Riel\n- **Myanmar**: Kyat\n\n#### 3. Celik Wang: Keperluan vs Kehendak, Simpanan & Pelaburan\n- **Keperluan**: Barang asas yang mesti ada untuk terus hidup (makanan, tempat tinggal, pakaian sekolah).\n- **Kehendak**: Barang pelengkap untuk keselesaan (permainan video, coklat mewah).",
+            ]
+        );
+
+        $t3Mod1->lessons()->updateOrCreate(
+            ['module_id' => $t3Mod1->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 1.1: Operasi Wang Hingga RM10,000 & Mata Wang Negara ASEAN',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=Wn7e9nB3k8w',
+                'duration' => 750,
+                'content' => "### Subtopik 1.1: Mata Wang ASEAN & Celik Wang\n\n- Ingat mata wang negara jiran utama kita: **Thailand menggunakan Baht**, **Indonesia menggunakan Rupiah**, **Singapura dan Brunei menggunakan Dolar**, dan **Filipina menggunakan Peso**.\n- Utamakan **Keperluan** sebelum berbelanja untuk **Kehendak**.",
+                'transcript' => 'Video pembelajaran Wang dan Mata Wang ASEAN Tahun 3.',
+            ]
+        );
+
+        $t3Mod1->lessons()->updateOrCreate(
+            ['module_id' => $t3Mod1->id, 'order' => 2],
+            [
+                'title' => 'Subtopik 1.2: Rujukan Buku Teks KPM Matematik Tahun 3 Jilid 2 (PDF)',
+                'content_type' => 'pdf',
+                'content_url' => '/books/Buku Teks Matematik Tahun 3 Jilid 2.pdf',
+                'duration' => 750,
+                'content' => "### Buku Teks Rasmi KPM: Matematik Tahun 3 Jilid 2\n\nSemak dan muat turun Buku Teks Rasmi KPM Matematik Tahun 3 Jilid 2 untuk latihan lengkap Unit 4 hingga Unit 9.",
+                'transcript' => 'Dokumen PDF Buku Teks KPM Matematik Tahun 3 Jilid 2.',
+            ]
+        );
+
+        if ($kssrTahun3->assessments()->where('module_id', $t3Mod1->id)->count() === 0) {
+            $kssrTahun3->assessments()->create([
+                'module_id' => $t3Mod1->id,
+                'question' => 'Apakah mata wang rasmi bagi negara Thailand dan Indonesia?',
+                'option_a' => 'Baht dan Rupiah',
+                'option_b' => 'Peso dan Dong',
+                'option_c' => 'Dolar dan Kyat',
+                'option_d' => 'Yen dan Won',
+                'correct_option' => 'a',
+            ]);
+        }
+
+        $t3Mod2 = $kssrTahun3->modules()->updateOrCreate(
+            ['course_id' => $kssrTahun3->id, 'order' => 2],
+            [
+                'title' => 'Unit 5 & 6 - Masa (Saat, Minit, Jam) & Pertukaran Unit Panjang, Jisim, Isi Padu',
+                'description' => 'Kuasai formula pertukaran unit masa (1 minit = 60 saat) dan ukuran metrik (1 m = 100 cm, 1 kg = 1,000 g, 1 l = 1,000 ml).',
+                'duration' => 1500,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=kOJFSH_Bn9U',
+                'transcript' => "### Nota Ceria Unit 5 & 6: Pertukaran Unit Masa & Ukuran Metrik\n\n#### 1. Perkaitan Unit Masa\n- **1 minit = 60 saat** (Contoh: `4 minit = 4 x 60 saat = 240 saat`).\n- **1 jam = 60 minit**.\n- **1 minggu = 7 hari**.\n- **1 tahun = 12 bulan**.\n\n#### 2. Formula Pertukaran Unit Panjang, Jisim & Isi Padu Cecair\n- **Panjang**: `1 m = 100 cm` (Contoh: `9 m 20 cm = 900 cm + 20 cm = 920 cm`).\n- **Jisim**: `1 kg = 1,000 g` (Contoh: `3 kg 500 g = 3,500 g`).\n- **Isi Padu Cecair**: `1 l = 1,000 ml` (Contoh: `2 l 250 ml = 2,250 ml`).\n- **Operasi Darab Ukuran**: Untuk `6 x 6 m 80 cm`, darabkan `6 x 80 cm = 480 cm` (`4 m 80 cm`), kemudian `6 x 6 m = 36 m`. Jumlahkan `36 m + 4 m 80 cm = 40 m 80 cm`.",
+            ]
+        );
+
+        $t3Mod2->lessons()->updateOrCreate(
+            ['module_id' => $t3Mod2->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 2.1: Pertukaran Unit Masa (Saat & Minit) serta Ukuran (m, cm, kg, g, l, ml)',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=kOJFSH_Bn9U',
+                'duration' => 900,
+                'content' => "### Subtopik 2.1: Formula Pantas Pertukaran Unit\n\n- **Masa**: Darab 60 untuk menukar minit kepada saat (`4 minit x 60 = 240 saat`).\n- **Panjang**: Darab 100 untuk menukar meter kepada sentimeter (`9 m 20 cm = 900 cm + 20 cm = 920 cm`).",
+                'transcript' => 'Video pembelajaran pertukaran unit masa dan metrik Tahun 3.',
+            ]
+        );
+
+        if ($kssrTahun3->assessments()->where('module_id', $t3Mod2->id)->count() === 0) {
+            $kssrTahun3->assessments()->create([
+                'module_id' => $t3Mod2->id,
+                'question' => 'Tukarkan 9 m 20 cm kepada unit sentimeter (cm).',
+                'option_a' => '92 cm',
+                'option_b' => '902 cm',
+                'option_c' => '920 cm',
+                'option_d' => '9200 cm',
+                'correct_option' => 'c',
+            ]);
+        }
+
+        $t3Mod3 = $kssrTahun3->modules()->updateOrCreate(
+            ['course_id' => $kssrTahun3->id, 'order' => 3],
+            [
+                'title' => 'Unit 7, 8 & 9 - Prisma, Poligon Sekata, Paksi Simetri, Kedudukan & Carta Pai',
+                'description' => 'Kenali Prisma vs Bukan Prisma, Poligon Sekata (Pentagon hingga Oktagon), Paksi Simetri, Koordinat Kedudukan, dan Carta Pai.',
+                'duration' => 1500,
+                'content_type' => 'link',
+                'media_url' => 'https://www.youtube.com/watch?v=zI3rUMrRLF8',
+                'transcript' => "### Nota Ceria Unit 7, 8 & 9: Prisma, Poligon Sekata, Paksi Simetri & Data\n\n#### 1. Kenali Prisma vs Bukan Prisma\n- **Prisma** mempunyai **2 tapak rata yang bertentangan dan sama bentuk/saiz**, serta permukaan rata yang lain berbentuk segi empat tepat (tiada permukaan melengkung).\n- Jenis Prisma Tahun 3:\n  1. **Prisma Segi Empat Sama** (Kubus)\n  2. **Prisma Segi Empat Tepat** (Kuboid)\n  3. **Prisma Segi Tiga**\n- **Bukan Prisma**: Sfera, Kon, Silinder (kerana ada permukaan melengkung) dan Piramid (kerana hanya ada 1 tapak dan bertemu di puncak).\n\n#### 2. Poligon Sekata (Sisi Lurus Sama Panjang)\n- **Pentagon**: 5 sisi lurus sama panjang dan 5 bucu.\n- **Heksagon**: 6 sisi lurus sama panjang dan 6 bucu.\n- **Heptagon**: 7 sisi lurus sama panjang dan 7 bucu.\n- **Oktagon**: 8 sisi lurus sama panjang dan 8 bucu.\n\n#### 3. Paksi Simetri, Kedudukan & Carta Pai\n- **Paksi Simetri**: Garis lurus yang membahagikan bentuk kepada dua bahagian yang sama saiz dan bentuk apabila dilipat.\n- **Kedudukan**: Baca lajur (paksi mengufuk) dahulu diikuti baris (paksi mencancang).",
+            ]
+        );
+
+        $t3Mod3->lessons()->updateOrCreate(
+            ['module_id' => $t3Mod3->id, 'order' => 1],
+            [
+                'title' => 'Subtopik 3.1: Prisma, Poligon Sekata (Pentagon - Oktagon) & Paksi Simetri',
+                'content_type' => 'video',
+                'content_url' => 'https://www.youtube.com/watch?v=zI3rUMrRLF8',
+                'duration' => 900,
+                'content' => "### Subtopik 3.1: Prisma & Poligon Sekata\n\n- **Prisma Segi Empat Tepat (Kuboid)** ialah sebuah prisma kerana mempunyai 2 tapak rata yang kongruen dan tiada permukaan melengkung.\n- **Oktagon** mempunyai **8 sisi lurus** yang sama panjang dan **8 bucu**.",
+                'transcript' => 'Video pembelajaran Prisma dan Poligon Sekata Tahun 3.',
+            ]
+        );
+
+        if ($kssrTahun3->assessments()->where('module_id', $t3Mod3->id)->count() === 0) {
+            $kssrTahun3->assessments()->create([
+                'module_id' => $t3Mod3->id,
+                'question' => 'Apakah nama poligon sekata yang mempunyai 8 sisi lurus sama panjang dan 8 bucu?',
+                'option_a' => 'Pentagon',
+                'option_b' => 'Heksagon',
+                'option_c' => 'Heptagon',
+                'option_d' => 'Oktagon',
+                'correct_option' => 'd',
+            ]);
+        }
+
+        if ($kssrTahun3->assessments()->whereNull('module_id')->count() === 0) {
+            $kssrTahun3->assessments()->create([
+                'question' => 'Apakah mata wang rasmi bagi negara jiran Thailand dan Indonesia?',
+                'option_a' => 'Baht dan Rupiah',
+                'option_b' => 'Peso dan Dong',
+                'option_c' => 'Dolar dan Riel',
+                'option_d' => 'Kyat dan Kip',
+                'correct_option' => 'a',
+            ]);
+
+            $kssrTahun3->assessments()->create([
+                'question' => 'Ibu merebus telur selama 4 minit. Nyatakan masa tersebut dalam unit saat.',
+                'option_a' => '120 saat',
+                'option_b' => '180 saat',
+                'option_c' => '240 saat',
+                'option_d' => '400 saat',
+                'correct_option' => 'c',
+            ]);
+
+            $kssrTahun3->assessments()->create([
+                'question' => 'Tukarkan ukuran panjang 9 m 20 cm kepada unit sentimeter (cm).',
+                'option_a' => '92 cm',
+                'option_b' => '902 cm',
+                'option_c' => '920 cm',
+                'option_d' => '9200 cm',
+                'correct_option' => 'c',
+            ]);
+
+            $kssrTahun3->assessments()->create([
+                'question' => 'Antara bentuk berikut, yang manakah merupakan sebuah Prisma?',
+                'option_a' => 'Sfera',
+                'option_b' => 'Kon',
+                'option_c' => 'Kuboid / Prisma Segi Empat Tepat',
+                'option_d' => 'Silinder',
+                'correct_option' => 'c',
+            ]);
+
+            $kssrTahun3->assessments()->create([
+                'question' => 'Apakah nama poligon sekata yang mempunyai 8 bucu dan 8 sisi lurus yang sama panjang?',
+                'option_a' => 'Pentagon',
+                'option_b' => 'Heksagon',
+                'option_c' => 'Heptagon',
+                'option_d' => 'Oktagon',
+                'correct_option' => 'd',
+            ]);
+        }
+
+        // Ensure all adult/professional courses default to 'certification' and KSSR courses to 'school'
+        Course::whereNull('course_mode')->update(['course_mode' => 'certification']);
+        Course::where('title', 'like', '%KSSR%')
+            ->orWhere('academic_year', 'like', '%KSSR%')
+            ->update(['course_mode' => 'school']);
     }
 }

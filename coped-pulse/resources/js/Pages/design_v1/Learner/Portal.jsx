@@ -241,6 +241,11 @@ export default function Portal({ enrollments, stats }) {
                                 const unreadCount = unreadChatSummary?.by_course?.[course?.id] || 0;
                                 const themeConfig = LOGO_CONFIG[course?.category_logo] || LOGO_CONFIG.charcoal || LOGO_CONFIG.general;
                                 const EmblemIcon = themeConfig?.icon;
+                                const isKssrCourse = Boolean(
+                                    course?.title?.includes('Tahun') ||
+                                        course?.title?.includes('KSSR') ||
+                                        course?.academic_year?.includes('KSSR')
+                                );
 
                                 return (
                                     <div
@@ -249,7 +254,11 @@ export default function Portal({ enrollments, stats }) {
                                             if (e.target.closest('button, a, input, select')) return;
                                             router.visit(route('learner.course.learn', course.id));
                                         }}
-                                        className="bg-white border-2 border-[#E5E7EB] rounded-lg overflow-hidden transition-all duration-200 hover:scale-[1.005] hover:border-black cursor-pointer"
+                                        className={`rounded-lg overflow-hidden transition-all duration-200 hover:scale-[1.005] hover:border-black cursor-pointer ${
+                                            isKssrCourse
+                                                ? 'bg-[#FEF9C3]/40 border-2 border-[#111827]'
+                                                : 'bg-white border-2 border-[#E5E7EB]'
+                                        }`}
                                     >
                                         {/* Mobile View (< sm): Ultra-compact horizontal header + bottom progress row */}
                                         <div className="block sm:hidden p-3.5 space-y-2.5">
@@ -357,6 +366,11 @@ export default function Portal({ enrollments, stats }) {
                                                             <span className="inline-flex items-center gap-1 bg-[#F3F4F6] border border-[#E5E7EB] text-[10px] font-bold text-gray-700 px-2 py-0.5 rounded">
                                                                 📅 {course?.academic_year || '2026 / 2027'}
                                                             </span>
+                                                            {isKssrCourse && (
+                                                                <span className="inline-flex items-center gap-1 bg-[#0284C7] border border-[#111827] text-[10px] font-black text-white px-2 py-0.5 rounded">
+                                                                    🌈 MOD CERIA KSSR
+                                                                </span>
+                                                            )}
                                                             {course?.cert_title && (
                                                                 <span className="inline-flex items-center gap-1 bg-[#FFFBEB] border border-[#FDE68A] text-[10px] font-bold text-[#92400E] px-2 py-0.5 rounded">
                                                                     🎓 {course.cert_title}

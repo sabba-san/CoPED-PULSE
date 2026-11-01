@@ -59,6 +59,7 @@ class CourseController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:draft,published,archived'],
+            'course_mode' => ['nullable', 'string', 'in:certification,school'],
             'academic_year' => ['nullable', 'string', 'max:100'],
             'category_logo' => ['nullable', 'string', 'max:50'],
             'billing_type' => ['nullable', 'string', 'in:free,one_time,subscription'],
@@ -71,10 +72,15 @@ class CourseController extends Controller
         ]);
 
         $themeColors = collect(['blue', 'emerald', 'amber', 'navy', 'rose', 'charcoal']);
+        $validated['course_mode'] = !empty($validated['course_mode']) ? $validated['course_mode'] : 'certification';
         $validated['academic_year'] = !empty($validated['academic_year']) ? $validated['academic_year'] : '2026 / 2027';
         $validated['category_logo'] = !empty($validated['category_logo']) ? $validated['category_logo'] : $themeColors->random();
         $validated['billing_type'] = !empty($validated['billing_type']) ? $validated['billing_type'] : 'free';
         $validated['price'] = isset($validated['price']) && $validated['price'] !== '' ? $validated['price'] : 0.00;
+
+        if (!Schema::hasColumn('courses', 'course_mode')) {
+            unset($validated['course_mode']);
+        }
 
         $course = new Course($validated);
 
@@ -199,6 +205,7 @@ class CourseController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:draft,published,archived'],
+            'course_mode' => ['nullable', 'string', 'in:certification,school'],
             'academic_year' => ['nullable', 'string', 'max:100'],
             'category_logo' => ['nullable', 'string', 'max:50'],
             'billing_type' => ['nullable', 'string', 'in:free,one_time,subscription'],
@@ -210,6 +217,9 @@ class CourseController extends Controller
             'instructor_id' => ['nullable', 'exists:users,id'],
         ]);
 
+        if (array_key_exists('course_mode', $validated)) {
+            $validated['course_mode'] = !empty($validated['course_mode']) ? $validated['course_mode'] : ($course->course_mode ?: 'certification');
+        }
         if (array_key_exists('academic_year', $validated)) {
             $validated['academic_year'] = !empty($validated['academic_year']) ? $validated['academic_year'] : '2026 / 2027';
         }
@@ -231,6 +241,10 @@ class CourseController extends Controller
             }
         }
         unset($validated['instructor_id']);
+
+        if (!Schema::hasColumn('courses', 'course_mode')) {
+            unset($validated['course_mode']);
+        }
 
         $course->update($validated);
 
