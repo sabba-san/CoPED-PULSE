@@ -284,19 +284,32 @@ const PROBLEMS_BY_MODE = {
     ],
 };
 
-function getDefaultModeForCourse(year, moduleIdx) {
+function getDefaultModeForCourse(year, moduleIdx, moduleTitle = '') {
+    const title = (moduleTitle || '').toLowerCase();
+    if (title) {
+        if (/poligon|prisma|bentuk|simetri/i.test(title)) return 'polygon-explorer';
+        if (/sukatan|metrik|cecair|panjang|jisim|liter|isi padu/i.test(title)) return 'measurement-metric';
+        // Note: Standard 3 does not have a dedicated interactive manipulative for Operasi Wang Hingga RM10,000.
+        // Money tray (money-clock) is only active for Year 2 (RM1-RM100 & Sen).
+        if (year === 2 && /wang|duit|jam|masa|saat|minit/i.test(title)) return 'money-clock';
+        if (/pecahan|perpuluhan/i.test(title)) return 'fraction-grid';
+        if (/nilai tempat|puluh|sa/i.test(title)) return 'place-value';
+        if (/bilang|nombor/i.test(title)) return 'counting-box';
+    }
     if (year === 1) {
         return moduleIdx === 0 ? 'counting-box' : 'place-value';
     }
     if (year === 2) {
         return moduleIdx === 0 ? 'fraction-grid' : 'money-clock';
     }
-    return moduleIdx === 0 ? 'measurement-metric' : 'polygon-explorer';
+    // Note: Standard 3 does not have interactive for operasi wang (defaults to Sukatan Metrik or Poligon Sekata)
+    return moduleIdx >= 2 ? 'polygon-explorer' : 'measurement-metric';
 }
 
 export default function MathPlayground({
     yearLevel = 1,
     moduleIndex = 0,
+    moduleTitle = '',
     onEarnXp = null,
     onCompleteStep = null,
 }) {
@@ -306,7 +319,9 @@ export default function MathPlayground({
         return list.length > 0 ? list : MANIPULATIVE_MODES.filter((m) => m.year === 1);
     }, [currentYear]);
 
-    const [activeMode, setActiveMode] = useState(() => getDefaultModeForCourse(currentYear, moduleIndex));
+    const [activeMode, setActiveMode] = useState(() =>
+        getDefaultModeForCourse(currentYear, moduleIndex, moduleTitle)
+    );
     const [problemIdx, setProblemIdx] = useState(0);
     const [completedByMode, setCompletedByMode] = useState({});
     const [showHint, setShowHint] = useState(false);
@@ -325,10 +340,10 @@ export default function MathPlayground({
     const [showSymmetryAxis, setShowSymmetryAxis] = useState(true);
 
     useEffect(() => {
-        const nextMode = getDefaultModeForCourse(currentYear, moduleIndex);
+        const nextMode = getDefaultModeForCourse(currentYear, moduleIndex, moduleTitle);
         setActiveMode(nextMode);
         setProblemIdx(0);
-    }, [currentYear, moduleIndex]);
+    }, [currentYear, moduleIndex, moduleTitle]);
 
     useEffect(() => {
         if (!availableModes.some((m) => m.id === activeMode)) {
@@ -483,9 +498,6 @@ export default function MathPlayground({
             {/* Top Manipulative Selector & Header - ONLY shows activities for current standard */}
             <div className="px-4 py-3 bg-[#F8FAFC] border-b border-[#E2E8F0] flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-xs font-black uppercase tracking-wider mr-1">
-                        Tahun {currentYear}
-                    </span>
                     {availableModes.map((m) => {
                         const isSelected = activeMode === m.id;
                         return (
@@ -518,35 +530,29 @@ export default function MathPlayground({
                 </button>
             </div>
 
-            {/* Main Interactive Stage (Fits cleanly in 1 viewport) */}
-            <div className="p-4 sm:p-6 space-y-4">
-                {/* Question Prompt Banner */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E2E8F0]">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-[11px] font-extrabold uppercase tracking-wider">
-                                Aktiviti {problemIdx + 1} daripada {problems.length}
-                            </span>
-                            {modeCompletedSet.has(currentProblem.id) && (
-                                <span className="px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0] text-[11px] font-extrabold">
-                                    ✓ Selesai (+20 XP)
-                                </span>
-                            )}
-                        </div>
+            {/* Main Interactive Stage (Centered to Eye-Friendly max-w-2xl) */}
+            <div className="p-4 sm:p-6">
+                <div className="max-w-2xl mx-auto space-y-4 py-2">
+                    {/* Question Prompt Banner */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E2E8F0]">
                         <h3 className="font-display font-extrabold text-base sm:text-xl text-[#0F172A] leading-snug">
                             {currentProblem.prompt}
                         </h3>
+                        {modeCompletedSet.has(currentProblem.id) && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0] text-[11px] font-extrabold shrink-0">
+                                ✓ Selesai (+20 XP)
+                            </span>
+                        )}
                     </div>
-                </div>
 
                 {/* MANIPULATIVE 1: KHAN ACADEMY COUNTING BOX (TAHUN 1) */}
                 {activeMode === 'counting-box' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                         {/* Left: Object Supply Buttons */}
-                        <div className="lg:col-span-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 space-y-3">
-                            <p className="text-xs font-extrabold uppercase tracking-wider text-[#475569]">
-                                1. Klik untuk Masukkan {currentProblem.unitLabel}:
-                            </p>
+                        <div className="md:col-span-5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 space-y-3">
+                            <span className="text-xs font-extrabold uppercase tracking-wider text-[#475569] block">
+                                Pilih Objek:
+                            </span>
                             <div className="grid grid-cols-2 gap-2">
                                 <button
                                     type="button"
@@ -554,9 +560,9 @@ export default function MathPlayground({
                                         setBoxCount((c) => Math.min(50, c + 1));
                                         setCheckStatus(null);
                                     }}
-                                    className="p-3 rounded-xl bg-white hover:bg-[#EFF6FF] border border-[#CBD5E1] hover:border-[#2563EB] flex flex-col items-center gap-1 transition-transform active:scale-95"
+                                    className="p-2.5 rounded-xl bg-white hover:bg-[#EFF6FF] border border-[#CBD5E1] hover:border-[#2563EB] flex flex-col items-center gap-1 transition-transform active:scale-95"
                                 >
-                                    <span className="text-2xl">{currentProblem.icon}</span>
+                                    <span className="text-xl">{currentProblem.icon}</span>
                                     <span className="text-xs font-extrabold text-[#0F172A]">+1 {currentProblem.unitLabel}</span>
                                 </button>
 
@@ -566,9 +572,9 @@ export default function MathPlayground({
                                         setBoxCount((c) => Math.min(50, c + 5));
                                         setCheckStatus(null);
                                     }}
-                                    className="p-3 rounded-xl bg-white hover:bg-[#EFF6FF] border border-[#CBD5E1] hover:border-[#2563EB] flex flex-col items-center gap-1 transition-transform active:scale-95"
+                                    className="p-2.5 rounded-xl bg-white hover:bg-[#EFF6FF] border border-[#CBD5E1] hover:border-[#2563EB] flex flex-col items-center gap-1 transition-transform active:scale-95"
                                 >
-                                    <span className="text-2xl">{currentProblem.icon}{currentProblem.icon}</span>
+                                    <span className="text-xl">{currentProblem.icon}{currentProblem.icon}</span>
                                     <span className="text-xs font-extrabold text-[#2563EB]">+5 Sekaligus</span>
                                 </button>
 
@@ -578,11 +584,11 @@ export default function MathPlayground({
                                         setBoxCount((c) => Math.min(50, c + 10));
                                         setCheckStatus(null);
                                     }}
-                                    className="col-span-2 p-2.5 rounded-xl bg-[#FEF3C7] hover:bg-[#FDE68A] border border-[#F59E0B] flex items-center justify-center gap-2 transition-transform active:scale-95"
+                                    className="col-span-2 p-2 rounded-xl bg-[#FEF3C7] hover:bg-[#FDE68A] border border-[#F59E0B] flex items-center justify-center gap-2 transition-transform active:scale-95"
                                 >
-                                    <span className="text-lg">📦</span>
-                                    <span className="text-xs sm:text-sm font-extrabold text-[#92400E]">
-                                        +10 (Tambah 1 Kumpulan Puluh)
+                                    <span className="text-base">📦</span>
+                                    <span className="text-xs font-extrabold text-[#92400E]">
+                                        +10 (1 Puluh)
                                     </span>
                                 </button>
                             </div>
@@ -595,7 +601,7 @@ export default function MathPlayground({
                                         setBoxCount((c) => Math.max(0, c - 1));
                                         setCheckStatus(null);
                                     }}
-                                    className="flex-1 py-2 px-3 rounded-lg bg-white border border-[#CBD5E1] text-xs font-bold text-[#334155] hover:bg-gray-50 disabled:opacity-40"
+                                    className="flex-1 py-1.5 px-3 rounded-lg bg-white border border-[#CBD5E1] text-xs font-bold text-[#334155] hover:bg-gray-50 disabled:opacity-40"
                                 >
                                     -1 Keluarkan
                                 </button>
@@ -606,62 +612,61 @@ export default function MathPlayground({
                                         setBoxCount(0);
                                         setCheckStatus(null);
                                     }}
-                                    className="py-2 px-3 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-40"
+                                    className="py-1.5 px-3 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-40"
                                 >
                                     Kosongkan
                                 </button>
                             </div>
                         </div>
 
-                        {/* Right: Target Counting Box */}
-                        <div className="lg:col-span-8 bg-[#FFFBEB] border border-[#FCD34D] rounded-xl p-4 min-h-[210px] flex flex-col justify-between">
+                        {/* Right: Target Counting Box (5-per-row 2x5 Ten-Frame Grid) */}
+                        <div className="md:col-span-7 bg-[#FFFBEB] border border-[#FCD34D] rounded-xl p-4 min-h-[210px] flex flex-col justify-between">
                             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#FDE68A]">
                                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#92400E]">
-                                    📥 Kotak Sasaran Murid (Klik objek untuk keluarkan):
+                                    Kotak Sasaran:
                                 </span>
-                                <div className="flex items-center gap-2">
-                                    <span className="px-3 py-1 rounded-full bg-white border border-[#F59E0B] text-xs sm:text-sm font-black text-[#0F172A]">
-                                        Jumlah: {boxCount} ({Math.floor(boxCount / 10)} puluh {boxCount % 10} sa)
-                                    </span>
-                                </div>
+                                <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#F59E0B] text-xs font-black text-[#0F172A]">
+                                    Jumlah: {boxCount} ({Math.floor(boxCount / 10)} puluh {boxCount % 10} sa)
+                                </span>
                             </div>
 
                             {boxCount === 0 ? (
-                                <div className="my-auto py-8 text-center text-sm font-bold text-[#92400E]/70">
-                                    Kotak masih kosong (0). Klik butang di sebelah kiri untuk memasukkan {currentProblem.unitLabel}!
+                                <div className="my-auto py-6 text-center text-xs font-bold text-[#92400E]/70">
+                                    Kotak kosong (0). Klik butang di sebelah kiri untuk memasukkan {currentProblem.unitLabel}!
                                 </div>
                             ) : (
-                                <div className="py-3 space-y-2">
-                                    {/* Group by 10s so Year 1 kids clearly see Puluh & Sa */}
-                                    {Array.from({ length: Math.ceil(boxCount / 10) }, (_, rowIdx) => {
-                                        const countInRow = Math.min(10, boxCount - rowIdx * 10);
-                                        const isFullTen = countInRow === 10;
+                                <div className="py-2 space-y-2">
+                                    {Array.from({ length: Math.ceil(boxCount / 10) }, (_, tenIdx) => {
+                                        const countInTen = Math.min(10, boxCount - tenIdx * 10);
+                                        const isFullTen = countInTen === 10;
                                         return (
                                             <div
-                                                key={rowIdx}
-                                                className={`p-2 rounded-lg border flex flex-wrap items-center gap-1.5 ${
+                                                key={tenIdx}
+                                                className={`p-2 rounded-lg border space-y-1 ${
                                                     isFullTen
                                                         ? 'bg-[#FEF3C7] border-[#F59E0B]'
                                                         : 'bg-white border-[#E2E8F0]'
                                                 }`}
                                             >
-                                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-white border border-[#CBD5E1] text-[#334155] mr-1">
-                                                    {isFullTen ? '1 Puluh (10)' : `${countInRow} Sa`}
+                                                <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-white border border-[#CBD5E1] text-[#334155] inline-block">
+                                                    {isFullTen ? `1 Puluh (Kumpulan ${tenIdx + 1})` : `${countInTen} Sa`}
                                                 </span>
-                                                {Array.from({ length: countInRow }, (__, itemIdx) => (
-                                                    <button
-                                                        key={itemIdx}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setBoxCount((c) => Math.max(0, c - 1));
-                                                            setCheckStatus(null);
-                                                        }}
-                                                        title="Klik untuk keluarkan 1"
-                                                        className="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] hover:border-rose-400 flex items-center justify-center text-lg transition-transform hover:scale-105"
-                                                    >
-                                                        {currentProblem.icon}
-                                                    </button>
-                                                ))}
+                                                <div className="grid grid-cols-5 gap-1.5 max-w-[210px]">
+                                                    {Array.from({ length: countInTen }, (__, itemIdx) => (
+                                                        <button
+                                                            key={itemIdx}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setBoxCount((c) => Math.max(0, c - 1));
+                                                                setCheckStatus(null);
+                                                            }}
+                                                            title="Klik untuk keluarkan 1"
+                                                            className="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] hover:border-rose-400 flex items-center justify-center text-base transition-transform hover:scale-105"
+                                                        >
+                                                            {currentProblem.icon}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -673,20 +678,20 @@ export default function MathPlayground({
 
                 {/* MANIPULATIVE 2: MATHIGON PLACE VALUE BLOCKS (PULUH & SA) */}
                 {activeMode === 'place-value' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="max-w-lg mx-auto space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {/* Column 1: Rumah Puluh (10) */}
-                            <div className="bg-[#FFF7ED] border border-[#FED7AA] rounded-xl p-4 space-y-3">
+                            <div className="bg-[#FFF7ED] border border-[#FED7AA] rounded-xl p-3.5 space-y-2.5">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <span className="text-xs font-black uppercase tracking-wider text-[#C2410C] block">
-                                            Rumah Nilai Tempat: PULUH (10)
+                                            Puluh (10)
                                         </span>
-                                        <span className="text-lg font-black text-[#0F172A]">
-                                            {tensCount} Puluh = {tensCount * 10}
+                                        <span className="text-base font-black text-[#0F172A]">
+                                            {tensCount * 10}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1">
                                         <button
                                             type="button"
                                             disabled={tensCount === 0}
@@ -694,9 +699,9 @@ export default function MathPlayground({
                                                 setTensCount((t) => Math.max(0, t - 1));
                                                 setCheckStatus(null);
                                             }}
-                                            className="px-2.5 py-1.5 rounded-lg bg-white border border-[#CBD5E1] text-xs font-extrabold text-[#0F172A] disabled:opacity-40"
+                                            className="px-2 py-1 rounded-lg bg-white border border-[#CBD5E1] text-xs font-extrabold text-[#0F172A] disabled:opacity-40"
                                         >
-                                            -1 Puluh
+                                            -1
                                         </button>
                                         <button
                                             type="button"
@@ -705,17 +710,18 @@ export default function MathPlayground({
                                                 setTensCount((t) => Math.min(9, t + 1));
                                                 setCheckStatus(null);
                                             }}
-                                            className="px-3 py-1.5 rounded-lg bg-[#EA580C] hover:bg-[#C2410C] text-white text-xs font-extrabold transition-colors"
+                                            className="px-2.5 py-1 rounded-lg bg-[#EA580C] hover:bg-[#C2410C] text-white text-xs font-extrabold transition-colors"
                                         >
-                                            +1 Blok Puluh (10)
+                                            +1 Puluh
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="min-h-[120px] p-3 rounded-lg bg-white border border-[#FFEDD5] flex flex-wrap items-end gap-2">
+                                {/* Upright Vertical 10-Block Towers */}
+                                <div className="min-h-[130px] p-2.5 rounded-lg bg-white border border-[#FFEDD5] flex items-end justify-center gap-1.5 overflow-x-auto">
                                     {tensCount === 0 ? (
-                                        <span className="text-xs font-semibold text-gray-400 m-auto">
-                                            Tiada blok Puluh (0). Klik [+1 Blok Puluh (10)] di atas.
+                                        <span className="text-xs font-semibold text-gray-400 m-auto text-center">
+                                            Tiada blok Puluh (0).<br />Klik [+1 Puluh].
                                         </span>
                                     ) : (
                                         Array.from({ length: tensCount }, (_, idx) => (
@@ -726,12 +732,12 @@ export default function MathPlayground({
                                                     setCheckStatus(null);
                                                 }}
                                                 title="Klik untuk keluarkan 1 blok Puluh"
-                                                className="cursor-pointer flex flex-col border border-[#C2410C] rounded overflow-hidden hover:opacity-80"
+                                                className="cursor-pointer flex flex-col border border-[#C2410C] rounded overflow-hidden hover:opacity-80 shrink-0"
                                             >
                                                 {Array.from({ length: 10 }, (__, seg) => (
                                                     <div
                                                         key={seg}
-                                                        className="w-6 h-2.5 bg-[#FB923C] border-b border-[#C2410C] last:border-b-0"
+                                                        className="w-5 h-2.5 bg-[#FB923C] border-b border-[#C2410C] last:border-b-0"
                                                     />
                                                 ))}
                                             </div>
@@ -741,17 +747,17 @@ export default function MathPlayground({
                             </div>
 
                             {/* Column 2: Rumah Sa (1) */}
-                            <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-4 space-y-3">
+                            <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-3.5 space-y-2.5">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <span className="text-xs font-black uppercase tracking-wider text-[#15803D] block">
-                                            Rumah Nilai Tempat: SA (1)
+                                            Sa (1)
                                         </span>
-                                        <span className="text-lg font-black text-[#0F172A]">
-                                            {onesCount} Sa = {onesCount}
+                                        <span className="text-base font-black text-[#0F172A]">
+                                            {onesCount}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1">
                                         <button
                                             type="button"
                                             disabled={onesCount === 0}
@@ -759,9 +765,9 @@ export default function MathPlayground({
                                                 setOnesCount((o) => Math.max(0, o - 1));
                                                 setCheckStatus(null);
                                             }}
-                                            className="px-2.5 py-1.5 rounded-lg bg-white border border-[#CBD5E1] text-xs font-extrabold text-[#0F172A] disabled:opacity-40"
+                                            className="px-2 py-1 rounded-lg bg-white border border-[#CBD5E1] text-xs font-extrabold text-[#0F172A] disabled:opacity-40"
                                         >
-                                            -1 Sa
+                                            -1
                                         </button>
                                         <button
                                             type="button"
@@ -770,17 +776,17 @@ export default function MathPlayground({
                                                 setOnesCount((o) => Math.min(9, o + 1));
                                                 setCheckStatus(null);
                                             }}
-                                            className="px-3 py-1.5 rounded-lg bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-extrabold transition-colors"
+                                            className="px-2.5 py-1 rounded-lg bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-extrabold transition-colors"
                                         >
-                                            +1 Blok Sa (1)
+                                            +1 Sa
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="min-h-[120px] p-3 rounded-lg bg-white border border-[#DCFCE7] flex flex-wrap items-center content-center gap-2">
+                                <div className="min-h-[130px] p-2.5 rounded-lg bg-white border border-[#DCFCE7] flex flex-wrap items-end justify-center content-end gap-1.5">
                                     {onesCount === 0 ? (
-                                        <span className="text-xs font-semibold text-gray-400 m-auto">
-                                            Tiada blok Sa (0). Klik [+1 Blok Sa (1)] di atas.
+                                        <span className="text-xs font-semibold text-gray-400 m-auto text-center">
+                                            Tiada blok Sa (0).<br />Klik [+1 Sa].
                                         </span>
                                     ) : (
                                         Array.from({ length: onesCount }, (_, idx) => (
@@ -792,7 +798,7 @@ export default function MathPlayground({
                                                     setCheckStatus(null);
                                                 }}
                                                 title="Klik untuk keluarkan 1 blok Sa"
-                                                className="w-8 h-8 rounded bg-[#22C55E] border border-[#15803D] text-white text-xs font-black flex items-center justify-center hover:opacity-80"
+                                                className="w-6 h-6 rounded bg-[#22C55E] border border-[#15803D] text-white text-xs font-black flex items-center justify-center hover:opacity-80 shrink-0"
                                             >
                                                 1
                                             </button>
@@ -803,13 +809,13 @@ export default function MathPlayground({
                         </div>
 
                         {/* Live Equation Summary Bar */}
-                        <div className="px-4 py-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex flex-wrap items-center justify-between gap-2">
-                            <span className="text-xs sm:text-sm font-bold text-[#475569]">
-                                Nilai Nombor Yang Dibina:
+                        <div className="px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-[#475569]">
+                                Nilai Dibina:
                             </span>
-                            <span className="text-base sm:text-xl font-black text-[#0F172A]">
-                                {tensCount} Puluh ({tensCount * 10}) + {onesCount} Sa ({onesCount}) ={' '}
-                                <span className="px-3 py-1 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
+                            <span className="text-sm sm:text-base font-black text-[#0F172A]">
+                                {tensCount * 10} + {onesCount} ={' '}
+                                <span className="px-2 py-0.5 rounded-lg bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
                                     {tensCount * 10 + onesCount}
                                 </span>
                             </span>
@@ -819,18 +825,18 @@ export default function MathPlayground({
 
                 {/* MANIPULATIVE 3: INTERACTIVE FRACTION & DECIMAL BAR (TAHUN 2) */}
                 {activeMode === 'fraction-grid' && (
-                    <div className="space-y-4">
-                        <div className="p-5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-4">
+                    <div className="max-w-lg mx-auto space-y-3">
+                        <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#475569]">
-                                    Klik petak di bawah untuk warnakan atau nyahwarna bahagian:
+                                    Pilih Bahagian:
                                 </span>
-                                <div className="flex items-center gap-2">
-                                    <span className="px-3 py-1 rounded-lg bg-white border border-[#CBD5E1] text-sm font-black text-[#0F172A]">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="px-2.5 py-0.5 rounded-lg bg-white border border-[#CBD5E1] text-xs font-black text-[#0F172A]">
                                         Pecahan: {shadedIndices.length} / {currentProblem.total}
                                     </span>
                                     {currentProblem.total === 10 && (
-                                        <span className="px-3 py-1 rounded-lg bg-[#ECFDF5] border border-[#A7F3D0] text-sm font-black text-[#047857]">
+                                        <span className="px-2.5 py-0.5 rounded-lg bg-[#ECFDF5] border border-[#A7F3D0] text-xs font-black text-[#047857]">
                                             Perpuluhan: {(shadedIndices.length / 10).toFixed(1)}
                                         </span>
                                     )}
@@ -839,7 +845,7 @@ export default function MathPlayground({
 
                             {/* Interactive Fraction / Decimal Strip */}
                             <div
-                                className="grid gap-2"
+                                className="grid gap-1.5"
                                 style={{
                                     gridTemplateColumns: `repeat(${currentProblem.total}, minmax(0, 1fr))`,
                                 }}
@@ -861,13 +867,13 @@ export default function MathPlayground({
                                             style={{
                                                 backgroundColor: isShaded ? currentProblem.color : '#FFFFFF',
                                             }}
-                                            className={`h-20 sm:h-24 rounded-xl border transition-transform active:scale-95 flex flex-col items-center justify-center gap-1 ${
+                                            className={`h-16 sm:h-20 rounded-xl border transition-transform active:scale-95 flex flex-col items-center justify-center gap-0.5 ${
                                                 isShaded
                                                     ? 'text-white border-[#0F172A]'
                                                     : 'text-[#64748B] border-[#CBD5E1] hover:border-[#2563EB]'
                                             }`}
                                         >
-                                            <span className="text-xs sm:text-sm font-black">
+                                            <span className="text-xs font-black">
                                                 1/{currentProblem.total}
                                             </span>
                                             {currentProblem.total === 10 && (
@@ -879,45 +885,33 @@ export default function MathPlayground({
                             </div>
 
                             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setCheckStatus(null);
-                                            if (shadedIndices.length < currentProblem.total) {
-                                                const nextIdx = Array.from(
-                                                    { length: currentProblem.total },
-                                                    (_, i) => i
-                                                ).find((i) => !shadedIndices.includes(i));
-                                                if (nextIdx !== undefined) {
-                                                    setShadedIndices((prev) => [...prev, nextIdx]);
-                                                }
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCheckStatus(null);
+                                        if (shadedIndices.length < currentProblem.total) {
+                                            const nextIdx = Array.from(
+                                                { length: currentProblem.total },
+                                                (_, i) => i
+                                            ).find((i) => !shadedIndices.includes(i));
+                                            if (nextIdx !== undefined) {
+                                                setShadedIndices((prev) => [...prev, nextIdx]);
                                             }
-                                        }}
-                                        className="px-3 py-1.5 rounded-lg bg-[#2563EB] text-white text-xs font-extrabold"
-                                    >
-                                        + Warnakan 1 Bahagian
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setCheckStatus(null);
-                                            setShadedIndices((prev) => prev.slice(0, -1));
-                                        }}
-                                        className="px-3 py-1.5 rounded-lg bg-white border border-[#CBD5E1] text-xs font-bold text-[#334155]"
-                                    >
-                                        - Kurangkan 1
-                                    </button>
-                                </div>
+                                        }
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg bg-[#2563EB] text-white text-xs font-extrabold"
+                                >
+                                    + Warnakan 1 Bahagian
+                                </button>
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setCheckStatus(null);
                                         setShadedIndices([]);
                                     }}
-                                    className="text-xs font-bold text-rose-600 hover:underline"
+                                    className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold"
                                 >
-                                    Padam Semua Warna
+                                    Kosongkan
                                 </button>
                             </div>
                         </div>
@@ -926,15 +920,15 @@ export default function MathPlayground({
 
                 {/* MANIPULATIVE 4: MONEY RM TRAY & ANALOG CLOCK (TAHUN 2) */}
                 {activeMode === 'money-clock' && (
-                    <div>
+                    <div className="max-w-xl mx-auto">
                         {currentProblem.subType === 'money' ? (
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-stretch">
                                 {/* Left: Malaysian Banknotes & Coins */}
-                                <div className="lg:col-span-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 space-y-3">
+                                <div className="md:col-span-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3.5 space-y-2.5">
                                     <span className="text-xs font-extrabold uppercase tracking-wider text-[#475569] block">
-                                        Klik Wang Kertas & Syiling Malaysia untuk Membayar:
+                                        Pilih Wang:
                                     </span>
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-4 gap-1.5">
                                         {[
                                             { label: 'RM50', cents: 5000, bg: 'bg-[#0D9488] text-white' },
                                             { label: 'RM20', cents: 2000, bg: 'bg-[#F59E0B] text-[#111827]' },
@@ -952,23 +946,21 @@ export default function MathPlayground({
                                                     setCheckStatus(null);
                                                     setMoneyTray((prev) => [...prev, note]);
                                                 }}
-                                                className={`py-2.5 px-2 rounded-lg border border-[#0F172A]/20 font-black text-xs sm:text-sm transition-transform active:scale-95 ${note.bg}`}
+                                                className={`py-2 px-1 rounded-lg border border-[#0F172A]/20 font-black text-xs transition-transform active:scale-95 text-center ${note.bg}`}
                                             >
-                                                + {note.label}
+                                                +{note.label}
                                             </button>
                                         ))}
                                     </div>
                                     <div className="flex items-center justify-between pt-1">
-                                        <span className="text-[11px] font-semibold text-gray-500">
-                                            Klik mana-mana wang di dalam dulang untuk keluarkan.
-                                        </span>
                                         <button
                                             type="button"
+                                            disabled={moneyTray.length === 0}
                                             onClick={() => {
                                                 setCheckStatus(null);
                                                 setMoneyTray([]);
                                             }}
-                                            className="text-xs font-bold text-rose-600 hover:underline"
+                                            className="text-xs font-bold text-rose-600 hover:underline disabled:opacity-40"
                                         >
                                             Kosongkan Dulang
                                         </button>
@@ -976,21 +968,21 @@ export default function MathPlayground({
                                 </div>
 
                                 {/* Right: Payment Tray */}
-                                <div className="lg:col-span-6 bg-[#ECFDF5] border border-[#A7F3D0] rounded-xl p-4 flex flex-col justify-between space-y-3">
+                                <div className="md:col-span-6 bg-[#ECFDF5] border border-[#A7F3D0] rounded-xl p-3.5 flex flex-col justify-between space-y-2.5">
                                     <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#A7F3D0]">
-                                        <span className="text-xs font-extrabold text-[#065F46]">
-                                            {currentProblem.itemTitle}
+                                        <span className="text-xs font-extrabold text-[#065F46] truncate">
+                                            {currentProblem.itemTitle || 'Dulang Bayaran:'}
                                         </span>
-                                        <span className="px-3 py-1 rounded-lg bg-white border border-[#10B981] text-sm font-black text-[#065F46]">
-                                            Jumlah: RM{(moneyTotalCents / 100).toFixed(2)} / Sasaran: RM
+                                        <span className="px-2.5 py-0.5 rounded-lg bg-white border border-[#10B981] text-xs font-black text-[#065F46]">
+                                            RM{(moneyTotalCents / 100).toFixed(2)} / Sasaran: RM
                                             {(currentProblem.targetCents / 100).toFixed(2)}
                                         </span>
                                     </div>
 
-                                    <div className="min-h-[110px] flex flex-wrap items-center content-start gap-2">
+                                    <div className="min-h-[110px] flex flex-wrap items-center content-start gap-1.5">
                                         {moneyTray.length === 0 ? (
-                                            <span className="text-xs font-semibold text-[#047857]/70 m-auto">
-                                                Dulang bayaran kosong (RM0.00). Klik wang di sebelah kiri.
+                                            <span className="text-xs font-semibold text-[#047857]/70 m-auto text-center">
+                                                Dulang kosong (RM0.00).<br />Klik wang di sebelah kiri.
                                             </span>
                                         ) : (
                                             moneyTray.map((item, idx) => (
@@ -1001,7 +993,8 @@ export default function MathPlayground({
                                                         setCheckStatus(null);
                                                         setMoneyTray((prev) => prev.filter((_, i) => i !== idx));
                                                     }}
-                                                    className={`px-2.5 py-1.5 rounded-lg border border-[#0F172A]/20 text-xs font-black ${item.bg}`}
+                                                    title="Klik untuk keluarkan"
+                                                    className={`px-2 py-1 rounded-lg border border-[#0F172A]/20 text-xs font-black ${item.bg}`}
                                                 >
                                                     {item.label} ✕
                                                 </button>
@@ -1014,7 +1007,7 @@ export default function MathPlayground({
                             /* Interactive Analog Clock Mode */
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
                                 <div className="md:col-span-5 flex flex-col items-center">
-                                    <svg width="210" height="210" viewBox="0 0 220 220" className="bg-white rounded-full border border-[#CBD5E1]">
+                                    <svg width="190" height="190" viewBox="0 0 220 220" className="bg-white rounded-full border border-[#CBD5E1]">
                                         <circle cx="110" cy="110" r="100" fill="#FFFFFF" stroke="#0F172A" strokeWidth="4" />
                                         {Array.from({ length: 12 }, (_, i) => {
                                             const num = i + 1;
@@ -1087,29 +1080,29 @@ export default function MathPlayground({
                                     </svg>
                                 </div>
 
-                                <div className="md:col-span-7 space-y-3">
-                                    <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] flex items-center justify-between">
+                                <div className="md:col-span-7 space-y-2.5">
+                                    <div className="p-3 rounded-xl bg-white border border-[#E2E8F0] flex items-center justify-between">
                                         <span className="text-xs font-extrabold uppercase text-[#475569]">
-                                            Waktu Pada Jam Sekarang:
+                                            Waktu Jam:
                                         </span>
-                                        <span className="text-xl font-black text-[#2563EB]">
+                                        <span className="text-lg font-black text-[#2563EB]">
                                             Pukul {currentProblem.hour}:{String(clockMinutes).padStart(2, '0')} (
-                                            {clockMinutes} Minit)
+                                            {clockMinutes}m)
                                         </span>
                                     </div>
-                                    <p className="text-xs font-semibold text-[#475569]">
-                                        Klik nombor 1 hingga 12 pada muka jam atau gunakan butang senggatan 5 minit di bawah:
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
+                                    <span className="text-xs font-semibold text-[#475569] block">
+                                        Pusing Jarum Jam:
+                                    </span>
+                                    <div className="flex flex-wrap gap-1.5">
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setCheckStatus(null);
                                                 setClockMinutes((m) => (m - 5 + 60) % 60);
                                             }}
-                                            className="px-3.5 py-2 rounded-lg bg-white border border-[#CBD5E1] text-xs font-extrabold text-[#0F172A]"
+                                            className="px-3 py-1.5 rounded-lg bg-white border border-[#CBD5E1] text-xs font-extrabold text-[#0F172A]"
                                         >
-                                            - 5 Minit
+                                            -5 Minit
                                         </button>
                                         <button
                                             type="button"
@@ -1117,9 +1110,9 @@ export default function MathPlayground({
                                                 setCheckStatus(null);
                                                 setClockMinutes((m) => (m + 5) % 60);
                                             }}
-                                            className="px-3.5 py-2 rounded-lg bg-[#2563EB] text-white text-xs font-extrabold"
+                                            className="px-3 py-1.5 rounded-lg bg-[#2563EB] text-white text-xs font-extrabold"
                                         >
-                                            + 5 Minit
+                                            +5 Minit
                                         </button>
                                         <button
                                             type="button"
@@ -1127,9 +1120,9 @@ export default function MathPlayground({
                                                 setCheckStatus(null);
                                                 setClockMinutes(15);
                                             }}
-                                            className="px-3.5 py-2 rounded-lg bg-[#FEF3C7] border border-[#F59E0B] text-xs font-extrabold text-[#92400E]"
+                                            className="px-3 py-1.5 rounded-lg bg-[#FEF3C7] border border-[#F59E0B] text-xs font-extrabold text-[#92400E]"
                                         >
-                                            Suku Jam (15 Minit)
+                                            Suku Jam (15m)
                                         </button>
                                         <button
                                             type="button"
@@ -1137,9 +1130,9 @@ export default function MathPlayground({
                                                 setCheckStatus(null);
                                                 setClockMinutes(30);
                                             }}
-                                            className="px-3.5 py-2 rounded-lg bg-[#ECFDF5] border border-[#10B981] text-xs font-extrabold text-[#065F46]"
+                                            className="px-3 py-1.5 rounded-lg bg-[#ECFDF5] border border-[#10B981] text-xs font-extrabold text-[#065F46]"
                                         >
-                                            Setengah Jam (30 Minit)
+                                            Setengah Jam (30m)
                                         </button>
                                     </div>
                                 </div>
@@ -1150,107 +1143,107 @@ export default function MathPlayground({
 
                 {/* MANIPULATIVE 5: POLYGON EXPLORER (TAHUN 3) */}
                 {activeMode === 'polygon-explorer' && (
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
-                        <div className="md:col-span-5 flex flex-col items-center">
-                            <svg width="260" height="230" viewBox="0 0 260 230" className="bg-white rounded-xl border border-[#CBD5E1]">
-                                <polygon
-                                    points={polygonPoints.map((p) => `${p.x},${p.y}`).join(' ')}
-                                    fill="#EFF6FF"
-                                    stroke="#2563EB"
-                                    strokeWidth="3"
-                                />
-                                {showSymmetryAxis && (
-                                    <line
-                                        x1="130"
-                                        y1="15"
-                                        x2="130"
-                                        y2="215"
-                                        stroke="#F59E0B"
-                                        strokeWidth="2"
-                                        strokeDasharray="6 4"
+                    <div className="max-w-xl mx-auto bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                            <div className="sm:col-span-6 flex flex-col items-center">
+                                <svg width="220" height="200" viewBox="0 0 260 230" className="bg-white rounded-xl border border-[#CBD5E1]">
+                                    <polygon
+                                        points={polygonPoints.map((p) => `${p.x},${p.y}`).join(' ')}
+                                        fill="#EFF6FF"
+                                        stroke="#2563EB"
+                                        strokeWidth="3"
                                     />
-                                )}
-                                {polygonPoints.map((pt, idx) => {
-                                    const isLit = litVertices.includes(idx);
-                                    return (
-                                        <g
-                                            key={idx}
-                                            onClick={() => {
-                                                setCheckStatus(null);
-                                                setLitVertices((prev) =>
-                                                    prev.includes(idx)
-                                                        ? prev.filter((i) => i !== idx)
-                                                        : [...prev, idx]
-                                                );
-                                            }}
-                                            className="cursor-pointer"
-                                        >
-                                            <circle
-                                                cx={pt.x}
-                                                cy={pt.y}
-                                                r="13"
-                                                fill={isLit ? '#10B981' : '#FFFFFF'}
-                                                stroke="#0F172A"
-                                                strokeWidth="2"
-                                            />
-                                            <text
-                                                x={pt.x}
-                                                y={pt.y + 4}
-                                                textAnchor="middle"
-                                                fontSize="11"
-                                                fontWeight="bold"
-                                                fill={isLit ? '#FFFFFF' : '#0F172A'}
+                                    {showSymmetryAxis && (
+                                        <line
+                                            x1="130"
+                                            y1="15"
+                                            x2="130"
+                                            y2="215"
+                                            stroke="#F59E0B"
+                                            strokeWidth="2"
+                                            strokeDasharray="6 4"
+                                        />
+                                    )}
+                                    {polygonPoints.map((pt, idx) => {
+                                        const isLit = litVertices.includes(idx);
+                                        return (
+                                            <g
+                                                key={idx}
+                                                onClick={() => {
+                                                    setCheckStatus(null);
+                                                    setLitVertices((prev) =>
+                                                        prev.includes(idx)
+                                                            ? prev.filter((i) => i !== idx)
+                                                            : [...prev, idx]
+                                                    );
+                                                }}
+                                                className="cursor-pointer"
                                             >
-                                                {idx + 1}
-                                            </text>
-                                        </g>
-                                    );
-                                })}
-                            </svg>
-                        </div>
-
-                        <div className="md:col-span-7 space-y-3">
-                            <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] flex items-center justify-between">
-                                <div>
-                                    <span className="text-xs font-extrabold uppercase text-[#475569] block">
-                                        Poligon Sekata Tahun 3: {currentProblem.shapeName}
-                                    </span>
-                                    <span className="text-lg font-black text-[#0F172A]">
-                                        Bucu Dinyalakan: {litVertices.length} / {currentProblem.sides} Bucu
-                                    </span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowSymmetryAxis((v) => !v)}
-                                    className="px-3 py-1.5 rounded-lg bg-[#FEF3C7] border border-[#F59E0B] text-xs font-extrabold text-[#92400E]"
-                                >
-                                    {showSymmetryAxis ? '✓ Paksi Simetri Aktif' : 'Tunjuk Paksi Simetri'}
-                                </button>
+                                                <circle
+                                                    cx={pt.x}
+                                                    cy={pt.y}
+                                                    r="13"
+                                                    fill={isLit ? '#10B981' : '#FFFFFF'}
+                                                    stroke="#0F172A"
+                                                    strokeWidth="2"
+                                                />
+                                                <text
+                                                    x={pt.x}
+                                                    y={pt.y + 4}
+                                                    textAnchor="middle"
+                                                    fontSize="11"
+                                                    fontWeight="bold"
+                                                    fill={isLit ? '#FFFFFF' : '#0F172A'}
+                                                >
+                                                    {idx + 1}
+                                                </text>
+                                            </g>
+                                        );
+                                    })}
+                                </svg>
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setCheckStatus(null);
-                                        setLitVertices(
-                                            Array.from({ length: currentProblem.sides }, (_, i) => i)
-                                        );
-                                    }}
-                                    className="px-4 py-2 rounded-lg bg-[#2563EB] text-white text-xs font-extrabold"
-                                >
-                                    ⚡ Nyalakan Semua {currentProblem.sides} Bucu
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setCheckStatus(null);
-                                        setLitVertices([]);
-                                    }}
-                                    className="px-3 py-2 rounded-lg bg-white border border-[#CBD5E1] text-xs font-bold text-[#334155]"
-                                >
-                                    Reset Bucu
-                                </button>
+                            <div className="sm:col-span-6 space-y-2.5">
+                                <div className="p-3 rounded-xl bg-white border border-[#E2E8F0] space-y-1">
+                                    <span className="text-xs font-extrabold uppercase text-[#475569] block">
+                                        Poligon: {currentProblem.shapeName}
+                                    </span>
+                                    <span className="text-base font-black text-[#0F172A] block">
+                                        Bucu: {litVertices.length} / {currentProblem.sides}
+                                    </span>
+                                </div>
+
+                                <div className="flex flex-wrap gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSymmetryAxis((v) => !v)}
+                                        className="px-2.5 py-1.5 rounded-lg bg-[#FEF3C7] border border-[#F59E0B] text-xs font-extrabold text-[#92400E]"
+                                    >
+                                        {showSymmetryAxis ? '✓ Simetri Aktif' : 'Paksi Simetri'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCheckStatus(null);
+                                            setLitVertices(
+                                                Array.from({ length: currentProblem.sides }, (_, i) => i)
+                                            );
+                                        }}
+                                        className="px-2.5 py-1.5 rounded-lg bg-[#2563EB] text-white text-xs font-extrabold"
+                                    >
+                                        Nyalakan Semua
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCheckStatus(null);
+                                            setLitVertices([]);
+                                        }}
+                                        className="px-2.5 py-1.5 rounded-lg bg-white border border-[#CBD5E1] text-xs font-bold text-[#334155]"
+                                    >
+                                        Kosongkan
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1258,84 +1251,298 @@ export default function MathPlayground({
 
                 {/* MANIPULATIVE 6: MEASUREMENT METRIC LAB (TAHUN 3) */}
                 {activeMode === 'measurement-metric' && (
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
-                        <div className="md:col-span-7 space-y-3">
-                            <span className="text-xs font-extrabold uppercase tracking-wider text-[#475569] block">
-                                Klik Alat Sukatan untuk Menambah / Mengurangkan Bacaan ({currentProblem.unit}):
-                            </span>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {(currentProblem.unit === 'ml'
-                                    ? [
-                                          { label: '+1 Liter (1,000 ml)', delta: 1000, primary: true },
-                                          { label: '+500 ml', delta: 500, primary: false },
-                                          { label: '+100 ml', delta: 100, primary: false },
-                                          { label: '-100 ml', delta: -100, primary: false },
-                                      ]
-                                    : [
-                                          { label: '+3 Meter (300 cm)', delta: 300, primary: true },
-                                          { label: '+1 Meter (100 cm)', delta: 100, primary: true },
-                                          { label: '+10 cm', delta: 10, primary: false },
-                                          { label: '-10 cm', delta: -10, primary: false },
-                                      ]
-                                ).map((btn) => (
-                                    <button
-                                        key={btn.label}
-                                        type="button"
-                                        onClick={() => {
-                                            setCheckStatus(null);
-                                            setMeasureValue((v) =>
-                                                Math.max(0, Math.min(currentProblem.maxVal, v + btn.delta))
-                                            );
-                                        }}
-                                        className={`p-3 rounded-xl font-extrabold text-xs transition-transform active:scale-95 border ${
-                                            btn.primary
-                                                ? 'bg-[#2563EB] text-white border-[#2563EB]'
-                                                : 'bg-white text-[#0F172A] border-[#CBD5E1] hover:border-[#2563EB]'
-                                        }`}
-                                    >
-                                        {btn.label}
-                                    </button>
-                                ))}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setCheckStatus(null);
-                                        setMeasureValue(0);
-                                    }}
-                                    className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs"
-                                >
-                                    Kosongkan (0 {currentProblem.unit})
-                                </button>
-                            </div>
-                        </div>
+                    <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 sm:p-5">
+                        {currentProblem.unit === 'ml' ? (
+                            /* Vertical Graduated Beaker / Measuring Cylinder */
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                                {/* Left Side: Pouring Jug Buttons */}
+                                <div className="md:col-span-6 space-y-2.5">
+                                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#475569] block">
+                                        Pilih Jug:
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setCheckStatus(null);
+                                                setMeasureValue((v) =>
+                                                    Math.min(currentProblem.maxVal || 4000, v + 1000)
+                                                );
+                                            }}
+                                            className="p-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs transition-transform active:scale-95 border border-[#2563EB] flex items-center justify-center gap-1.5"
+                                        >
+                                            <span>🫗</span>
+                                            <span>+1,000 ml (1 l)</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setCheckStatus(null);
+                                                setMeasureValue((v) =>
+                                                    Math.min(currentProblem.maxVal || 4000, v + 500)
+                                                );
+                                            }}
+                                            className="p-2.5 rounded-xl bg-white hover:bg-[#EFF6FF] text-[#0F172A] border border-[#CBD5E1] hover:border-[#2563EB] font-extrabold text-xs transition-transform active:scale-95 flex items-center justify-center gap-1.5"
+                                        >
+                                            <span>🫗</span>
+                                            <span>+500 ml</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setCheckStatus(null);
+                                                setMeasureValue((v) =>
+                                                    Math.min(currentProblem.maxVal || 4000, v + 100)
+                                                );
+                                            }}
+                                            className="p-2.5 rounded-xl bg-white hover:bg-[#EFF6FF] text-[#0F172A] border border-[#CBD5E1] hover:border-[#2563EB] font-extrabold text-xs transition-transform active:scale-95 flex items-center justify-center gap-1.5"
+                                        >
+                                            <span>🫗</span>
+                                            <span>+100 ml</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={measureValue === 0}
+                                            onClick={() => {
+                                                setCheckStatus(null);
+                                                setMeasureValue((v) => Math.max(0, v - 100));
+                                            }}
+                                            className="p-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[#475569] font-bold text-xs disabled:opacity-40"
+                                        >
+                                            -100 ml
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={measureValue === 0}
+                                            onClick={() => {
+                                                setCheckStatus(null);
+                                                setMeasureValue(0);
+                                            }}
+                                            className="col-span-2 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs hover:bg-rose-100 disabled:opacity-40"
+                                        >
+                                            Kosongkan
+                                        </button>
+                                    </div>
+                                </div>
 
-                        <div className="md:col-span-5 bg-white border border-[#CBD5E1] rounded-xl p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-extrabold uppercase text-[#475569]">
-                                    Bacaan Semasa:
-                                </span>
-                                <span className="text-lg font-black text-[#0284C7]">
-                                    {measureValue.toLocaleString()} {currentProblem.unit}
-                                </span>
-                            </div>
-                            {/* Animated Graduated Cylinder / Bar */}
-                            <div className="w-full h-24 bg-[#F1F5F9] border border-[#94A3B8] rounded-xl overflow-hidden flex items-end p-1">
-                                <div
-                                    className="w-full bg-[#38BDF8] rounded-lg transition-all duration-300 flex items-center justify-center text-xs font-black text-[#0F172A]"
-                                    style={{
-                                        height: `${Math.min(
-                                            100,
-                                            Math.round((measureValue / currentProblem.maxVal) * 100)
-                                        )}%`,
-                                    }}
-                                >
-                                    {measureValue > 0 ? `${measureValue} ${currentProblem.unit}` : ''}
+                                {/* Right Side: Realistic Vertical Graduated Beaker */}
+                                <div className="md:col-span-6 flex flex-col items-center">
+                                    {/* Live Readout Pill above beaker */}
+                                    <div className="mb-2">
+                                        <span
+                                            className={`px-3 py-1 rounded-full text-xs font-black border transition-colors inline-block ${
+                                                measureValue === currentProblem.targetVal
+                                                    ? 'bg-[#ECFDF5] text-[#047857] border-[#A7F3D0]'
+                                                    : 'bg-white text-[#0284C7] border-[#CBD5E1]'
+                                            }`}
+                                        >
+                                            {measureValue.toLocaleString()} ml
+                                        </span>
+                                    </div>
+
+                                    {/* Beaker Top Rim / Lip */}
+                                    <div className="w-44 h-2.5 border-2 border-[#334155] rounded-full mx-auto -mb-1 bg-white relative z-20" />
+
+                                    {/* Beaker Body */}
+                                    <div className="w-40 h-60 mx-auto relative border-x-2 border-b-2 border-[#334155] rounded-b-2xl bg-[#F8FAFC] overflow-hidden">
+                                        {/* Graduation Tick Marks */}
+                                        {[500, 1000, 1500, 2000, 2500, 3000, 3500].map((tick) => {
+                                            const maxV = currentProblem.maxVal || 4000;
+                                            const bottomPct = (tick / maxV) * 100;
+                                            const isLiter = tick % 1000 === 0;
+                                            const label = isLiter ? `${tick / 1000}L` : `${tick}`;
+                                            return (
+                                                <div
+                                                    key={tick}
+                                                    className="absolute right-0 flex items-center gap-1 z-10 pointer-events-none pr-1"
+                                                    style={{ bottom: `${bottomPct}%`, transform: 'translateY(50%)' }}
+                                                >
+                                                    <span
+                                                        className={`text-[9px] font-bold ${
+                                                            isLiter ? 'text-[#0F172A] font-black' : 'text-[#64748B]'
+                                                        }`}
+                                                    >
+                                                        {label}
+                                                    </span>
+                                                    <div className={`h-0.5 bg-[#334155] ${isLiter ? 'w-3.5' : 'w-2'}`} />
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* Target Dashed Line Marker */}
+                                        {currentProblem.targetVal && (
+                                            <div
+                                                className="absolute left-0 right-0 border-t-2 border-dashed border-[#F59E0B] z-20 pointer-events-none flex items-center justify-start pl-1"
+                                                style={{
+                                                    bottom: `${Math.min(
+                                                        100,
+                                                        (currentProblem.targetVal / (currentProblem.maxVal || 4000)) * 100
+                                                    )}%`,
+                                                }}
+                                            >
+                                                <span className="text-[9px] font-black text-[#92400E] bg-[#FEF3C7] border border-[#FCD34D] px-1 rounded -translate-y-1/2">
+                                                    Sasaran: {currentProblem.targetVal.toLocaleString()} ml
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Rising Liquid Fill */}
+                                        <div
+                                            className="absolute bottom-0 left-0 right-0 bg-[#38BDF8] border-t-2 border-[#0284C7] transition-all duration-300"
+                                            style={{
+                                                height: `${Math.min(
+                                                    100,
+                                                    Math.round(
+                                                        (measureValue / (currentProblem.maxVal || 4000)) * 100
+                                                    )
+                                                )}%`,
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                            <p className="text-[11px] font-bold text-[#64748B] text-center">
-                                Sasaran: {currentProblem.targetVal.toLocaleString()} {currentProblem.unit}
-                            </p>
-                        </div>
+                        ) : (
+                            /* Measuring Tape / Ruler Mode (cm / m) */
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                                {/* Left Side: Measure Buttons */}
+                                <div className="md:col-span-6 space-y-2.5">
+                                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#475569] block">
+                                        Pilih Ukuran:
+                                    </span>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setCheckStatus(null);
+                                                setMeasureValue((v) =>
+                                                    Math.min(currentProblem.maxVal || 1200, v + 100)
+                                                );
+                                            }}
+                                            className="p-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs transition-transform active:scale-95 border border-[#2563EB] flex items-center justify-center gap-1.5"
+                                        >
+                                            <span>📏</span>
+                                            <span>+100 cm (1 m)</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setCheckStatus(null);
+                                                setMeasureValue((v) =>
+                                                    Math.min(currentProblem.maxVal || 1200, v + 50)
+                                                );
+                                            }}
+                                            className="p-2.5 rounded-xl bg-white hover:bg-[#EFF6FF] text-[#0F172A] border border-[#CBD5E1] hover:border-[#2563EB] font-extrabold text-xs transition-transform active:scale-95 flex items-center justify-center gap-1.5"
+                                        >
+                                            <span>📏</span>
+                                            <span>+50 cm</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setCheckStatus(null);
+                                                setMeasureValue((v) =>
+                                                    Math.min(currentProblem.maxVal || 1200, v + 10)
+                                                );
+                                            }}
+                                            className="p-2.5 rounded-xl bg-white hover:bg-[#EFF6FF] text-[#0F172A] border border-[#CBD5E1] hover:border-[#2563EB] font-extrabold text-xs transition-transform active:scale-95 flex items-center justify-center gap-1.5"
+                                        >
+                                            <span>📏</span>
+                                            <span>+10 cm</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={measureValue === 0}
+                                            onClick={() => {
+                                                setCheckStatus(null);
+                                                setMeasureValue((v) => Math.max(0, v - 10));
+                                            }}
+                                            className="p-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[#475569] font-bold text-xs disabled:opacity-40"
+                                        >
+                                            -10 cm
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={measureValue === 0}
+                                            onClick={() => {
+                                                setCheckStatus(null);
+                                                setMeasureValue(0);
+                                            }}
+                                            className="col-span-2 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs hover:bg-rose-100 disabled:opacity-40"
+                                        >
+                                            Kosongkan
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Right Side: Measuring Tape */}
+                                <div className="md:col-span-6 flex flex-col items-center">
+                                    <div className="mb-2">
+                                        <span
+                                            className={`px-3 py-1 rounded-full text-xs font-black border transition-colors inline-block ${
+                                                measureValue === currentProblem.targetVal
+                                                    ? 'bg-[#ECFDF5] text-[#047857] border-[#A7F3D0]'
+                                                    : 'bg-white text-[#D97706] border-[#CBD5E1]'
+                                            }`}
+                                        >
+                                            {measureValue.toLocaleString()} cm ({Math.floor(measureValue / 100)} m{' '}
+                                            {measureValue % 100} cm)
+                                        </span>
+                                    </div>
+
+                                    {/* Ruler / Tape Frame */}
+                                    <div className="w-40 h-60 mx-auto relative border-2 border-[#334155] rounded-xl bg-[#FEF3C7] overflow-hidden">
+                                        {/* Ticks every 200cm */}
+                                        {[200, 400, 600, 800, 1000].map((tick) => {
+                                            const maxV = currentProblem.maxVal || 1200;
+                                            const bottomPct = (tick / maxV) * 100;
+                                            return (
+                                                <div
+                                                    key={tick}
+                                                    className="absolute right-0 flex items-center gap-1 z-10 pointer-events-none pr-1"
+                                                    style={{ bottom: `${bottomPct}%`, transform: 'translateY(50%)' }}
+                                                >
+                                                    <span className="text-[9px] font-black text-[#92400E]">
+                                                        {tick / 100}m
+                                                    </span>
+                                                    <div className="h-0.5 bg-[#78350F] w-3" />
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* Target Line */}
+                                        {currentProblem.targetVal && (
+                                            <div
+                                                className="absolute left-0 right-0 border-t-2 border-dashed border-[#DC2626] z-20 pointer-events-none flex items-center justify-start pl-1"
+                                                style={{
+                                                    bottom: `${Math.min(
+                                                        100,
+                                                        (currentProblem.targetVal / (currentProblem.maxVal || 1200)) *
+                                                            100
+                                                    )}%`,
+                                                }}
+                                            >
+                                                <span className="text-[9px] font-black text-[#991B1B] bg-white border border-[#FCA5A5] px-1 rounded -translate-y-1/2">
+                                                    Sasaran: {currentProblem.targetVal} cm
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Fill */}
+                                        <div
+                                            className="absolute bottom-0 left-0 right-0 bg-[#F59E0B]/50 border-t-2 border-[#B45309] transition-all duration-300"
+                                            style={{
+                                                height: `${Math.min(
+                                                    100,
+                                                    Math.round(
+                                                        (measureValue / (currentProblem.maxVal || 1200)) * 100
+                                                    )
+                                                )}%`,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -1372,6 +1579,7 @@ export default function MathPlayground({
                         </button>
                     </div>
                 )}
+                </div>
             </div>
 
             {/* Khan Academy Sticky Bottom Progress & Check Bar */}
@@ -1440,7 +1648,7 @@ export default function MathPlayground({
 
             {/* Bottom-Right Khan Academy Celebration Popup */}
             {celebrationPopup && (
-                <div className="fixed bottom-6 right-6 z-40 bg-white border-2 border-[#10B981] rounded-xl p-4 flex items-center gap-3 max-w-sm animate-fade-in">
+                <div className="fixed bottom-6 right-6 z-40 bg-white border border-[#10B981] rounded-xl p-4 flex items-center gap-3 max-w-sm animate-fade-in">
                     <span className="w-9 h-9 rounded-full bg-[#10B981] text-white font-black text-base flex items-center justify-center shrink-0">
                         ✓
                     </span>

@@ -246,7 +246,7 @@ export default function VideoPlayer({
         return (
             <div key={safe} className="mt-2 animate-fade-in">
                 {/* Top PDF Utility Strip with Download Button */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-2.5 bg-[#0F172A] text-white rounded-t-xl text-xs font-bold border border-b-0 border-[#CBD5E1] gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-2.5 bg-[#0F172A] text-white rounded-t-xl text-xs font-bold border border-b-0 border-[#E2E8F0] gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                         <span className="text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white px-2 py-0.5 rounded shrink-0">
                             PDF DOCUMENT
@@ -268,7 +268,7 @@ export default function VideoPlayer({
                 </div>
 
                 {/* Main PDF Frame */}
-                <div className="overflow-hidden border border-[#CBD5E1] rounded-b-xl bg-[#F8FAFC]">
+                <div className="overflow-hidden border border-[#E2E8F0] rounded-b-xl bg-[#F8FAFC]">
                     <iframe
                         src={safe}
                         title={titleText}

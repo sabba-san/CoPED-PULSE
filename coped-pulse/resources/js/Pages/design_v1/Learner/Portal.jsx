@@ -166,6 +166,15 @@ export default function Portal({ enrollments, stats }) {
                             <option value="recent">Last enrolled</option>
                             <option value="title">Title (A-Z)</option>
                         </select>
+
+                        {/* Browse Catalog CTA button */}
+                        <Link
+                            href={route('learner.catalog')}
+                            className="px-3.5 py-1.5 text-xs font-bold rounded-md bg-[#111827] text-white hover:bg-[#10B981] transition-colors min-h-[38px] inline-flex items-center gap-1.5 shrink-0"
+                        >
+                            <span>📚</span>
+                            <span>Browse Catalog</span>
+                        </Link>
                     </div>
                 </div>
 

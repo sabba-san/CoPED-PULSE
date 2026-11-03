@@ -6,7 +6,13 @@
 
 export function safeUrl(url) {
     if (!url || typeof url !== 'string') return null;
-    const trimmed = url.trim();
+    let trimmed = url.trim();
+    if (trimmed.startsWith('storage/')) {
+        trimmed = '/' + trimmed;
+    }
+    if (trimmed.startsWith('books/')) {
+        trimmed = '/' + trimmed;
+    }
     if (trimmed.startsWith('/storage/') || trimmed.startsWith('/books/')) return trimmed;
 
     try {
@@ -69,7 +75,7 @@ export function isVideoFile(url) {
 
 export function isPdfFile(url, contentType = null) {
     if (contentType === 'pdf') return true;
-    const safe = safeUrl(url);
+    const safe = safeUrl(url) || (typeof url === 'string' ? url.trim() : null);
     if (!safe) return contentType === 'file';
     return /\.pdf(\?|#|$)/i.test(safe) || (contentType === 'file' && !isVideoFile(safe));
 }

@@ -8,7 +8,7 @@ import DiveDeeper from './Partials/DiveDeeper';
 import FeedbackBar from './Partials/FeedbackBar';
 import FormattedGuide from '@/Components/FormattedGuide';
 
-import { safeUrl } from '@/Utils/mediaUtils';
+import { safeUrl, isPdfFile } from '@/Utils/mediaUtils';
 
 const OPTION_KEYS = ['a', 'b', 'c', 'd'];
 
@@ -43,6 +43,9 @@ export default function Module({
         ?? safeUrl(module.media_url)
         ?? safeUrl((module.lessons || []).find((l) => l.content_url)?.content_url);
     const activeMediaTitle = selectedMediaTitle || module.title;
+    const activeContentType = selectedLesson
+        ? (isPdfFile(selectedLesson.content_url) ? 'pdf' : selectedLesson.content_type)
+        : (isPdfFile(activeMediaUrl) ? 'pdf' : module.content_type);
     const deepTranscript = module.transcript
         ?? (module.lessons || []).find((l) => l.transcript)?.transcript
         ?? null;
@@ -181,10 +184,11 @@ export default function Module({
 
                         <div id="module-player-stage" className="scroll-mt-6">
                             <VideoPlayer
-                                key={activeMediaUrl}
-                                module={{ ...module, content_type: module.media_url ? module.content_type : 'file' }}
+                                key={`${activeMediaUrl}_${activeContentType}`}
+                                module={{ ...module, content_type: activeContentType }}
                                 mediaUrl={activeMediaUrl}
                                 activeTitle={activeMediaTitle}
+                                contentType={activeContentType}
                                 onEnded={onVideoEnd}
                             />
                         </div>

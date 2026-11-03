@@ -47,6 +47,15 @@ class LessonController extends Controller
         $filename = time() . '_' . preg_replace('/\s+/', '_', $file->getClientOriginalName());
         $path = $file->storeAs('lessons', $filename, 'public');
         $validated['content_url'] = '/storage/' . $path;
+
+        $ext = strtolower($file->getClientOriginalExtension());
+        if ($ext === 'pdf' || $file->getMimeType() === 'application/pdf') {
+            $validated['content_type'] = 'pdf';
+        } elseif (in_array($ext, ['mp4', 'mov', 'webm', 'm4v', 'ogg'], true)) {
+            $validated['content_type'] = 'video';
+        } else {
+            $validated['content_type'] = 'file';
+        }
     }
 
     public function store(StoreLessonRequest $request, Course $course, Module $module)

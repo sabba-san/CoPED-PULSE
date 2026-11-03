@@ -392,11 +392,12 @@ export default function Learn({
         });
     };
 
-    // Quick notes scratchpad (saved per course in localStorage & synced to backend)
+    // Quick notes scratchpad (saved per course in localStorage & debounced cloud autosave)
     const [courseNotes, setCourseNotes] = useState('');
-    const [notesSavedNotice, setNotesSavedNotice] = useState(false);
     const [isSavingNotes, setIsSavingNotes] = useState(false);
-    const [notesStatusText, setNotesStatusText] = useState('');
+    const [autosaveStatus, setAutosaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'saved-local'
+    const [lastSavedTime, setLastSavedTime] = useState(null);
+    const autosaveTimerRef = useRef(null);
 
     useEffect(() => {
         try {
@@ -411,16 +412,48 @@ export default function Learn({
                 setCourseNotes(combined);
             }
         } catch {}
+
+        return () => {
+            if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+        };
     }, [course.id, notes]);
 
     const handleNotesChange = (e) => {
         const val = e.target.value;
         setCourseNotes(val);
+        setAutosaveStatus('saving');
         try {
             localStorage.setItem(`coped_notes_${course.id}`, val);
-            setNotesSavedNotice(true);
-            setTimeout(() => setNotesSavedNotice(false), 2000);
         } catch {}
+
+        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = setTimeout(async () => {
+            if (!activeModule?.id) {
+                setAutosaveStatus('saved');
+                setLastSavedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                return;
+            }
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.content;
+                const res = await fetch(route('learner.course.module.note.store', [course.id, activeModule.id]), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                    },
+                    body: JSON.stringify({ content: val }),
+                });
+                if (res.ok) {
+                    setAutosaveStatus('saved');
+                    setLastSavedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                } else {
+                    setAutosaveStatus('saved-local');
+                }
+            } catch {
+                setAutosaveStatus('saved-local');
+            }
+        }, 800);
     };
 
     // Active module entity & surrounding navigation
@@ -431,7 +464,7 @@ export default function Learn({
 
     const saveNotesExplicit = async () => {
         setIsSavingNotes(true);
-        setNotesStatusText('Saving...');
+        setAutosaveStatus('saving');
         try {
             localStorage.setItem(`coped_notes_${course.id}`, courseNotes);
         } catch {}
@@ -449,21 +482,19 @@ export default function Learn({
                     body: JSON.stringify({ content: courseNotes }),
                 });
                 if (res.ok) {
-                    setNotesStatusText('✓ Saved to your account');
+                    setAutosaveStatus('saved');
+                    setLastSavedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
                 } else {
-                    setNotesStatusText('✓ Saved to your account');
+                    setAutosaveStatus('saved-local');
                 }
             } catch {
-                setNotesStatusText('✓ Saved to your account');
+                setAutosaveStatus('saved-local');
             }
         } else {
-            setNotesStatusText('✓ Saved to your account');
+            setAutosaveStatus('saved-local');
         }
 
         setIsSavingNotes(false);
-        setTimeout(() => {
-            setNotesStatusText('');
-        }, 3000);
     };
 
     // Final Assessment Form & Local Quiz State
@@ -732,8 +763,8 @@ export default function Learn({
     }, [activeModuleId]);
 
     const activeContentType = selectedLesson
-        ? (selectedLesson.contentType || (isPdfFile(selectedLesson.url) ? 'pdf' : (isVideoUrl(selectedLesson.url) ? 'video' : 'link')))
-        : (activeModule?.content_type || (isPdfFile(activeModule?.media_url) ? 'pdf' : 'link'));
+        ? (isPdfFile(selectedLesson.url) ? 'pdf' : (selectedLesson.contentType || (isVideoUrl(selectedLesson.url) ? 'video' : 'link')))
+        : (isPdfFile(activeModule?.media_url) ? 'pdf' : (activeModule?.content_type || 'link'));
 
     const activeSafeUrl = selectedLesson
         ? safeUrl(selectedLesson.url)
@@ -1111,54 +1142,94 @@ export default function Learn({
                                 </div>
                             )}
                             <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#64748B]">
-                                    <Link href={route('portal')} className="text-[#0F172A] hover:text-[#2563EB] hover:underline shrink-0">
-                                        ← My Portal
-                                    </Link>
-                                    <span>·</span>
-                                    <span className="truncate">Instructed by {course.instructor?.name || 'Faculty Instructor'}</span>
-                                    {course.academic_year && (
-                                        <span className="text-[10px] font-bold text-[#1E40AF] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md">
-                                            📅 {course.academic_year}
-                                        </span>
-                                    )}
-                                    {isKssrCourse && (
-                                        <span className="px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-extrabold uppercase tracking-wider">
-                                            🎮 Mod Interaktif KSSR · Tahun {kssrYearLevel}
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div className="flex flex-wrap items-center gap-2.5">
-                                    <h1 className="font-display text-base sm:text-xl font-extrabold text-[#0F172A] break-words leading-snug">
-                                        {course.title}
-                                    </h1>
-                                    {course.bundle_url && (
-                                        <a
-                                            href={course.bundle_url}
-                                            download
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#065F46] bg-[#ECFDF5] hover:bg-[#D1FAE5] border border-[#A7F3D0] px-2.5 py-0.5 rounded-lg transition-colors"
-                                        >
-                                            <span className="truncate">
-                                                📥 {course.bundle_title || 'Muat Turun Buku Teks KPM (PDF)'}
+                                {isKssrCourse ? (
+                                    <div className="space-y-1.5">
+                                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#64748B]">
+                                            <Link
+                                                href={route('portal')}
+                                                className="inline-flex items-center gap-1 text-[#0F172A] hover:text-[#2563EB] hover:underline font-extrabold"
+                                            >
+                                                <span>&larr;</span>
+                                                <span>My Portal</span>
+                                            </Link>
+                                            <span className="px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-[10px] font-extrabold uppercase tracking-wider">
+                                                🏫 KSSR Rendah · Tahun {kssrYearLevel}
                                             </span>
-                                            <span className="text-[10px] shrink-0">⬇</span>
-                                        </a>
-                                    )}
-                                    {course.cert_title && (
-                                        <a
-                                            href={course.cert_url || '#'}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1D4ED8] bg-[#EFF6FF] border border-[#BFDBFE] hover:bg-[#DBEAFE] px-2 py-0.5 rounded-lg transition-colors"
-                                        >
-                                            <span className="truncate">🎓 Leads to: {course.cert_title}</span>
-                                            <span className="text-[10px] shrink-0">↗</span>
-                                        </a>
-                                    )}
-                                </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2.5">
+                                            <h1 className="font-display text-base sm:text-xl font-extrabold text-[#0F172A] break-words leading-snug">
+                                                {course.title}
+                                            </h1>
+                                            {course.bundle_url && (
+                                                <a
+                                                    href={course.bundle_url}
+                                                    download
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#065F46] bg-[#ECFDF5] hover:bg-[#D1FAE5] border border-[#A7F3D0] px-2.5 py-0.5 rounded-lg transition-colors"
+                                                >
+                                                    <span className="truncate">
+                                                        📄 {course.bundle_title || 'Buku Teks PDF'}
+                                                    </span>
+                                                    <span className="text-[10px] shrink-0">&#11015;</span>
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1">
+                                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#64748B]">
+                                            <nav aria-label="Course breadcrumb" className="inline-flex items-center gap-1.5 shrink-0">
+                                                <Link href={route('learner.catalog')} className="text-[#0F172A] hover:text-[#2563EB] hover:underline">
+                                                    Browse Catalog
+                                                </Link>
+                                                <span className="text-gray-400">/</span>
+                                                <Link href={route('portal')} className="text-[#0F172A] hover:text-[#2563EB] hover:underline">
+                                                    My Portal
+                                                </Link>
+                                            </nav>
+                                            <span>·</span>
+                                            <span className="truncate">Instructed by {course.instructor?.name || 'Faculty Instructor'}</span>
+                                            {course.academic_year && (
+                                                <span className="text-[10px] font-bold text-[#1E40AF] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md">
+                                                    📅 {course.academic_year}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2.5">
+                                            <h1 className="font-display text-base sm:text-xl font-extrabold text-[#0F172A] break-words leading-snug">
+                                                {course.title}
+                                            </h1>
+                                            {course.bundle_url && (
+                                                <a
+                                                    href={course.bundle_url}
+                                                    download
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#065F46] bg-[#ECFDF5] hover:bg-[#D1FAE5] border border-[#A7F3D0] px-2.5 py-0.5 rounded-lg transition-colors"
+                                                >
+                                                    <span className="truncate">
+                                                        📥 {course.bundle_title || 'Muat Turun Buku Teks KPM (PDF)'}
+                                                    </span>
+                                                    <span className="text-[10px] shrink-0">&#11015;</span>
+                                                </a>
+                                            )}
+                                            {course.cert_title && (
+                                                <a
+                                                    href={course.cert_url || '#'}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1D4ED8] bg-[#EFF6FF] border border-[#BFDBFE] hover:bg-[#DBEAFE] px-2 py-0.5 rounded-lg transition-colors"
+                                                >
+                                                    <span className="truncate">🎓 Leads to: {course.cert_title}</span>
+                                                    <span className="text-[10px] shrink-0">&#8599;</span>
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -1638,9 +1709,17 @@ export default function Learn({
                                             <div className="space-y-2 pb-3 border-b border-[#E2E8F0]">
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="flex flex-wrap items-center gap-2 min-w-0">
-                                                        <span className="text-[11px] font-extrabold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md uppercase tracking-wider">
-                                                            Chapter {activeIndex + 1} of {modules.length}
-                                                        </span>
+                                                        {chapterStep !== 'interact' && (
+                                                            <>
+                                                                <span className="text-[11px] font-extrabold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                                                    Chapter {activeIndex + 1} of {modules.length}
+                                                                </span>
+                                                                <span className="text-[10px] font-extrabold text-[#065F46] bg-[#ECFDF5] border border-[#A7F3D0] px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                                                                    <span>⚡</span>
+                                                                    <span>Auto-tracks on finish</span>
+                                                                </span>
+                                                            </>
+                                                        )}
                                                         <h2 className="font-display font-extrabold text-base sm:text-xl text-[#0F172A] truncate">
                                                             {activeModule.title}
                                                         </h2>
@@ -1652,20 +1731,23 @@ export default function Learn({
                                                             onClick={toggleCurrentViewComplete}
                                                             title={
                                                                 isCurrentViewDone
-                                                                    ? 'Click to untick current subtopic'
-                                                                    : 'Click to tick current subtopic complete'
+                                                                    ? 'Click to mark incomplete'
+                                                                    : 'Click to mark complete manually (or finishes automatically on video/quiz completion)'
                                                             }
-                                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold uppercase border transition-colors cursor-pointer ${
+                                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold border transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
                                                                 isCurrentViewDone
                                                                     ? 'bg-[#ECFDF5] text-[#065F46] border-[#10B981] hover:bg-emerald-100'
-                                                                    : 'bg-white text-[#475569] border-[#CBD5E1] hover:border-[#2563EB]'
+                                                                    : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-[#2563EB]'
                                                             }`}
                                                         >
-                                                            {isCurrentViewDone
-                                                                ? selectedLesson
-                                                                    ? '✓ Subtopic Completed'
-                                                                    : '✓ Completed'
-                                                                : '☐ Tick Complete'}
+                                                            <span>{isCurrentViewDone ? '✓' : '☐'}</span>
+                                                            <span>
+                                                                {isCurrentViewDone
+                                                                    ? selectedLesson
+                                                                        ? 'Subtopic Completed'
+                                                                        : 'Chapter Completed'
+                                                                    : 'Mark Complete'}
+                                                            </span>
                                                         </button>
                                                         <button
                                                             type="button"
@@ -1677,8 +1759,8 @@ export default function Learn({
                                                     </div>
                                                 </div>
 
-                                                {/* Quick Subtopic Switcher Pills */}
-                                                {activeLessons.length > 0 && (
+                                                {/* Quick Subtopic Switcher Pills (hidden in interactive step) */}
+                                                {chapterStep !== 'interact' && activeLessons.length > 0 && (
                                                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                                                         {activeLessons.map((lesson, lIdx) => {
                                                             const isSelectedSub = selectedLesson?.id === lesson.id;
@@ -1803,6 +1885,7 @@ export default function Learn({
                                                     <MathPlayground
                                                         yearLevel={kssrYearLevel}
                                                         moduleIndex={activeIndex}
+                                                        moduleTitle={activeModule?.title || ''}
                                                         onEarnXp={awardXp}
                                                         onCompleteStep={() => goToStep('guide')}
                                                     />
@@ -1857,23 +1940,25 @@ export default function Learn({
 
                                                         {/* Collapsible Quick Study Notes Drawer */}
                                                         {showNotesDrawer && (
-                                                            <div className="bg-white border border-[#CBD5E1] rounded-xl p-4 space-y-3">
+                                                            <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 space-y-3">
                                                                 <div className="flex items-center justify-between gap-2">
                                                                     <h4 className="font-display font-extrabold text-sm text-[#0F172A]">
                                                                         Quick Study Notes
                                                                     </h4>
                                                                     <div className="flex items-center gap-2">
-                                                                        {notesStatusText ? (
-                                                                            <span className="text-xs text-[#10B981] font-bold">
-                                                                                {notesStatusText}
+                                                                        {autosaveStatus === 'saving' ? (
+                                                                            <span className="text-xs text-amber-600 font-bold animate-pulse">
+                                                                                Saving...
                                                                             </span>
-                                                                        ) : (
-                                                                            notesSavedNotice && (
-                                                                                <span className="text-xs text-[#10B981] font-bold">
-                                                                                    Saved locally ✓
-                                                                                </span>
-                                                                            )
-                                                                        )}
+                                                                        ) : autosaveStatus === 'saved' ? (
+                                                                            <span className="text-xs text-[#10B981] font-bold">
+                                                                                ✓ Autosaved to cloud {lastSavedTime ? `at ${lastSavedTime}` : ''}
+                                                                            </span>
+                                                                        ) : autosaveStatus === 'saved-local' ? (
+                                                                            <span className="text-xs text-blue-600 font-bold">
+                                                                                ✓ Saved locally
+                                                                            </span>
+                                                                        ) : null}
                                                                     </div>
                                                                 </div>
                                                                 <textarea
@@ -1881,7 +1966,7 @@ export default function Learn({
                                                                     value={courseNotes}
                                                                     onChange={handleNotesChange}
                                                                     placeholder="Type your key takeaways here while reading the study guide..."
-                                                                    className="w-full p-3 bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg text-sm text-[#0F172A] placeholder:text-gray-400 focus:outline-none focus:border-[#2563EB] focus:bg-white"
+                                                                    className="w-full p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-sm text-[#0F172A] placeholder:text-gray-400 focus:outline-none focus:border-[#2563EB] focus:bg-white"
                                                                 />
                                                                 <div className="flex items-center justify-between gap-2">
                                                                     <button
@@ -1890,10 +1975,10 @@ export default function Learn({
                                                                         disabled={isSavingNotes}
                                                                         className="px-3.5 py-1.5 bg-[#0F172A] hover:bg-[#1E293B] text-white font-extrabold text-xs rounded-lg transition-colors disabled:opacity-50"
                                                                     >
-                                                                        {isSavingNotes ? 'Saving...' : 'Save Notes'}
+                                                                        {isSavingNotes ? 'Saving...' : 'Save Notes Now'}
                                                                     </button>
                                                                     <span className="text-[11px] text-[#64748B]">
-                                                                        Auto-saves on keystroke
+                                                                        Debounced cloud autosave (800ms)
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -2306,58 +2391,31 @@ export default function Learn({
                 {/* Tab 3: Progress & Assessment (Inline Final Quiz & Score Breakdown) */}
                 {activeTab === 'assessment' && (
                     <div className="w-full space-y-5">
-                        {/* Readiness Summary 2-Stat Box */}
+                        {/* Final Assessment Status Box */}
                         <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 space-y-4">
-                            <div className="pb-3.5 border-b border-[#E2E8F0]">
-                                <h2 className="font-display font-extrabold text-xl text-[#0F172A]">
-                                    Certification Readiness Summary
-                                </h2>
-                                <p className="text-xs text-[#64748B] mt-0.5">
-                                    Review chapter completion and final quiz mastery required to unlock your verified credential.
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
-                                    <span className="text-[10px] font-extrabold uppercase text-[#64748B] tracking-wider block">
-                                        Chapter Completion
-                                    </span>
-                                    <p className="text-lg font-black text-[#0F172A] mt-1">
-                                        {completedModuleIds.length} / {modules.length} Completed
-                                    </p>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-[#E2E8F0]">
+                                <div>
+                                    <h2 className="font-display font-extrabold text-xl text-[#0F172A]">
+                                        Final Assessment Mastery
+                                    </h2>
                                     <p className="text-xs text-[#64748B] mt-0.5">
-                                        {completedModuleIds.length === modules.length
-                                            ? 'All course chapters reviewed and checked off.'
-                                            : 'Review each chapter thoroughly before taking the quiz.'}
+                                        Answer all questions correctly (100% mastery) to unlock your official verified certificate.
                                     </p>
                                 </div>
-
-                                <div className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
-                                    <span className="text-[10px] font-extrabold uppercase text-[#64748B] tracking-wider block">
-                                        Final Assessment Status
-                                    </span>
-                                    <p className="text-lg font-black text-[#0F172A] mt-1 flex items-center gap-2">
-                                        {isQuizPassed ? (
-                                            <span className="text-[#10B981]">
-                                                Passed · {totalQuestions} / {totalQuestions} Correct
-                                            </span>
-                                        ) : hasSubmittedQuiz ? (
-                                            <span className="text-[#EF4444]">
-                                                {correctCount} / {totalQuestions} Correct · Needs Review
-                                            </span>
-                                        ) : (
-                                            <span className="text-[#0F172A]">
-                                                Not Attempted ({totalQuestions} Questions)
-                                            </span>
-                                        )}
-                                    </p>
-                                    <p className="text-xs text-[#64748B] mt-0.5">
-                                        {isQuizPassed
-                                            ? 'All questions answered correctly. Your certificate is unlocked.'
-                                            : hasSubmittedQuiz
-                                            ? 'Review the highlighted questions below and click Restart Quiz to try again.'
-                                            : 'Answer all questions below correctly to unlock your certificate.'}
-                                    </p>
+                                <div className="shrink-0">
+                                    {isQuizPassed ? (
+                                        <span className="px-3 py-1 rounded-lg text-xs font-black bg-[#ECFDF5] border border-[#10B981] text-[#047857]">
+                                            ✓ Passed 100% · Certificate Unlocked
+                                        </span>
+                                    ) : hasSubmittedQuiz ? (
+                                        <span className="px-3 py-1 rounded-lg text-xs font-black bg-[#FEF2F2] border border-[#EF4444] text-[#B91C1C]">
+                                            Needs Review · {correctCount} / {totalQuestions} Correct
+                                        </span>
+                                    ) : (
+                                        <span className="px-3 py-1 rounded-lg text-xs font-black bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8]">
+                                            Pending Attempt ({totalQuestions} Questions)
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -2492,28 +2550,39 @@ export default function Learn({
                                                         {['a', 'b', 'c', 'd'].map((key) => {
                                                             const isChecked = activeAnswers[q.id] === key;
                                                             const isSubmittedChoice = results?.submitted && results.submitted[q.id] === key;
+                                                            const is100PctPassed = isQuizPassed || (results?.passed === true);
+                                                            const isActualCorrectAnswer = is100PctPassed && results?.correct_options && results.correct_options[q.id] === key;
 
                                                             let optionClass = 'border border-[#E2E8F0] bg-white text-[#0F172A] hover:border-[#CBD5E1]';
                                                             let badge = null;
 
-                                                            if (hasResult && isSubmittedChoice) {
-                                                                if (isCorrect) {
-                                                                    optionClass = 'border-2 border-[#10B981] bg-[#ECFDF5] text-[#047857] font-bold';
+                                                            if (hasResult) {
+                                                                if (isSubmittedChoice) {
+                                                                    if (isCorrect) {
+                                                                        optionClass = 'border border-[#10B981] bg-[#ECFDF5] text-[#047857] font-bold';
+                                                                        badge = (
+                                                                            <span className="text-xs font-extrabold text-[#047857] shrink-0">
+                                                                                ✓ Correct Answer
+                                                                            </span>
+                                                                        );
+                                                                    } else {
+                                                                        optionClass = 'border border-[#EF4444] bg-[#FEF2F2] text-[#B91C1C] font-bold';
+                                                                        badge = (
+                                                                            <span className="text-xs font-extrabold text-[#B91C1C] shrink-0">
+                                                                                ✗ Your Answer - Incorrect
+                                                                            </span>
+                                                                        );
+                                                                    }
+                                                                } else if (isActualCorrectAnswer) {
+                                                                    optionClass = 'border border-[#10B981] bg-[#ECFDF5] text-[#047857] font-bold';
                                                                     badge = (
                                                                         <span className="text-xs font-extrabold text-[#047857] shrink-0">
                                                                             ✓ Correct Answer
                                                                         </span>
                                                                     );
-                                                                } else {
-                                                                    optionClass = 'border-2 border-[#EF4444] bg-[#FEF2F2] text-[#B91C1C] font-bold';
-                                                                    badge = (
-                                                                        <span className="text-xs font-extrabold text-[#B91C1C] shrink-0">
-                                                                            ✗ Incorrect - Review this topic and try again
-                                                                        </span>
-                                                                    );
                                                                 }
                                                             } else if (isChecked && !hasResult) {
-                                                                optionClass = 'border-2 border-[#2563EB] bg-[#EFF6FF] text-[#1E40AF] font-bold';
+                                                                optionClass = 'border border-[#2563EB] bg-[#EFF6FF] text-[#1E40AF] font-bold';
                                                             }
 
                                                             return (
@@ -2538,6 +2607,8 @@ export default function Learn({
                                                                                     ? isCorrect
                                                                                         ? 'border-[#10B981] bg-[#10B981] text-white'
                                                                                         : 'border-[#EF4444] bg-[#EF4444] text-white'
+                                                                                    : hasResult && isActualCorrectAnswer
+                                                                                    ? 'border-[#10B981] bg-[#10B981] text-white'
                                                                                     : 'border-[#CBD5E1] text-[#475569] bg-[#F8FAFC]'
                                                                             }`}
                                                                         >
@@ -2558,6 +2629,20 @@ export default function Learn({
                                                             );
                                                         })}
                                                     </div>
+
+                                                    {hasResult && !isCorrect && (() => {
+                                                        const hintMod = modules.find((m) => m.id === q.module_id) || modules[qIndex % modules.length] || modules[0];
+                                                        const hintIdx = hintMod ? modules.findIndex((m) => m.id === hintMod.id) + 1 : (qIndex + 1);
+                                                        return (
+                                                            <div className="p-3.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-xs text-[#1E40AF] flex items-center gap-2.5">
+                                                                <span className="text-base shrink-0">💡</span>
+                                                                <span>
+                                                                    <span className="font-extrabold">Review Hint: </span>
+                                                                    Review Chapter {hintIdx}: "{hintMod?.title || 'Course Material'}" to master this concept before retrying.
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })()}
 
                                                     {form.errors[`answers.${q.id}`] && (
                                                         <p className="text-xs text-red-600 font-bold mt-1">
@@ -2670,15 +2755,19 @@ export default function Learn({
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {notesStatusText ? (
-                                        <span className="text-xs text-[#10B981] font-bold">
-                                            {notesStatusText}
+                                    {autosaveStatus === 'saving' ? (
+                                        <span className="text-xs text-amber-600 font-bold animate-pulse">
+                                            Saving...
                                         </span>
-                                    ) : notesSavedNotice && (
+                                    ) : autosaveStatus === 'saved' ? (
                                         <span className="text-xs text-[#10B981] font-bold">
-                                            Saved locally ✓
+                                            ✓ Autosaved to cloud {lastSavedTime ? `at ${lastSavedTime}` : ''}
                                         </span>
-                                    )}
+                                    ) : autosaveStatus === 'saved-local' ? (
+                                        <span className="text-xs text-blue-600 font-bold">
+                                            ✓ Saved locally
+                                        </span>
+                                    ) : null}
                                 </div>
                             </div>
 
@@ -2687,7 +2776,7 @@ export default function Learn({
                                 value={courseNotes}
                                 onChange={handleNotesChange}
                                 placeholder="Type your full study notes, lecture takeaways, and questions here..."
-                                className="w-full p-4 bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-sm text-[#0F172A] placeholder:text-gray-400 focus:outline-none focus:border-[#2563EB] focus:bg-white"
+                                className="w-full p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm text-[#0F172A] placeholder:text-gray-400 focus:outline-none focus:border-[#2563EB] focus:bg-white"
                             />
 
                             <div className="flex items-center justify-between pt-2">
@@ -2698,9 +2787,11 @@ export default function Learn({
                                         disabled={isSavingNotes}
                                         className="px-4 py-2 bg-[#0F172A] hover:bg-[#1E293B] text-white font-extrabold text-xs rounded-lg transition-colors disabled:opacity-50"
                                     >
-                                        {isSavingNotes ? 'Saving...' : 'Save Notes'}
+                                        {isSavingNotes ? 'Saving...' : 'Save Notes Now'}
                                     </button>
-                                    <span className="text-xs text-[#64748B]">Auto-saves on keystroke</span>
+                                    <span className="text-xs text-[#64748B]">
+                                        Debounced cloud autosave (800ms)
+                                    </span>
                                 </div>
                                 <button
                                     type="button"
