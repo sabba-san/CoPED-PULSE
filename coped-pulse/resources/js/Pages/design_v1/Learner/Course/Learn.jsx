@@ -879,9 +879,6 @@ export default function Learn({
         );
     }, [completedModuleIds.length, completedLessonIds.length, isQuizPassed, hybridSubmitted, bonusXp]);
 
-    const currentLevel = Math.floor(totalXp / 150) + 1;
-    const xpInLevel = totalXp % 150;
-    const xpProgressPct = Math.min(100, Math.round((xpInLevel / 150) * 100));
 
     const handleHybridFileChange = (e) => {
         const file = e.target.files?.[0];
@@ -1233,127 +1230,56 @@ export default function Learn({
                             </div>
                         </div>
 
-                        {/* Right Column: Gamification XP/Level/Mastery Bar (School Mode) OR Institutional Progress Bar (Certification Mode) */}
-                        {isKssrCourse ? (
-                            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3.5 py-2 shrink-0">
-                                {/* Streak Pill */}
-                                <span className="bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full text-xs font-extrabold inline-flex items-center gap-1">
-                                    <span>🔥</span>
-                                    <span>1 Week Streak</span>
-                                </span>
-
-                                {/* Level & Animated XP Bar */}
-                                <div className="flex flex-col gap-1 min-w-[140px]">
-                                    <div className="flex items-center justify-between text-[11px] font-extrabold">
-                                        <span className="text-[#1E40AF]">⭐ Level {currentLevel}</span>
-                                        <span className="text-[#2563EB]">{xpInLevel} / 150 XP</span>
-                                    </div>
-                                    <div
-                                        className="w-36 h-2 bg-[#DBEAFE] border border-[#BFDBFE] rounded-full overflow-hidden"
-                                        role="progressbar"
-                                        aria-valuenow={xpProgressPct}
-                                        aria-valuemin={0}
-                                        aria-valuemax={100}
-                                    >
-                                        <div
-                                            className="h-full bg-[#2563EB] rounded-full transition-all duration-500"
-                                            style={{ width: `${xpProgressPct}%` }}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Khan Academy Unit Mastery Squares */}
-                                <div className="flex items-center gap-1.5 pl-2 border-l border-[#E2E8F0]">
-                                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#64748B] mr-0.5 hidden sm:inline">
-                                        👑 Mastery:
+                        {/* Right Column: XP (School Mode) + Progress % + Assessment / Certificate CTA */}
+                        <div className="flex items-center gap-3 sm:gap-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-2.5 shrink-0">
+                            {isKssrCourse && (
+                                <div className="relative inline-flex items-center">
+                                    <span className="bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg text-xs font-extrabold inline-flex items-center gap-1">
+                                        <span>⭐</span>
+                                        <span>{totalXp} XP</span>
                                     </span>
-                                    {modules.map((m, mIdx) => {
-                                        const modDone = isModuleFullyDone(m);
-                                        const modActive = m.id === activeModuleId;
-                                        return (
-                                            <button
-                                                key={m.id}
-                                                type="button"
-                                                onClick={() => goToModule(m.id)}
-                                                title={`Unit ${mIdx + 1}: ${m.title} (${modDone ? 'Mastered' : modActive ? 'In Progress' : 'Not Started'})`}
-                                                className={`w-7 h-7 rounded-lg text-[11px] font-black flex items-center justify-center border transition-colors ${
-                                                    modDone
-                                                        ? 'bg-[#7C3AED] text-white border-[#6D28D9]'
-                                                        : modActive
-                                                        ? 'bg-[#2563EB] text-white border-[#1D4ED8]'
-                                                        : 'bg-white text-[#64748B] border-[#CBD5E1] hover:border-[#2563EB]'
-                                                }`}
-                                            >
-                                                {modDone ? '👑' : `U${mIdx + 1}`}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Status & Final Exam CTA */}
-                                <div className="flex items-center gap-2 pl-2 border-l border-[#E2E8F0]">
-                                    <span
-                                        className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md border ${
-                                            isCompleted
-                                                ? 'bg-emerald-50 text-[#059669] border-[#A7F3D0]'
-                                                : 'bg-blue-50 text-[#2563EB] border-[#BFDBFE]'
-                                        }`}
-                                    >
-                                        {isCompleted ? 'COMPLETED' : `${progressPct}%`}
-                                    </span>
-                                    {assessments.length > 0 && !isCompleted && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveTab('assessment')}
-                                            className="bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors"
-                                        >
-                                            Take Final Assessment
-                                        </button>
+                                    {xpToast && (
+                                        <span className="absolute -top-3 -right-2 bg-[#10B981] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full border border-[#059669] animate-bounce pointer-events-none">
+                                            +{xpToast.amount} XP!
+                                        </span>
                                     )}
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="flex flex-wrap items-center gap-3 shrink-0">
-                                <div className="w-44 space-y-1">
-                                    <div className="flex items-center justify-between text-[11px] font-bold text-[#0F172A]">
-                                        <span>Overall Course Progress</span>
-                                        <span>{progressPct}%</span>
-                                    </div>
-                                    <div
-                                        className="w-full bg-[#F1F5F9] border border-[#E2E8F0] h-2 rounded-full overflow-hidden"
-                                        role="progressbar"
-                                        aria-valuenow={progressPct}
-                                        aria-valuemin={0}
-                                        aria-valuemax={100}
-                                    >
-                                        <div
-                                            className="h-full bg-[#10B981] rounded-full transition-all duration-500"
-                                            style={{ width: `${progressPct}%` }}
-                                        />
-                                    </div>
-                                </div>
+                            )}
 
-                                <span
-                                    className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg border ${
-                                        isCompleted
-                                            ? 'bg-emerald-50 text-[#10B981] border-[#A7F3D0]'
-                                            : 'bg-blue-50 text-[#2563EB] border-[#BFDBFE]'
-                                    }`}
+                            <div className="flex items-center gap-2">
+                                <div
+                                    className="w-28 sm:w-36 h-2 bg-[#E2E8F0] rounded-full overflow-hidden"
+                                    role="progressbar"
+                                    aria-valuenow={progressPct}
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
                                 >
-                                    {isCompleted ? 'COMPLETED' : 'IN PROGRESS'}
-                                </span>
-
-                                {assessments.length > 0 && !isCompleted && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveTab('assessment')}
-                                        className="bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs px-3.5 py-2 rounded-lg transition-colors"
-                                    >
-                                        Take Final Assessment
-                                    </button>
-                                )}
+                                    <div
+                                        className="h-full bg-[#10B981] rounded-full transition-all duration-500"
+                                        style={{ width: `${progressPct}%` }}
+                                    />
+                                </div>
+                                <span className="text-sm font-extrabold text-[#111827]">{progressPct}%</span>
                             </div>
-                        )}
+
+                            {assessments.length > 0 && !isCompleted && (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('assessment')}
+                                    className="bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs px-3.5 py-2 rounded-lg transition-colors shrink-0"
+                                >
+                                    Take Final Assessment
+                                </button>
+                            )}
+                            {isCompleted && (
+                                <Link
+                                    href={route('learner.course.certificate', course.id)}
+                                    className="bg-[#10B981] hover:bg-[#059669] text-white font-bold text-xs px-3.5 py-2 rounded-lg transition-colors shrink-0 inline-flex items-center gap-1"
+                                >
+                                    🎓 View Certificate
+                                </Link>
+                            )}
+                        </div>
                     </div>
 
                     {/* Celebration Banner */}
