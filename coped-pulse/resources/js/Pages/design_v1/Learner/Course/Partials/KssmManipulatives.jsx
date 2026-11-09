@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 
 // KSSM (secondary) manipulatives for MathPlayground. Each problem has a `kind`; the
 // kind decides its state shape (kssmInit), its answer check (isKssmCorrect) and its UI.
@@ -85,15 +85,15 @@ export function isKssmCorrect(problem, value) {
     if (!problem || value == null) return false;
     switch (problem.kind) {
         case 'balance':
-            return value.a === 1 && value.b === 0;
+            return Boolean(value && typeof value === 'object' && value.a === 1 && value.b === 0);
         case 'sequence':
-            return value.length === problem.steps.length && value.every((v, i) => v === i);
+            return Array.isArray(value) && value.length === problem.steps.length && value.every((v, i) => v === i);
         case 'choices':
-            return problem.items.every((item, i) => value[i] === item.answer);
+            return Array.isArray(value) && problem.items.every((item, i) => value[i] === item.answer);
         case 'graph':
-            return Object.entries(problem.target).every(([k, v]) => value[k] === v);
+            return Boolean(value && typeof value === 'object' && problem.target && Object.entries(problem.target).every(([k, v]) => value[k] === v));
         case 'bits':
-            return bitsValue(value) === problem.target;
+            return Array.isArray(value) && bitsValue(value) === problem.target;
         default:
             return false;
     }
@@ -121,8 +121,10 @@ const toSub = (n) => String(n).replace(/\d/g, (d) => SUPERSCRIPT_DIGITS[d]);
 const num = (n) => String(+n.toFixed(2));
 
 function linearSide(a, b) {
-    const coef = a === 1 ? '' : a;
-    return `${coef}x${b > 0 ? ` + ${b}` : b < 0 ? ` - ${-b}` : ''}`;
+    const aVal = Number(a) || 0;
+    const bVal = Number(b) || 0;
+    const coef = aVal === 1 ? '' : aVal;
+    return `${coef}x${bVal > 0 ? ` + ${bVal}` : bVal < 0 ? ` - ${-bVal}` : ''}`;
 }
 
 function quadraticText({ a, b, c }) {
@@ -137,21 +139,935 @@ const cardOff = 'bg-white text-[#0F172A] border-[#CBD5E1] hover:bg-[#F1F5F9]';
 const cardOn = 'bg-[#2563EB] text-white border-[#2563EB]';
 const panel = 'bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4';
 
-function BalanceScale({ problem, value, onChange }) {
+// ---------------------------------------------------------------------------
+// Native WebGL 3D balance scale (no external libraries). Every object in the
+// scene is the same unit cube, drawn with its own translate / rotateZ / scale.
+// ---------------------------------------------------------------------------
+
+const VERT_SRC = `
+attribute vec3 aPosition;
+attribute vec3 aNormal;
+uniform mat4 uMVPMatrix;
+uniform mat3 uNormalMatrix;
+varying vec3 vNormal;
+void main() {
+    vNormal = uNormalMatrix * aNormal;
+    gl_Position = uMVPMatrix * vec4(aPosition, 1.0);
+}`;
+
+const FRAG_SRC = `
+precision mediump float;
+uniform vec3 uColor;
+uniform vec3 uLightDir;
+varying vec3 vNormal;
+void main() {
+    float diffuse = max(dot(normalize(vNormal), uLightDir), 0.0);
+    gl_FragColor = vec4(uColor * (0.42 + 0.58 * diffuse), 1.0);
+}`;
+
+const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+const GL_COLORS = {
+    floor: hexRgb('#E2E8F0'),
+    pedestal: hexRgb('#1E293B'),
+    pillar: hexRgb('#334155'),
+    beam: hexRgb('#475569'),
+    string: hexRgb('#64748B'),
+    pan: hexRgb('#94A3B8'),
+    x: hexRgb('#4F46E5'),
+    plus: hexRgb('#F59E0B'),
+    minus: hexRgb('#F43F5E'),
+    right: hexRgb('#10B981'),
+};
+const LIGHT_DIR = (() => {
+    const v = [0.45, 0.85, 0.6];
+    const len = Math.hypot(...v);
+    return new Float32Array(v.map((c) => c / len));
+})();
+
+const PIVOT_Y = 1.3;
+const ARM = 2.2;
+const STRING_LEN = 1.25;
+const CAM_TARGET = [0, 0.3, 0];
+const DEG = Math.PI / 180;
+const CAM_DEFAULT = { yaw: 0.5, pitch: 22 * DEG, dist: 8.5 };
+const PITCH_MIN = 10 * DEG;
+const PITCH_MAX = 65 * DEG;
+const DIST_MIN = 5.5;
+const DIST_MAX = 13;
+const TILT_AMP = 0.22;
+const TILT_SECONDS = 1.6;
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+function cubeGeometry() {
+    const pos = [];
+    const nrm = [];
+    for (let axis = 0; axis < 3; axis++) {
+        for (const s of [-1, 1]) {
+            const u = (axis + 1) % 3;
+            const v = (axis + 2) % 3;
+            const corner = (cu, cv) => {
+                const p = [0, 0, 0];
+                p[axis] = s * 0.5;
+                p[u] = cu * 0.5;
+                p[v] = cv * 0.5;
+                return p;
+            };
+            const quad = [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)];
+            const n = [0, 0, 0];
+            n[axis] = s;
+            for (const k of [0, 1, 2, 0, 2, 3]) {
+                pos.push(...quad[k]);
+                nrm.push(...n);
+            }
+        }
+    }
+    return { pos: new Float32Array(pos), nrm: new Float32Array(nrm) };
+}
+
+// Column-major 4x4 helpers.
+function mat4Mul(a, b) {
+    const out = new Float32Array(16);
+    for (let c = 0; c < 4; c++) {
+        for (let r = 0; r < 4; r++) {
+            let sum = 0;
+            for (let k = 0; k < 4; k++) sum += a[k * 4 + r] * b[c * 4 + k];
+            out[c * 4 + r] = sum;
+        }
+    }
+    return out;
+}
+
+function perspective(fovy, aspect, near, far) {
+    const f = 1 / Math.tan(fovy / 2);
+    const nf = 1 / (near - far);
+    return new Float32Array([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0]);
+}
+
+function lookAt(eye, target) {
+    const z = eye.map((e, i) => e - target[i]);
+    const zl = Math.hypot(...z);
+    z.forEach((_, i) => (z[i] /= zl));
+    const xl = Math.hypot(z[2], z[0]);
+    const x = [z[2] / xl, 0, -z[0] / xl]; // cross(up = +Y, z)
+    const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+    const dot = (v) => v[0] * eye[0] + v[1] * eye[1] + v[2] * eye[2];
+    return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x), -dot(y), -dot(z), 1]);
+}
+
+// Model = T * Rz * S, normal matrix = Rz * S^-1 (inverse-transpose of the 3x3 part).
+function modelMatrix({ p, rz, s }) {
+    const c = Math.cos(rz);
+    const n = Math.sin(rz);
+    return new Float32Array([c * s[0], n * s[0], 0, 0, -n * s[1], c * s[1], 0, 0, 0, 0, s[2], 0, p[0], p[1], p[2], 1]);
+}
+
+function normalMatrix({ rz, s }) {
+    const c = Math.cos(rz);
+    const n = Math.sin(rz);
+    return new Float32Array([c / s[0], n / s[0], 0, -n / s[1], c / s[1], 0, 0, 0, 1 / s[2]]);
+}
+
+function createProgram(gl) {
+    const compile = (type, src) => {
+        const sh = gl.createShader(type);
+        gl.shaderSource(sh, src);
+        gl.compileShader(sh);
+        return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null;
+    };
+    const vs = compile(gl.VERTEX_SHADER, VERT_SRC);
+    const fs = compile(gl.FRAGMENT_SHADER, FRAG_SRC);
+    if (!vs || !fs) return null;
+    const program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    return gl.getProgramParameter(program, gl.LINK_STATUS) ? program : null;
+}
+
+// Stack `count` cubes in a cols x rows grid, layer by layer, sitting on `origin`.
+function stackCubes(items, count, color, origin, cols, rows) {
+    const size = 0.24;
+    const step = 0.28;
+    for (let i = 0; i < count; i++) {
+        const layer = Math.floor(i / (cols * rows));
+        const slot = i % (cols * rows);
+        items.push({
+            p: [origin[0] + ((slot % cols) - (cols - 1) / 2) * step, origin[1] + size / 2 + layer * step, origin[2] + (Math.floor(slot / cols) - (rows - 1) / 2) * step],
+            rz: 0,
+            s: [size, size, size],
+            color,
+        });
+    }
+}
+
+function buildScene({ a, b, r }, theta) {
+    const items = [];
+    const add = (p, s, color, rz = 0) => items.push({ p, s, color, rz });
+    add([0, -1.36, 0], [7, 0.04, 3.6], GL_COLORS.floor);
+    add([0, -1.2, 0], [1.6, 0.28, 1.1], GL_COLORS.pedestal);
+    add([0, 0.05, 0], [0.26, 2.5, 0.26], GL_COLORS.pillar);
+    add([0, PIVOT_Y, 0], [0.34, 0.34, 0.34], GL_COLORS.pedestal);
+    add([0, PIVOT_Y, 0], [2 * ARM + 0.5, 0.12, 0.18], GL_COLORS.beam, theta);
+
+    const anchors = [];
+    const pans = [-1, 1].map((side) => {
+        const endX = side * ARM * Math.cos(theta);
+        const endY = PIVOT_Y + side * ARM * Math.sin(theta);
+        const panY = endY - STRING_LEN;
+        add([endX, endY, 0], [0.07, 0.07, 1.3], GL_COLORS.string);
+        add([endX, endY - STRING_LEN / 2, -0.62], [0.025, STRING_LEN, 0.025], GL_COLORS.string);
+        add([endX, endY - STRING_LEN / 2, 0.62], [0.025, STRING_LEN, 0.025], GL_COLORS.string);
+        add([endX, panY - 0.04, 0], [1.9, 0.08, 1.45], GL_COLORS.pan);
+        anchors.push([endX, endY + 0.45, 0]);
+        return [endX, panY];
+    });
+
+    const [lx, ly] = pans[0];
+    const xCount = Math.abs(a);
+    for (let i = 0; i < xCount; i++) add([lx + (i - (xCount - 1) / 2) * 0.4, ly + 0.36, -0.4], [0.3, 0.72, 0.3], GL_COLORS.x);
+    stackCubes(items, Math.abs(b), b > 0 ? GL_COLORS.plus : GL_COLORS.minus, [lx, ly, 0.32], 5, 2);
+    const [rx, ry] = pans[1];
+    stackCubes(items, Math.round(Math.abs(r)), GL_COLORS.right, [rx, ry, 0], 5, 4);
+    return { items, anchors };
+}
+
+let webglSupportCache = null;
+function webglSupported() {
+    if (webglSupportCache !== null) return webglSupportCache;
+    if (typeof document === 'undefined') return false;
+    try {
+        const probe = document.createElement('canvas');
+        const gl = probe.getContext('webgl') || probe.getContext('experimental-webgl');
+        gl?.getExtension('WEBGL_lose_context')?.loseContext();
+        webglSupportCache = Boolean(gl);
+    } catch {
+        webglSupportCache = false;
+    }
+    return webglSupportCache;
+}
+
+const iconBtn = 'w-8 h-8 rounded-lg border border-[#E2E8F0] bg-white text-sm font-black text-[#0F172A] hover:bg-[#F1F5F9]';
+
+function WebglLinearBalanceCanvas({ value, onUnsupported }) {
     const { a, b, r } = value;
+    const canvasRef = useRef(null);
+    const leftBadgeRef = useRef(null);
+    const rightBadgeRef = useRef(null);
+    const stateRef = useRef(value);
+    const camRef = useRef({ ...CAM_DEFAULT });
+    const tiltRef = useRef({ start: 0, amp: 0 });
+    const dirtyRef = useRef(true);
+    const dragRef = useRef(null);
+    const mountedRef = useRef(false);
+    const unsupportedRef = useRef(onUnsupported);
+    unsupportedRef.current = onUnsupported;
+
+    // Each inverse-operation step kicks the beam: theta(t) = A * e^(-4t) * sin(12t).
+    useEffect(() => {
+        stateRef.current = { a, b, r };
+        dirtyRef.current = true;
+        if (!mountedRef.current) {
+            mountedRef.current = true;
+            return;
+        }
+        tiltRef.current = { start: performance.now(), amp: TILT_AMP };
+    }, [a, b, r]);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        let gl = null;
+        try {
+            gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        } catch {
+            gl = null;
+        }
+        const program = gl && createProgram(gl);
+        if (!program) {
+            unsupportedRef.current();
+            return undefined;
+        }
+
+        const geo = cubeGeometry();
+        const posBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, geo.pos, gl.STATIC_DRAW);
+        const aPosition = gl.getAttribLocation(program, 'aPosition');
+        gl.enableVertexAttribArray(aPosition);
+        gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+        const nrmBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, nrmBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, geo.nrm, gl.STATIC_DRAW);
+        const aNormal = gl.getAttribLocation(program, 'aNormal');
+        gl.enableVertexAttribArray(aNormal);
+        gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
+
+        gl.useProgram(program);
+        const uMVP = gl.getUniformLocation(program, 'uMVPMatrix');
+        const uNormal = gl.getUniformLocation(program, 'uNormalMatrix');
+        const uColor = gl.getUniformLocation(program, 'uColor');
+        gl.uniform3fv(gl.getUniformLocation(program, 'uLightDir'), LIGHT_DIR);
+        gl.enable(gl.DEPTH_TEST);
+        gl.clearColor(0.973, 0.98, 0.988, 1);
+
+        const placeBadge = (el, point, vp) => {
+            if (!el) return;
+            const [x, y, z] = point;
+            const cx = vp[0] * x + vp[4] * y + vp[8] * z + vp[12];
+            const cy = vp[1] * x + vp[5] * y + vp[9] * z + vp[13];
+            const cw = vp[3] * x + vp[7] * y + vp[11] * z + vp[15];
+            const sxp = (cx / cw * 0.5 + 0.5) * canvas.clientWidth;
+            const syp = (0.5 - cy / cw * 0.5) * canvas.clientHeight;
+            el.style.transform = `translate(${sxp}px, ${syp}px) translate(-50%, -100%)`;
+        };
+
+        const draw = (theta) => {
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            const { yaw, pitch, dist } = camRef.current;
+            const eye = [
+                CAM_TARGET[0] + dist * Math.cos(pitch) * Math.sin(yaw),
+                CAM_TARGET[1] + dist * Math.sin(pitch),
+                CAM_TARGET[2] + dist * Math.cos(pitch) * Math.cos(yaw),
+            ];
+            const vp = mat4Mul(perspective(0.8, canvas.width / canvas.height, 0.1, 100), lookAt(eye, CAM_TARGET));
+            const { items, anchors } = buildScene(stateRef.current, theta);
+            for (const item of items) {
+                gl.uniformMatrix4fv(uMVP, false, mat4Mul(vp, modelMatrix(item)));
+                gl.uniformMatrix3fv(uNormal, false, normalMatrix(item));
+                gl.uniform3fv(uColor, item.color);
+                gl.drawArrays(gl.TRIANGLES, 0, 36);
+            }
+            placeBadge(leftBadgeRef.current, anchors[0], vp);
+            placeBadge(rightBadgeRef.current, anchors[1], vp);
+        };
+
+        let raf = 0;
+        const frame = (now) => {
+            raf = requestAnimationFrame(frame);
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
+            const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+            if (canvas.width !== w || canvas.height !== h) {
+                canvas.width = w;
+                canvas.height = h;
+                dirtyRef.current = true;
+            }
+            const tilt = tiltRef.current;
+            const t = (now - tilt.start) / 1000;
+            if (tilt.amp !== 0 && t >= TILT_SECONDS) {
+                tilt.amp = 0;
+                dirtyRef.current = true;
+            }
+            const animating = tilt.amp !== 0;
+            if (!animating && !dirtyRef.current) return;
+            dirtyRef.current = false;
+            draw(animating ? tilt.amp * Math.exp(-4 * t) * Math.sin(12 * t) : 0);
+        };
+        raf = requestAnimationFrame(frame);
+
+        const onWheel = (e) => {
+            e.preventDefault();
+            camRef.current.dist = clamp(camRef.current.dist + e.deltaY * 0.01, DIST_MIN, DIST_MAX);
+            dirtyRef.current = true;
+        };
+        const onContextLost = (e) => {
+            e.preventDefault();
+            unsupportedRef.current();
+        };
+        canvas.addEventListener('wheel', onWheel, { passive: false });
+        canvas.addEventListener('webglcontextlost', onContextLost);
+
+        return () => {
+            cancelAnimationFrame(raf);
+            canvas.removeEventListener('wheel', onWheel);
+            canvas.removeEventListener('webglcontextlost', onContextLost);
+            gl.deleteBuffer(posBuf);
+            gl.deleteBuffer(nrmBuf);
+            gl.deleteProgram(program);
+        };
+    }, []);
+
+    const onPointerDown = (e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        dragRef.current = { x: e.clientX, y: e.clientY };
+    };
+    const onPointerMove = (e) => {
+        if (!dragRef.current) return;
+        const cam = camRef.current;
+        cam.yaw -= (e.clientX - dragRef.current.x) * 0.008;
+        cam.pitch = clamp(cam.pitch + (e.clientY - dragRef.current.y) * 0.006, PITCH_MIN, PITCH_MAX);
+        dragRef.current = { x: e.clientX, y: e.clientY };
+        dirtyRef.current = true;
+    };
+    const endDrag = () => {
+        dragRef.current = null;
+    };
+    const zoom = (delta) => {
+        camRef.current.dist = clamp(camRef.current.dist + delta, DIST_MIN, DIST_MAX);
+        dirtyRef.current = true;
+    };
+    const resetCamera = () => {
+        camRef.current = { ...CAM_DEFAULT };
+        dirtyRef.current = true;
+    };
+
+    return (
+        <div className="space-y-2">
+            <div className="relative w-full overflow-hidden border border-[#E2E8F0] rounded-xl bg-[#F8FAFC]">
+                <canvas
+                    ref={canvasRef}
+                    role="img"
+                    aria-label={`Timbangan persamaan linear 3D: ${linearSide(a, b)} = ${r}`}
+                    className="block w-full h-64 sm:h-80 touch-none select-none cursor-grab active:cursor-grabbing"
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={endDrag}
+                    onPointerCancel={endDrag}
+                />
+                <div ref={leftBadgeRef} className="pointer-events-none absolute left-0 top-0 px-2 py-0.5 rounded-lg border border-[#C7D2FE] bg-white text-sm font-extrabold text-[#3730A3] font-math whitespace-nowrap">
+                    {linearSide(a, b)}
+                </div>
+                <div ref={rightBadgeRef} className="pointer-events-none absolute left-0 top-0 px-2 py-0.5 rounded-lg border border-[#A7F3D0] bg-white text-sm font-extrabold text-[#065F46] font-math whitespace-nowrap">
+                    {r}
+                </div>
+                <div className="absolute right-2 top-2 flex gap-1">
+                    <button type="button" onClick={() => zoom(-1)} className={iconBtn} aria-label="Zum masuk">+</button>
+                    <button type="button" onClick={() => zoom(1)} className={iconBtn} aria-label="Zum keluar">−</button>
+                </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-bold text-[#64748B]">🖱️ Klik & seret kanvas 3D untuk memutar pandangan 360°</p>
+                <button type="button" onClick={resetCamera} className="text-xs font-extrabold text-[#2563EB] hover:underline">
+                    🔄 Reset Sudut 3D
+                </button>
+            </div>
+            <p className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-bold text-[#475569]">
+                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#4F46E5] align-middle" /> x</span>
+                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#F59E0B] align-middle" /> +1</span>
+                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#F43F5E] align-middle" /> -1</span>
+                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#10B981] align-middle" /> 1 (kanan)</span>
+            </p>
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// 2D Mario 8-Bit & Angry Birds Inspired Arcade Balance Scale Engine
+// ---------------------------------------------------------------------------
+
+function Arcade2DBalanceScale({ value }) {
+    const { a, b, r } = value;
+    const prevRef = useRef(value);
+    const [animTime, setAnimTime] = useState(0);
+    const tiltRef = useRef({ start: 0, amp: 0, dir: 1 });
+    const bounceRef = useRef({ start: 0, amp: 0 });
+    const projectilesRef = useRef([]);
+    const particlesRef = useRef([]);
+    const isFirstMount = useRef(true);
+
+    const burst = (cx, cy, count, colors) => {
+        const pts = [];
+        for (let i = 0; i < count; i++) {
+            const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+            const speed = 70 + Math.random() * 150;
+            pts.push({
+                id: Math.random() + i,
+                x: cx,
+                y: cy,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 40,
+                size: Math.random() > 0.4 ? 5 : 7,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                life: 1.0,
+            });
+        }
+        particlesRef.current = [...particlesRef.current, ...pts];
+    };
+
+    useEffect(() => {
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            prevRef.current = { a, b, r };
+            return;
+        }
+
+        const prev = prevRef.current;
+        const now = performance.now();
+        const diffA = prev.a - a;
+        const diffB = Math.abs(prev.b) - Math.abs(b);
+        const diffR = prev.r - r;
+
+        // Trigger spring seesaw tilt and bounce
+        const tiltDir = diffR > 0 || diffB > 0 ? (Math.random() > 0.5 ? 1 : -1) : 1;
+        tiltRef.current = { start: now, amp: 0.16, dir: tiltDir };
+        bounceRef.current = { start: now, amp: 8 };
+
+        const newProjs = [];
+
+        // Variable 'x' mystery blocks launched (divided)
+        if (diffA > 0) {
+            for (let i = 0; i < diffA; i++) {
+                newProjs.push({
+                    id: Math.random() + i,
+                    type: 'x',
+                    x: 130 + i * 24,
+                    y: 205,
+                    vx: -75 - Math.random() * 85,
+                    vy: -230 - Math.random() * 90,
+                    rot: 0,
+                    vrot: -260 - Math.random() * 180,
+                    life: 1.0,
+                });
+            }
+            burst(140, 215, 16, ['#F59E0B', '#FACC15', '#FB923C', '#FFFFFF']);
+        }
+
+        // Constant b blocks launched (subtracted or eliminated)
+        if (diffB > 0) {
+            const count = Math.min(diffB, 8);
+            for (let i = 0; i < count; i++) {
+                newProjs.push({
+                    id: Math.random() + i + 10,
+                    type: prev.b > 0 ? 'plus' : 'minus',
+                    x: 175 + (i % 3) * 18,
+                    y: 215 - Math.floor(i / 3) * 18,
+                    vx: -60 - Math.random() * 80,
+                    vy: -240 - Math.random() * 80,
+                    rot: 0,
+                    vrot: -220 - Math.random() * 160,
+                    life: 1.0,
+                });
+            }
+            burst(180, 220, 16, prev.b > 0 ? ['#EA580C', '#F59E0B', '#FFFFFF'] : ['#E11D48', '#FDA4AF', '#FFFFFF']);
+        }
+
+        // Right pan units launched
+        if (diffR > 0) {
+            const count = Math.min(diffR, 12);
+            for (let i = 0; i < count; i++) {
+                newProjs.push({
+                    id: Math.random() + i + 20,
+                    type: 'unit',
+                    x: 485 + (i % 4) * 18,
+                    y: 215 - Math.floor(i / 4) * 18,
+                    vx: 65 + Math.random() * 85,
+                    vy: -230 - Math.random() * 80,
+                    rot: 0,
+                    vrot: 220 + Math.random() * 160,
+                    life: 1.0,
+                });
+            }
+            burst(505, 220, 16, ['#10B981', '#34D399', '#FACC15', '#FFFFFF']);
+        }
+
+        // Celebration burst when solved
+        if (a === 1 && b === 0) {
+            burst(320, 150, 24, ['#FACC15', '#F59E0B', '#10B981', '#38BDF8', '#FFFFFF']);
+        }
+
+        projectilesRef.current = [...projectilesRef.current, ...newProjs];
+        prevRef.current = { a, b, r };
+        setAnimTime(now);
+    }, [a, b, r]);
+
+    useEffect(() => {
+        let rafId;
+        let lastTime = performance.now();
+
+        const loop = (now) => {
+            const dt = Math.min((now - lastTime) / 1000, 0.05);
+            lastTime = now;
+
+            const tilt = tiltRef.current;
+            const tiltTime = (now - tilt.start) / 1000;
+            const isTilting = tilt.amp > 0.001 && tiltTime < 1.6;
+            if (!isTilting && tilt.amp > 0) {
+                tilt.amp = 0;
+            }
+
+            const bounce = bounceRef.current;
+            const bounceTime = (now - bounce.start) / 1000;
+            const isBouncing = bounce.amp > 0.01 && bounceTime < 1.2;
+            if (!isBouncing && bounce.amp > 0) {
+                bounce.amp = 0;
+            }
+
+            let projActive = false;
+            if (projectilesRef.current.length > 0) {
+                projectilesRef.current = projectilesRef.current
+                    .map((p) => ({
+                        ...p,
+                        x: p.x + p.vx * dt,
+                        y: p.y + p.vy * dt,
+                        vy: p.vy + 720 * dt,
+                        rot: p.rot + p.vrot * dt,
+                        life: p.life - dt / 1.3,
+                    }))
+                    .filter((p) => p.life > 0 && p.y < 360);
+                if (projectilesRef.current.length > 0) projActive = true;
+            }
+
+            let partActive = false;
+            if (particlesRef.current.length > 0) {
+                particlesRef.current = particlesRef.current
+                    .map((pt) => ({
+                        ...pt,
+                        x: pt.x + pt.vx * dt,
+                        y: pt.y + pt.vy * dt,
+                        vy: pt.vy + 280 * dt,
+                        life: pt.life - dt / 0.7,
+                    }))
+                    .filter((pt) => pt.life > 0);
+                if (particlesRef.current.length > 0) partActive = true;
+            }
+
+            if (isTilting || isBouncing || projActive || partActive) {
+                setAnimTime(now);
+            }
+
+            rafId = requestAnimationFrame(loop);
+        };
+
+        rafId = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(rafId);
+    }, []);
+
+    const replay = () => {
+        const now = performance.now();
+        tiltRef.current = { start: now, amp: 0.16, dir: 1 };
+        bounceRef.current = { start: now, amp: 8 };
+        burst(320, 190, 16, ['#FACC15', '#F59E0B', '#38BDF8', '#FFFFFF']);
+        setAnimTime(now);
+    };
+
+    // Physics calculations
+    const tilt = tiltRef.current;
+    const t = (animTime - tilt.start) / 1000;
+    const theta = tilt.amp > 0 && t < 1.6
+        ? tilt.amp * Math.exp(-4 * t) * Math.sin(12 * t) * tilt.dir
+        : 0;
+    const thetaDeg = (theta * 180) / Math.PI;
+
+    const bounce = bounceRef.current;
+    const tb = (animTime - bounce.start) / 1000;
+    const bounceY = bounce.amp > 0 && tb < 1.2
+        ? -bounce.amp * Math.exp(-5 * tb) * Math.abs(Math.cos(14 * tb))
+        : 0;
+
+    // Beam geometry
+    const CX = 320;
+    const CY = 192;
+    const L = 186;
+    const x1 = CX - L * Math.cos(theta);
+    const y1 = CY - L * Math.sin(theta);
+    const x2 = CX + L * Math.cos(theta);
+    const y2 = CY + L * Math.sin(theta);
+
+    const px1 = x1;
+    const py1 = y1 + 56;
+    const px2 = x2;
+    const py2 = y2 + 56;
+
+    // Sitting blocks layout
+    const xVal = Number(a) || 0;
+    const bVal = Number(b) || 0;
+    const rVal = Number(r) || 0;
+    const xCount = Math.max(0, Math.min(xVal, 4));
+    const bCount = Math.max(0, Math.min(Math.abs(bVal), 10));
+    const rCount = Math.max(0, Math.min(Math.round(rVal), 25));
+
+    return (
+        <div className="space-y-2">
+            <div className="relative w-full overflow-hidden border border-[#E2E8F0] rounded-xl bg-[#E0F2FE]">
+                <svg
+                    viewBox="0 0 640 330"
+                    className="w-full h-auto block select-none"
+                    role="img"
+                    aria-label={`Timbangan persamaan linear 2D: ${linearSide(a, b)} = ${r}`}
+                >
+                    {/* Sky & Horizon */}
+                    <rect x="0" y="0" width="640" height="330" fill="#E0F2FE" />
+                    <line x1="0" y1="270" x2="640" y2="270" stroke="#BAE6FD" strokeWidth="2" />
+
+                    {/* Mario Rolling Hills */}
+                    <path d="M-20,270 Q90,195 210,270 Z" fill="#BBF7D0" stroke="#86EFAC" strokeWidth="2" />
+                    <path d="M360,270 Q490,190 620,270 Z" fill="#A7F3D0" stroke="#6EE7B7" strokeWidth="2" />
+
+                    {/* 8-Bit Pixel Clouds */}
+                    <g opacity="0.95">
+                        <rect x="60" y="52" width="68" height="18" rx="4" fill="#FFFFFF" />
+                        <rect x="74" y="40" width="40" height="24" rx="4" fill="#FFFFFF" />
+                        <rect x="86" y="32" width="20" height="20" rx="3" fill="#FFFFFF" />
+                    </g>
+                    <g opacity="0.9">
+                        <rect x="440" y="70" width="60" height="16" rx="4" fill="#FFFFFF" />
+                        <rect x="452" y="58" width="36" height="20" rx="4" fill="#FFFFFF" />
+                    </g>
+                    <g opacity="0.85">
+                        <rect x="250" y="36" width="50" height="14" rx="4" fill="#FFFFFF" />
+                        <rect x="260" y="28" width="28" height="16" rx="4" fill="#FFFFFF" />
+                    </g>
+
+                    {/* Ground Turf & Soil */}
+                    <rect x="0" y="270" width="640" height="10" fill="#22C55E" stroke="#16A34A" strokeWidth="1" />
+                    <rect x="0" y="280" width="640" height="50" fill="#B45309" />
+                    {/* Brick lines */}
+                    <line x1="0" y1="295" x2="640" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="0" y1="310" x2="640" y2="310" stroke="#78350F" strokeWidth="1" />
+                    <line x1="0" y1="325" x2="640" y2="325" stroke="#78350F" strokeWidth="1" />
+                    <line x1="40" y1="280" x2="40" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="120" y1="280" x2="120" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="200" y1="280" x2="200" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="280" y1="280" x2="280" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="360" y1="280" x2="360" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="440" y1="280" x2="440" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="520" y1="280" x2="520" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="600" y1="280" x2="600" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="80" y1="295" x2="80" y2="310" stroke="#78350F" strokeWidth="1" />
+                    <line x1="160" y1="295" x2="160" y2="310" stroke="#78350F" strokeWidth="1" />
+                    <line x1="240" y1="295" x2="240" y2="310" stroke="#78350F" strokeWidth="1" />
+                    <line x1="320" y1="295" x2="320" y2="310" stroke="#78350F" strokeWidth="1" />
+                    <line x1="400" y1="295" x2="400" y2="310" stroke="#78350F" strokeWidth="1" />
+                    <line x1="480" y1="295" x2="480" y2="310" stroke="#78350F" strokeWidth="1" />
+                    <line x1="560" y1="295" x2="560" y2="310" stroke="#78350F" strokeWidth="1" />
+
+                    {/* Green Warp Pipe Fulcrum */}
+                    <rect x="301" y="214" width="38" height="56" fill="#16A34A" stroke="#14532D" strokeWidth="2" />
+                    <rect x="306" y="214" width="5" height="56" fill="#4ADE80" />
+                    <rect x="327" y="214" width="8" height="56" fill="#15803D" />
+                    <rect x="294" y="196" width="52" height="18" rx="2" fill="#22C55E" stroke="#14532D" strokeWidth="2" />
+                    <rect x="300" y="198" width="6" height="14" fill="#86EFAC" />
+                    <rect x="334" y="198" width="8" height="14" fill="#15803D" />
+
+                    {/* Balance Beam (Tilts by thetaDeg around 320, 192) */}
+                    <g transform={`rotate(${thetaDeg}, ${CX}, ${CY})`}>
+                        <rect x="130" y="186" width="380" height="12" rx="2" fill="#D97706" stroke="#92400E" strokeWidth="2" />
+                        <line x1="140" y1="192" x2="500" y2="192" stroke="#B45309" strokeWidth="1.5" />
+                        <rect x="126" y="183" width="12" height="18" rx="2" fill="#475569" stroke="#1E293B" strokeWidth="1.5" />
+                        <rect x="502" y="183" width="12" height="18" rx="2" fill="#475569" stroke="#1E293B" strokeWidth="1.5" />
+                    </g>
+
+                    {/* Brass Central Pivot Hub */}
+                    <circle cx="320" cy="192" r="10" fill="#F59E0B" stroke="#78350F" strokeWidth="2" />
+                    <circle cx="320" cy="192" r="4" fill="#78350F" />
+
+                    {/* Suspension Ropes / Chains */}
+                    <line x1={x1} y1={y1} x2={px1 - 65} y2={py1} stroke="#78350F" strokeWidth="2" strokeDasharray="4 2" />
+                    <line x1={x1} y1={y1} x2={px1 + 65} y2={py1} stroke="#78350F" strokeWidth="2" strokeDasharray="4 2" />
+                    <line x1={x2} y1={y2} x2={px2 - 65} y2={py2} stroke="#78350F" strokeWidth="2" strokeDasharray="4 2" />
+                    <line x1={x2} y1={y2} x2={px2 + 65} y2={py2} stroke="#78350F" strokeWidth="2" strokeDasharray="4 2" />
+
+                    {/* Wooden Trays (Remain Horizontal) */}
+                    {/* Left Pan Tray */}
+                    <rect x={px1 - 72} y={py1} width="144" height="10" rx="3" fill="#92400E" stroke="#78350F" strokeWidth="2" />
+                    <rect x={px1 - 72} y={py1 - 6} width="6" height="12" rx="1" fill="#78350F" />
+                    <rect x={px1 + 66} y={py1 - 6} width="6" height="12" rx="1" fill="#78350F" />
+
+                    {/* Right Pan Tray */}
+                    <rect x={px2 - 72} y={py2} width="144" height="10" rx="3" fill="#92400E" stroke="#78350F" strokeWidth="2" />
+                    <rect x={px2 - 72} y={py2 - 6} width="6" height="12" rx="1" fill="#78350F" />
+                    <rect x={px2 + 66} y={py2 - 6} width="6" height="12" rx="1" fill="#78350F" />
+
+                    {/* Left Pan Blocks: ?x Mystery Crates */}
+                    {Array.from({ length: xCount }).map((_, i) => {
+                        const startX = bCount === 0 ? px1 - ((xCount - 1) * 30) / 2 - 13 : px1 - 62 + i * 30;
+                        const bx = startX;
+                        const by = py1 + bounceY - 32;
+                        return (
+                            <g key={`x-${i}`} transform={`translate(${bx}, ${by})`}>
+                                <rect x="0" y="0" width="26" height="32" rx="3" fill="#F59E0B" stroke="#B45309" strokeWidth="2" />
+                                <rect x="2" y="2" width="22" height="28" rx="2" fill="none" stroke="#FDE68A" strokeWidth="1" />
+                                <circle cx="4" cy="4" r="1.2" fill="#78350F" />
+                                <circle cx="22" cy="4" r="1.2" fill="#78350F" />
+                                <circle cx="4" cy="28" r="1.2" fill="#78350F" />
+                                <circle cx="22" cy="28" r="1.2" fill="#78350F" />
+                                <text x="13" y="21" textAnchor="middle" fontSize="16" fontWeight="900" fill="#78350F" className="font-math">x</text>
+                                <text x="19" y="11" textAnchor="middle" fontSize="8" fontWeight="900" fill="#92400E">?</text>
+                            </g>
+                        );
+                    })}
+
+                    {/* Left Pan Blocks: Constant b Units */}
+                    {Array.from({ length: bCount }).map((_, j) => {
+                        const col = j % 3;
+                        const row = Math.floor(j / 3);
+                        const bx = px1 + 8 + col * 20;
+                        const by = py1 + bounceY - 18 - row * 20;
+                        return b > 0 ? (
+                            <g key={`b-${j}`} transform={`translate(${bx}, ${by})`}>
+                                <rect x="0" y="0" width="18" height="18" rx="2" fill="#EA580C" stroke="#9A3412" strokeWidth="1.5" />
+                                <line x1="0" y1="9" x2="18" y2="9" stroke="#7C2D12" strokeWidth="1" />
+                                <line x1="9" y1="0" x2="9" y2="9" stroke="#7C2D12" strokeWidth="1" />
+                                <text x="9" y="13" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FEF08A" className="font-math">+1</text>
+                            </g>
+                        ) : (
+                            <g key={`b-neg-${j}`} transform={`translate(${bx}, ${by})`}>
+                                <rect x="0" y="0" width="18" height="18" rx="2" fill="#E11D48" stroke="#881337" strokeWidth="1.5" />
+                                <rect x="2" y="2" width="14" height="14" rx="1" fill="#BE123C" />
+                                <text x="9" y="13" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FFFFFF" className="font-math">-1</text>
+                            </g>
+                        );
+                    })}
+
+                    {/* Right Pan Blocks: Constant r Units */}
+                    {Array.from({ length: rCount }).map((_, k) => {
+                        const col = k % 5;
+                        const row = Math.floor(k / 5);
+                        const bx = px2 - 44 + col * 18;
+                        const by = py2 + bounceY - 16 - row * 18;
+                        return (
+                            <g key={`r-${k}`} transform={`translate(${bx}, ${by})`}>
+                                <rect x="0" y="0" width="16" height="16" rx="2" fill="#10B981" stroke="#047857" strokeWidth="1.5" />
+                                <circle cx="8" cy="8" r="5" fill="#34D399" stroke="#065F46" strokeWidth="1" />
+                                <text x="8" y="11" textAnchor="middle" fontSize="9" fontWeight="900" fill="#FFFFFF" className="font-math">1</text>
+                            </g>
+                        );
+                    })}
+
+                    {/* Flying Angry Birds Launch Projectiles */}
+                    {projectilesRef.current.map((p) => (
+                        <g
+                            key={p.id}
+                            transform={`translate(${p.x}, ${p.y}) rotate(${p.rot})`}
+                            opacity={Math.max(0, p.life)}
+                        >
+                            {p.type === 'x' ? (
+                                <g transform="translate(-13, -16)">
+                                    <rect x="0" y="0" width="26" height="32" rx="3" fill="#F59E0B" stroke="#B45309" strokeWidth="2" />
+                                    <text x="13" y="21" textAnchor="middle" fontSize="16" fontWeight="900" fill="#78350F" className="font-math">x</text>
+                                    <text x="19" y="11" textAnchor="middle" fontSize="8" fontWeight="900" fill="#92400E">?</text>
+                                </g>
+                            ) : p.type === 'plus' ? (
+                                <g transform="translate(-9, -9)">
+                                    <rect x="0" y="0" width="18" height="18" rx="2" fill="#EA580C" stroke="#9A3412" strokeWidth="1.5" />
+                                    <text x="9" y="13" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FEF08A" className="font-math">+1</text>
+                                </g>
+                            ) : p.type === 'minus' ? (
+                                <g transform="translate(-9, -9)">
+                                    <rect x="0" y="0" width="18" height="18" rx="2" fill="#E11D48" stroke="#881337" strokeWidth="1.5" />
+                                    <text x="9" y="13" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FFFFFF" className="font-math">-1</text>
+                                </g>
+                            ) : (
+                                <g transform="translate(-8, -8)">
+                                    <rect x="0" y="0" width="16" height="16" rx="2" fill="#10B981" stroke="#047857" strokeWidth="1.5" />
+                                    <circle cx="8" cy="8" r="5" fill="#34D399" stroke="#065F46" strokeWidth="1" />
+                                    <text x="8" y="11" textAnchor="middle" fontSize="9" fontWeight="900" fill="#FFFFFF" className="font-math">1</text>
+                                </g>
+                            )}
+                        </g>
+                    ))}
+
+                    {/* 8-Bit Pixel Particle Bursts */}
+                    {particlesRef.current.map((pt) => (
+                        <rect
+                            key={pt.id}
+                            x={pt.x - pt.size / 2}
+                            y={pt.y - pt.size / 2}
+                            width={pt.size}
+                            height={pt.size}
+                            fill={pt.color}
+                            opacity={Math.max(0, pt.life)}
+                        />
+                    ))}
+
+                    {/* Live Algebraic Expression Badges */}
+                    <g transform={`translate(${px1}, ${py1 - 65})`}>
+                        <rect x="-44" y="-13" width="88" height="24" rx="8" fill="#FFFFFF" stroke="#C7D2FE" strokeWidth="1.5" />
+                        <text x="0" y="3" textAnchor="middle" fontSize="13" fontWeight="900" fill="#3730A3" className="font-math">
+                            {linearSide(a, b)}
+                        </text>
+                    </g>
+                    <g transform={`translate(${px2}, ${py2 - 65})`}>
+                        <rect x="-34" y="-13" width="68" height="24" rx="8" fill="#FFFFFF" stroke="#A7F3D0" strokeWidth="1.5" />
+                        <text x="0" y="3" textAnchor="middle" fontSize="13" fontWeight="900" fill="#065F46" className="font-math">
+                            {r}
+                        </text>
+                    </g>
+
+                    {/* Solved Celebration Ribbon */}
+                    {a === 1 && b === 0 && (
+                        <g transform="translate(320, 36)">
+                            <rect x="-105" y="-14" width="210" height="28" rx="8" fill="#ECFDF5" stroke="#10B981" strokeWidth="1.5" />
+                            <text x="0" y="4" textAnchor="middle" fontSize="13" fontWeight="900" fill="#047857" className="font-math">
+                                ★ SELESAI: x = {r} ★
+                            </text>
+                        </g>
+                    )}
+                </svg>
+            </div>
+
+            {/* Stage Footer & Legend */}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-bold text-[#475569]">
+                    <span className="flex items-center gap-1.5">
+                        <span className="inline-block w-3.5 h-3.5 rounded-sm bg-[#F59E0B] border border-[#B45309] text-[9px] font-black text-[#78350F] text-center leading-3 font-math">x</span>
+                        <span>Pemboleh ubah x</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <span className="inline-block w-3 h-3 rounded-sm bg-[#EA580C] border border-[#9A3412]" />
+                        <span>Unit (+1)</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <span className="inline-block w-3 h-3 rounded-sm bg-[#10B981] border border-[#047857]" />
+                        <span>Unit Kanan</span>
+                    </span>
+                </div>
+                <button
+                    type="button"
+                    onClick={replay}
+                    className="text-xs font-extrabold text-[#2563EB] hover:underline"
+                >
+                    💥 Ulang Animasi
+                </button>
+            </div>
+        </div>
+    );
+}
+
+const pillBase = 'px-3 py-1.5 rounded-lg text-xs font-extrabold transition-colors border';
+const pillOn = 'bg-white text-[#0F172A] border-[#E2E8F0]';
+const pillOff = 'text-[#64748B] border-transparent hover:text-[#0F172A] disabled:opacity-40 disabled:cursor-not-allowed';
+
+function BalanceScale({ problem, value, onChange }) {
+    const val = (value && typeof value === 'object' && typeof value.a === 'number') ? value : kssmInit(problem);
+    const { a, b, r } = val;
     const stepLabel = b > 0 ? `Tolak ${b} pada kedua-dua belah` : `Tambah ${-b} pada kedua-dua belah`;
+    const [canWebgl, setCanWebgl] = useState(webglSupported);
+    const [mode, setMode] = useState('2d');
+    const handleUnsupported = () => {
+        webglSupportCache = false;
+        setCanWebgl(false);
+        setMode('2d');
+    };
     return (
         <div className="space-y-3">
-            <svg viewBox="0 0 320 130" className="w-full max-w-sm mx-auto" role="img" aria-label="Timbangan persamaan seimbang">
-                <polygon points="160,36 142,118 178,118" fill="#CBD5E1" />
-                <line x1="40" y1="36" x2="280" y2="36" stroke="#334155" strokeWidth="4" strokeLinecap="round" />
-                <line x1="75" y1="36" x2="75" y2="72" stroke="#64748B" strokeWidth="2" />
-                <line x1="245" y1="36" x2="245" y2="72" stroke="#64748B" strokeWidth="2" />
-                <rect x="15" y="72" width="120" height="38" rx="10" fill="#EFF6FF" stroke="#BFDBFE" />
-                <rect x="185" y="72" width="120" height="38" rx="10" fill="#ECFDF5" stroke="#A7F3D0" />
-                <text x="75" y="96" textAnchor="middle" fontSize="16" fontWeight="800" fill="#1E3A8A" className="font-math">{linearSide(a, b)}</text>
-                <text x="245" y="96" textAnchor="middle" fontSize="16" fontWeight="800" fill="#065F46" className="font-math">{r}</text>
-            </svg>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-[#475569]">Timbangan Persamaan Linear</span>
+                <div role="group" aria-label="Mod paparan timbangan" className="inline-flex gap-1 p-1 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]">
+                    <button
+                        type="button"
+                        aria-pressed={mode === '2d'}
+                        onClick={() => setMode('2d')}
+                        className={`${pillBase} ${mode === '2d' ? pillOn : pillOff}`}
+                    >
+                        🎮 Mod 2D Arked
+                    </button>
+                    <button
+                        type="button"
+                        disabled={!canWebgl}
+                        aria-pressed={mode === '3d'}
+                        onClick={() => setMode('3d')}
+                        className={`${pillBase} ${mode === '3d' ? pillOn : pillOff}`}
+                    >
+                        🧊 Mod 3D WebGL
+                    </button>
+                </div>
+            </div>
+            {mode === '3d' ? (
+                <WebglLinearBalanceCanvas value={val} onUnsupported={handleUnsupported} />
+            ) : (
+                <Arcade2DBalanceScale value={val} />
+            )}
             <p className="text-center text-xs font-extrabold text-[#047857]">⚖️ Timbangan sentiasa seimbang</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
@@ -180,13 +1096,14 @@ function BalanceScale({ problem, value, onChange }) {
 }
 
 function StepSequencer({ problem, value, onChange }) {
-    const toggle = (idx) => onChange(value.includes(idx) ? value.filter((v) => v !== idx) : [...value, idx]);
+    const list = Array.isArray(value) ? value : [];
+    const toggle = (idx) => onChange(list.includes(idx) ? list.filter((v) => v !== idx) : [...list, idx]);
     return (
         <div className="space-y-3">
             <p className="text-xs font-extrabold uppercase tracking-wider text-[#475569]">Klik mengikut urutan betul</p>
             <div className="grid grid-cols-1 gap-2">
                 {problem.shuffle.map((idx) => {
-                    const pos = value.indexOf(idx);
+                    const pos = list.indexOf(idx);
                     return (
                         <button key={idx} type="button" onClick={() => toggle(idx)} className={`${cardBase} text-left flex items-center gap-3 ${pos >= 0 ? cardOn : cardOff}`}>
                             <span className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 border ${pos >= 0 ? 'bg-white text-[#2563EB] border-white' : 'bg-[#F1F5F9] text-[#94A3B8] border-[#CBD5E1]'}`}>
@@ -205,7 +1122,8 @@ function StepSequencer({ problem, value, onChange }) {
 }
 
 function ChoiceList({ problem, value, onChange }) {
-    const set = (i, opt) => onChange(value.map((v, j) => (j === i ? opt : v)));
+    const list = Array.isArray(value) ? value : [];
+    const set = (i, opt) => onChange(list.map((v, j) => (j === i ? opt : v)));
     return (
         <div className="space-y-2">
             {problem.items.map((item, i) => (
@@ -213,7 +1131,7 @@ function ChoiceList({ problem, value, onChange }) {
                     <span className="text-sm sm:text-base font-extrabold text-[#0F172A] font-math">{item.label}</span>
                     <div className="flex flex-wrap gap-1.5">
                         {(item.options || problem.options).map((opt) => (
-                            <button key={opt} type="button" onClick={() => set(i, opt)} className={`${cardBase} ${value[i] === opt ? cardOn : cardOff} font-math`}>
+                            <button key={opt} type="button" onClick={() => set(i, opt)} className={`${cardBase} ${list[i] === opt ? cardOn : cardOff} font-math`}>
                                 {opt}
                             </button>
                         ))}
@@ -434,40 +1352,59 @@ function QuadraticGraph({ value, onChange }) {
 }
 
 function BitSwitcher({ value, onChange, problem }) {
-    const total = bitsValue(value);
-    const toggle = (i) => onChange(value.map((bit, j) => (j === i ? 1 - bit : bit)));
+    const list = Array.isArray(value) ? value : [0, 0, 0, 0, 0];
+    const total = bitsValue(list);
+    const toggle = (i) => onChange(list.map((bit, j) => (j === i ? 1 - bit : bit)));
     return (
         <div className="space-y-3">
             <div className="grid grid-cols-5 gap-2">
                 {BIT_LABELS.map((label, i) => (
-                    <button key={label} type="button" onClick={() => toggle(i)} className={`${cardBase} ${value[i] ? cardOn : cardOff} flex flex-col items-center gap-1 !px-1`} aria-pressed={Boolean(value[i])}>
+                    <button key={label} type="button" onClick={() => toggle(i)} className={`${cardBase} ${list[i] ? cardOn : cardOff} flex flex-col items-center gap-1 !px-1`} aria-pressed={Boolean(list[i])}>
                         <span className="text-[11px]">{label}</span>
-                        <span className="text-xl font-black">{value[i]}</span>
+                        <span className="text-xl font-black">{list[i]}</span>
                     </button>
                 ))}
             </div>
             <div className={`${panel} text-sm font-bold text-[#0F172A] space-y-0.5`}>
-                <p>Asas dua: <span className="font-black">{value.join('')}</span>{toSub(2)}</p>
-                <p>Kira: {BIT_VALUES.map((v, i) => `${value[i]}×${v}`).join(' + ')} = <span className="font-black">{total}</span>{toSub(10)}</p>
+                <p>Asas dua: <span className="font-black">{list.join('')}</span>{toSub(2)}</p>
+                <p>Kira: {BIT_VALUES.map((v, i) => `${list[i]}×${v}`).join(' + ')} = <span className="font-black">{total}</span>{toSub(10)}</p>
                 <p className="text-[#64748B]">Sasaran: {problem.target}{toSub(10)}</p>
             </div>
         </div>
     );
 }
 
-export default function KssmManipulative({ problem, value, onChange }) {
-    if (!problem || value == null) return null;
+function isKssmValueValid(problem, value) {
+    if (!problem || value == null) return false;
     switch (problem.kind) {
         case 'balance':
-            return <BalanceScale problem={problem} value={value} onChange={onChange} />;
+            return typeof value === 'object' && !Array.isArray(value) && typeof value.a === 'number';
         case 'sequence':
-            return <StepSequencer problem={problem} value={value} onChange={onChange} />;
         case 'choices':
-            return <ChoiceList problem={problem} value={value} onChange={onChange} />;
-        case 'graph':
-            return <QuadraticGraph value={value} onChange={onChange} />;
         case 'bits':
-            return <BitSwitcher problem={problem} value={value} onChange={onChange} />;
+            return Array.isArray(value);
+        case 'graph':
+            return typeof value === 'object' && !Array.isArray(value) && typeof value.a === 'number';
+        default:
+            return false;
+    }
+}
+
+export default function KssmManipulative({ problem, value, onChange }) {
+    if (!problem) return null;
+    const safeValue = isKssmValueValid(problem, value) ? value : kssmInit(problem);
+    if (safeValue == null) return null;
+    switch (problem.kind) {
+        case 'balance':
+            return <BalanceScale problem={problem} value={safeValue} onChange={onChange} />;
+        case 'sequence':
+            return <StepSequencer problem={problem} value={safeValue} onChange={onChange} />;
+        case 'choices':
+            return <ChoiceList problem={problem} value={safeValue} onChange={onChange} />;
+        case 'graph':
+            return <QuadraticGraph value={safeValue} onChange={onChange} />;
+        case 'bits':
+            return <BitSwitcher problem={problem} value={safeValue} onChange={onChange} />;
         default:
             return null;
     }

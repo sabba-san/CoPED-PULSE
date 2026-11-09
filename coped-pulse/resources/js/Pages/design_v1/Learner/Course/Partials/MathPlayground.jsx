@@ -604,6 +604,7 @@ export default function MathPlayground({
                 {/* KSSM MANIPULATIVES (TINGKATAN 1 & 4) */}
                 {isKssmMode && (
                     <KssmManipulative
+                        key={currentProblem.id}
                         problem={currentProblem}
                         value={kssmValue}
                         onChange={(next) => {
