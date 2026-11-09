@@ -19,6 +19,7 @@ import MathPlayground from './Partials/MathPlayground';
 import CourseLogoBadge from '@/Components/flat/CourseLogoBadge';
 import FormattedGuide from '@/Components/FormattedGuide';
 import { safeUrl, formatEmbedUrl, getYouTubeId, isVideoUrl, isPdfFile } from '@/Utils/mediaUtils';
+import { renderMathText } from '@/Utils/mathTypography';
 
 const CERT_CHAPTER_STEPS = [
     { key: 'watch', id: 'watch', label: '1. Watch & Materials', shortLabel: '1. Watch' },
@@ -35,7 +36,44 @@ const SCHOOL_CHAPTER_STEPS = [
 
 const buildDemoWorksheetSvg = (yearLevel) => {
     const lines =
-        yearLevel === 2
+        yearLevel === 'F4_ADD'
+            ? [
+                  'LATIHAN KERTAS MATEMATIK TAMBAHAN TINGKATAN 4 (FUNGSI)',
+                  'Diberi f(x) = 2x - 3 dan g(x) = x + 4.',
+                  'fg(x) = f(g(x)) = f(x + 4)',
+                  '      = 2(x + 4) - 3',
+                  '      = 2x + 5',
+                  'Fungsi songsang: y = 2x - 3',
+                  '                 x = (y + 3) / 2',
+                  '                 f-1(x) = (x + 3) / 2',
+                  'Jawapan Akhir: fg(x) = 2x + 5, f-1(x) = (x + 3) / 2   [Disemak Betul]',
+              ]
+            : yearLevel === 'F1'
+            ? [
+                  'LATIHAN KERTAS MATEMATIK TINGKATAN 1 (PERSAMAAN LINEAR)',
+                  'Soalan: (a) 3x - 4 = 11    (b) (y / 2) + 3 = 7',
+                  '(a) 3x - 4 = 11',
+                  '    3x = 11 + 4',
+                  '    3x = 15',
+                  '     x = 15 / 3 = 5',
+                  '(b) (y / 2) + 3 = 7',
+                  '    y / 2 = 7 - 3 = 4',
+                  '      y = 4 x 2 = 8',
+                  'Jawapan Akhir: x = 5, y = 8   [Disemak Betul]',
+              ]
+            : yearLevel === 'F4'
+            ? [
+                  'LATIHAN KERTAS MATEMATIK TINGKATAN 4 (PERSAMAAN KUADRATIK)',
+                  'Soalan: x² + 2x - 15 = 0 (pemfaktoran) dan lakaran f(x)',
+                  'x² + 2x - 15 = 0',
+                  '(x + 5)(x - 3) = 0',
+                  'x + 5 = 0   atau   x - 3 = 0',
+                  'x = -5   atau   x = 3',
+                  'Lakaran: parabola senyum (a > 0), memotong paksi-x',
+                  '         pada -5 dan 3, pintasan-y = -15, paksi x = -1',
+                  'Jawapan Akhir: x = 3, x = -5   [Disemak Betul]',
+              ]
+            : yearLevel === 2
             ? [
                   'LATIHAN KERTAS MATEMATIK TAHUN 2 (BENTUK LAZIM)',
                   'Soalan: RM90.00 - RM54.60 - RM27.00 = ___',
@@ -74,14 +112,14 @@ const buildDemoWorksheetSvg = (yearLevel) => {
                   'Jawapan Akhir: 86 dan 56   [Disemak Betul]',
               ];
 
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="680" height="320" viewBox="0 0 680 320">
-        <rect width="680" height="320" fill="#FFFBEB" stroke="#CBD5E1" stroke-width="2"/>
-        <line x1="56" y1="0" x2="56" y2="320" stroke="#EF4444" stroke-width="2"/>
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="560" height="220" viewBox="0 0 560 220">
+        <rect width="560" height="220" fill="#FFFBEB" stroke="#CBD5E1" stroke-width="1.5"/>
+        <line x1="44" y1="0" x2="44" y2="220" stroke="#EF4444" stroke-width="1.5"/>
         ${lines
             .map(
                 (txt, idx) =>
-                    `<line x1="0" y1="${42 + idx * 28}" x2="680" y2="${42 + idx * 28}" stroke="#93C5FD" stroke-width="1"/>
-                     <text x="70" y="${36 + idx * 28}" font-family="monospace" font-size="15" font-weight="bold" fill="#1E3A8A">${txt
+                    `<line x1="0" y1="${28 + idx * 19}" x2="560" y2="${28 + idx * 19}" stroke="#93C5FD" stroke-width="1"/>
+                     <text x="54" y="${24 + idx * 19}" font-family="monospace" font-size="11" font-weight="bold" fill="#1E3A8A">${txt
                          .replace(/&/g, '&amp;')
                          .replace(/</g, '&lt;')
                          .replace(/>/g, '&gt;')}</text>`
@@ -174,6 +212,8 @@ export default function Learn({
     const prevLastMessageIdRef = useRef(null);
     const prevChatModeRef = useRef(null);
     const prevTabRef = useRef(null);
+    const sidebarScrollRef = useRef(null);
+    const activeModuleRef = useRef(null);
 
     const activeChatMessages = useMemo(() => {
         if (chatMode === 'direct') {
@@ -205,6 +245,22 @@ export default function Learn({
             }).catch(() => {});
         }
     }, [activeTab, course.id]);
+
+    // Keep active chapter scrolled smoothly into view inside the sidebar container without window shifting
+    useEffect(() => {
+        if (activeModuleRef.current && sidebarScrollRef.current) {
+            const container = sidebarScrollRef.current;
+            const target = activeModuleRef.current;
+            const targetRect = target.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+
+            if (targetRect.top < containerRect.top) {
+                container.scrollTop -= (containerRect.top - targetRect.top + 8);
+            } else if (targetRect.bottom > containerRect.bottom) {
+                container.scrollTop += (targetRect.bottom - containerRect.bottom + 8);
+            }
+        }
+    }, [activeModuleId]);
 
     useEffect(() => {
         if (chatMessages) {
@@ -665,8 +721,15 @@ export default function Learn({
         course?.course_mode === 'school' ||
             course?.title?.includes('Tahun') ||
             course?.title?.includes('KSSR') ||
-            course?.academic_year?.includes('KSSR')
+            course?.title?.includes('KSSM') ||
+            course?.title?.includes('Tingkatan') ||
+            course?.academic_year?.includes('KSSR') ||
+            course?.academic_year?.includes('KSSM')
     );
+
+    const pilotModule = useMemo(() => {
+        return modules.find((m) => /fokus\s+ujian\s+rintis|ujian\s+rintis/i.test(m.title)) ?? null;
+    }, [modules]);
 
     const activeChapterSteps = isKssrCourse ? SCHOOL_CHAPTER_STEPS : CERT_CHAPTER_STEPS;
 
@@ -822,13 +885,55 @@ export default function Learn({
 
     const kssrYearLevel = useMemo(() => {
         const text = `${course?.title || ''} ${course?.academic_year || ''} ${course?.description || ''} ${course?.category || ''}`;
+        // KSSM secondary levels return strings; keep them away from Number() coercion.
+        if (/matematik\s*tambahan|add(itional)?\s*math/i.test(text)) return 'F4_ADD';
+        if (/tingkatan\s*1\b|form\s*1\b/i.test(text)) return 'F1';
+        if (/tingkatan\s*4\b|form\s*4\b/i.test(text)) return 'F4';
         if (/tahun\s*2|standard\s*2|darjah\s*2/i.test(text)) return 2;
         if (/tahun\s*3|standard\s*3|darjah\s*3/i.test(text)) return 3;
         return 1;
     }, [course?.title, course?.academic_year, course?.description, course?.category]);
 
+    const isSecondaryMath = ['F1', 'F4', 'F4_ADD'].includes(kssrYearLevel);
+
     // Penilaian Hibrid (Paper Worksheet & Scan/Photo Upload) State
     const hybridTask = useMemo(() => {
+        if (kssrYearLevel === 'F4_ADD') {
+            return {
+                badge: 'Matematik Tambahan Tingkatan 4 · Fungsi (Bab 1)',
+                prompt: 'Diberi f(x) = 2x - 3 dan g(x) = x + 4. Cari fg(x) dan f⁻¹(x) di atas kertas dengan menunjukkan semua langkah. Muat naik gambar kertas kerja anda.',
+                placeholder: 'Contoh: fg(x) = 2x + 5, f⁻¹(x) = (x + 3) / 2',
+                demoAnswer: 'fg(x) = 2x + 5, f⁻¹(x) = (x + 3) / 2',
+                validate: (val) => {
+                    const clean = String(val || '').replace(/\s+/g, '').toLowerCase();
+                    return clean.includes('2x+5') && clean.includes('(x+3)/2');
+                },
+            };
+        }
+        if (kssrYearLevel === 'F1') {
+            return {
+                badge: 'Tingkatan 1 · Persamaan Linear (Bab 6)',
+                prompt: 'Selesaikan persamaan berikut di atas kertas latihan dengan menunjukkan semua langkah pengiraan: (a) 3x - 4 = 11  (b) (y / 2) + 3 = 7. Tangkap gambar kertas kerja anda dan muat naik ke sistem.',
+                placeholder: 'Contoh: x = 5, y = 8',
+                demoAnswer: 'x = 5, y = 8',
+                validate: (val) => {
+                    const clean = String(val || '').replace(/\s+/g, '').toLowerCase();
+                    return clean.includes('x=5') && clean.includes('y=8');
+                },
+            };
+        }
+        if (kssrYearLevel === 'F4') {
+            return {
+                badge: 'Tingkatan 4 · Persamaan Kuadratik (Bab 1)',
+                prompt: 'Selesaikan persamaan kuadratik x² + 2x - 15 = 0 menggunakan kaedah pemfaktoran di atas kertas, dan lakarkan bentuk graf f(x) = x² + 2x - 15. Muat naik gambar jalan kerja dan lakaran anda.',
+                placeholder: 'Contoh: x = 3, x = -5',
+                demoAnswer: 'x = 3, x = -5',
+                validate: (val) => {
+                    const clean = String(val || '').replace(/\s+/g, '').toLowerCase();
+                    return clean.includes('3') && clean.includes('-5');
+                },
+            };
+        }
         if (kssrYearLevel === 2) {
             return {
                 badge: 'Tahun 2 · Wang Hingga RM100',
@@ -867,6 +972,7 @@ export default function Learn({
     const [hybridScanName, setHybridScanName] = useState('');
     const [hybridError, setHybridError] = useState('');
     const [hybridSubmitted, setHybridSubmitted] = useState(false);
+    const [hybridZoom, setHybridZoom] = useState(false);
 
     // Live Total XP & Level Computation
     const totalXp = useMemo(() => {
@@ -906,7 +1012,9 @@ export default function Learn({
         setHybridError('');
         setHybridSubmitted(false);
         setHybridAnswer(hybridTask.demoAnswer);
-        setHybridScanName(`Imbasan_Kertas_Bentuk_Lazim_Tahun_${kssrYearLevel}.svg`);
+        setHybridScanName(
+            `Imbasan_Kertas_Bentuk_Lazim_${typeof kssrYearLevel === 'string' ? `Tingkatan_${kssrYearLevel.slice(1)}` : `Tahun_${kssrYearLevel}`}.svg`
+        );
         setHybridScanPreview(buildDemoWorksheetSvg(kssrYearLevel));
     };
 
@@ -935,43 +1043,43 @@ export default function Learn({
     const renderHybridPaperCard = () => (
         <div
             id="penilaian-hibrid-card"
-            className="bg-[#FFFBEB] border border-[#FCD34D] rounded-xl p-4 sm:p-5 space-y-4"
+            className="bg-[#FFFBEB] border border-[#FCD34D] rounded-xl p-3 sm:p-4 space-y-3 max-w-3xl"
         >
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#FDE68A]">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[#FDE68A]">
                 <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-lg bg-[#D97706] text-white text-xs font-black uppercase tracking-wider">
+                    <span className="px-2 py-0.5 rounded-lg bg-[#D97706] text-white text-[11px] font-black uppercase tracking-wider">
                         📝 Tugasan Kertas &amp; Imbasan
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-lg bg-white text-[#92400E] border border-[#FCD34D] text-xs font-extrabold">
+                    <span className="px-2 py-0.5 rounded-lg bg-white text-[#92400E] border border-[#FCD34D] text-[11px] font-extrabold">
                         Penilaian Hibrid · {hybridTask.badge}
                     </span>
                 </div>
                 <button
                     type="button"
                     onClick={handleLoadDemoWorksheet}
-                    className="px-3 py-1.5 rounded-lg bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-black transition-colors"
+                    className="px-2.5 py-1 rounded-lg bg-[#0284C7] hover:bg-[#0369A1] text-white text-[11px] font-black transition-colors"
                 >
                     ⚡ Gunakan Contoh Imbasan Kertas Murid (Demo)
                 </button>
             </div>
 
             {/* 1. Assigned Textbook Problem */}
-            <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] space-y-1">
+            <div className="p-2.5 sm:p-3 rounded-lg bg-white border border-[#E2E8F0] space-y-1">
                 <span className="text-[11px] font-black uppercase tracking-wider text-[#D97706] block">
                     Soalan Jalan Kerja Bentuk Lazim (Kertas Latihan):
                 </span>
-                <p className="text-base sm:text-lg font-extrabold text-[#0F172A] leading-snug">
-                    {hybridTask.prompt}
+                <p className="text-sm font-extrabold text-[#0F172A] leading-snug">
+                    {renderMathText(hybridTask.prompt, isSecondaryMath)}
                 </p>
             </div>
 
             {/* 2. Step-by-Step Hybrid Submission Flow */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 {/* Input 1: Final Numerical Answer */}
-                <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] space-y-2">
+                <div className="p-2.5 sm:p-3 rounded-lg bg-white border border-[#E2E8F0] space-y-1.5">
                     <label
                         htmlFor="hybrid-final-answer"
-                        className="text-xs sm:text-sm font-extrabold text-[#0F172A] block"
+                        className="text-xs font-extrabold text-[#0F172A] block"
                     >
                         Langkah 1: Taip Jawapan Akhir daripada Kertas Anda
                     </label>
@@ -984,7 +1092,7 @@ export default function Learn({
                             setHybridSubmitted(false);
                         }}
                         placeholder={hybridTask.placeholder}
-                        className="w-full px-3.5 py-2 rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] text-base font-extrabold text-[#0F172A] focus:outline-none focus:border-[#2563EB] focus:bg-white"
+                        className="w-full px-3 py-1.5 rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] text-sm font-extrabold text-[#0F172A] min-h-[36px] focus:outline-none focus:border-[#2563EB] focus:bg-white"
                     />
                     <p className="text-[11px] font-semibold text-gray-500">
                         Kira di atas kertas latihan dahulu, kemudian masukkan jawapan akhir di sini.
@@ -992,12 +1100,12 @@ export default function Learn({
                 </div>
 
                 {/* Input 2: Upload Scan / Photo of Handwritten Working */}
-                <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] space-y-2 flex flex-col justify-between">
-                    <div className="space-y-2">
-                        <span className="text-xs sm:text-sm font-extrabold text-[#0F172A] block">
+                <div className="p-2.5 sm:p-3 rounded-lg bg-white border border-[#E2E8F0] space-y-1.5 flex flex-col justify-between">
+                    <div className="space-y-1.5">
+                        <span className="text-xs font-extrabold text-[#0F172A] block">
                             Langkah 2: Muat Naik Gambar / Imbasan Kertas Jalan Kerja
                         </span>
-                        <label className="w-full min-h-[42px] px-4 py-2 rounded-lg bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] hover:text-white border border-[#D97706] text-xs sm:text-sm font-black cursor-pointer inline-flex items-center justify-center gap-2 transition-colors text-center">
+                        <label className="w-full min-h-[36px] px-3 py-1.5 rounded-lg bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] hover:text-white border border-[#D97706] text-xs font-black cursor-pointer inline-flex items-center justify-center gap-2 transition-colors text-center">
                             <span>📷 Tangkap Gambar / Muat Naik Kertas Jalan Kerja</span>
                             <input
                                 type="file"
@@ -1018,28 +1126,38 @@ export default function Learn({
 
             {/* Instant Worksheet Preview */}
             {hybridScanPreview && (
-                <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] space-y-2">
+                <div className="p-2.5 sm:p-3 rounded-lg bg-white border border-[#E2E8F0] space-y-1.5">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-black uppercase tracking-wider text-[#0F172A]">
-                            🔍 Pratonton Imbasan Kertas Jalan Kerja Murid:
+                        <span className="text-[11px] font-black uppercase tracking-wider text-[#0F172A]">
+                            🔍 Pratonton Imbasan Kertas:
                         </span>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setHybridScanPreview(null);
-                                setHybridScanName('');
-                                setHybridSubmitted(false);
-                            }}
-                            className="text-xs font-extrabold text-red-600 hover:underline"
-                        >
-                            Padam Imbasan
-                        </button>
+                        <div className="flex items-center gap-2.5">
+                            <button
+                                type="button"
+                                onClick={() => setHybridZoom((prev) => !prev)}
+                                className="text-[11px] font-extrabold text-[#2563EB] hover:underline"
+                            >
+                                {hybridZoom ? 'Kecilkan' : 'Besarkan'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setHybridScanPreview(null);
+                                    setHybridScanName('');
+                                    setHybridSubmitted(false);
+                                    setHybridZoom(false);
+                                }}
+                                className="text-[11px] font-extrabold text-red-600 hover:underline"
+                            >
+                                Padam Imbasan
+                            </button>
+                        </div>
                     </div>
-                    <div className="border border-[#CBD5E1] rounded-lg overflow-hidden bg-[#FFFBEB] max-h-56 flex items-center justify-center">
+                    <div className={`border border-[#CBD5E1] rounded-lg overflow-hidden bg-[#FFFBEB] flex items-center justify-center transition-all ${hybridZoom ? 'max-h-80' : 'max-h-36'}`}>
                         <img
                             src={hybridScanPreview}
                             alt="Pratonton Kertas Jalan Kerja Bentuk Lazim"
-                            className="max-h-52 w-auto object-contain"
+                            className={`${hybridZoom ? 'max-h-76' : 'max-h-32'} w-auto object-contain`}
                         />
                     </div>
                 </div>
@@ -1150,7 +1268,13 @@ export default function Learn({
                                                 <span>My Portal</span>
                                             </Link>
                                             <span className="px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-[10px] font-extrabold uppercase tracking-wider">
-                                                🏫 KSSR Rendah · Tahun {kssrYearLevel}
+                                                🏫 {kssrYearLevel === 'F1'
+                                                    ? 'KSSM Menengah · Tingkatan 1'
+                                                    : kssrYearLevel === 'F4'
+                                                    ? 'KSSM Menengah · Tingkatan 4'
+                                                    : kssrYearLevel === 'F4_ADD'
+                                                    ? 'KSSM Menengah Atas · Matematik Tambahan Tingkatan 4'
+                                                    : `KSSR Rendah · Tahun ${kssrYearLevel}`}
                                             </span>
                                         </div>
 
@@ -1350,20 +1474,28 @@ export default function Learn({
                                     >
                                         <span className="flex items-center gap-2">
                                             <span>📑</span>
-                                            <span>Course Curriculum ({modules.length} Modules)</span>
+                                            <span>Course Curriculum ({modules.length} {isKssrCourse ? 'Bab' : 'Modules'})</span>
                                         </span>
                                         <span className="text-[#64748B] font-bold">{mobileCurriculumOpen ? '▲ Hide' : '▼ View Curriculum'}</span>
                                     </button>
                                 </div>
 
-                                <div className={`${mobileCurriculumOpen ? 'block' : 'hidden'} lg:block bg-white border border-[#E2E8F0] rounded-xl p-4`}>
+                                <div className={`${mobileCurriculumOpen ? 'block' : 'hidden'} lg:block bg-white border border-[#E2E8F0] rounded-xl p-4 flex flex-col`}>
                                     <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-[#E2E8F0]">
                                         <h3 className="font-display font-extrabold text-xs text-[#0F172A] uppercase tracking-wider">
-                                            Curriculum ({modules.length} Modules)
+                                            Curriculum ({modules.length} {isKssrCourse ? 'Bab' : 'Modules'})
                                         </h3>
-                                        <span className="text-[11px] text-[#64748B] font-semibold">
-                                            Click to open
-                                        </span>
+                                        {pilotModule && (
+                                            <button
+                                                type="button"
+                                                onClick={() => goToModule(pilotModule.id)}
+                                                className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                                title="Lompat terus ke Bab Fokus Ujian Rintis"
+                                            >
+                                                <span>🎯</span>
+                                                <span>Fokus Rintis</span>
+                                            </button>
+                                        )}
                                     </div>
 
                                     {modules.length === 0 ? (
@@ -1371,146 +1503,134 @@ export default function Learn({
                                             No modules added to this course yet.
                                         </p>
                                     ) : (
-                                        <div className="space-y-2">
+                                        <div
+                                            ref={sidebarScrollRef}
+                                            className="max-h-[440px] lg:max-h-[490px] overflow-y-auto pr-1 space-y-1.5 focus:outline-none"
+                                        >
                                             {modules.map((m, idx) => {
                                                 const isActive = m.id === activeModuleId;
                                                 const mLessons = m.lessons || [];
                                                 const doneSubCount = mLessons.filter((l) => doneLessonSet.has(l.id)).length;
                                                 const isChecked = isModuleFullyDone(m);
                                                 const isEmbed = m.content_type === 'embed';
+                                                const isPilot = /fokus\s+ujian\s+rintis|ujian\s+rintis/i.test(m.title);
+                                                const cleanTitle = m.title.replace(/\s*\(Fokus Ujian Rintis\)/i, '');
 
                                                 return (
-                                                    <div key={m.id} className="space-y-1.5">
-                                                        {/* Parent Chapter Bar */}
+                                                    <div
+                                                        key={m.id}
+                                                        ref={isActive ? activeModuleRef : null}
+                                                        className="space-y-1"
+                                                    >
+                                                        {/* Parent Chapter Bar (1-Line Sleek Row) */}
                                                         <div
                                                             onClick={() => goToModule(m.id)}
-                                                            className={`p-2.5 rounded-xl transition-colors cursor-pointer flex items-start gap-2.5 ${
+                                                            className={`py-2 px-2.5 rounded-xl transition-colors cursor-pointer flex items-center justify-between gap-2 ${
                                                                 isActive
-                                                                    ? 'border-2 border-[#2563EB] bg-[#EFF6FF]/60'
+                                                                    ? 'border-2 border-[#2563EB] bg-[#EFF6FF]/70 text-[#1E40AF]'
+                                                                    : isPilot
+                                                                    ? 'border border-amber-200 bg-amber-50/40 hover:border-amber-300'
                                                                     : 'border border-[#E2E8F0] bg-white hover:border-[#CBD5E1]'
                                                             }`}
                                                         >
-                                                            {/* Module Checkbox / Status Indicator */}
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    if (mLessons.length > 0) {
-                                                                        e.stopPropagation();
-                                                                        const targetLesson =
-                                                                            isActive && selectedLesson
-                                                                                ? selectedLesson
-                                                                                : mLessons.find((l) => !doneLessonSet.has(l.id)) || mLessons[0];
-                                                                        if (targetLesson) {
-                                                                            toggleLessonCheck(m.id, targetLesson.id, e);
-                                                                        }
-                                                                    } else {
-                                                                        toggleModuleCheck(m.id, e);
-                                                                    }
-                                                                }}
-                                                                title={
-                                                                    mLessons.length > 0
-                                                                        ? `${doneSubCount}/${mLessons.length} subtopics completed`
-                                                                        : isChecked
-                                                                        ? 'Mark incomplete'
-                                                                        : 'Mark complete'
-                                                                }
-                                                                className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
-                                                                    isChecked
-                                                                        ? 'bg-[#10B981] border-[#10B981] text-white'
-                                                                        : doneSubCount > 0
-                                                                        ? 'bg-emerald-50 border-[#10B981] text-[#065F46]'
-                                                                        : 'bg-white border-[#CBD5E1] hover:border-[#2563EB]'
-                                                                }`}
-                                                            >
-                                                                {isChecked ? (
-                                                                    <CheckIcon className="w-3.5 h-3.5 text-white" />
-                                                                ) : doneSubCount > 0 ? (
-                                                                    <span className="text-[9px] font-black">{doneSubCount}</span>
-                                                                ) : null}
-                                                            </button>
-
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center justify-between gap-1">
-                                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
-                                                                        Chapter {idx + 1}
-                                                                    </span>
-                                                                    {isChecked ? (
-                                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                                                            ✓ DONE
-                                                                        </span>
-                                                                    ) : mLessons.length > 0 ? (
-                                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0]">
-                                                                            {doneSubCount}/{mLessons.length} DONE
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span
-                                                                            className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider border ${
-                                                                                isEmbed
-                                                                                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                                                                    : 'bg-gray-100 text-gray-700 border-gray-200'
-                                                                            }`}
-                                                                        >
-                                                                            {isEmbed ? 'EMBED' : 'LINK'}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <p
-                                                                    className={`text-xs font-bold truncate mt-0.5 ${
-                                                                        isActive ? 'text-[#1E40AF]' : 'text-[#0F172A]'
+                                                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                                {/* Status Icon / Chevron */}
+                                                                <span
+                                                                    className={`w-4 h-4 rounded flex items-center justify-center shrink-0 text-[10px] font-black ${
+                                                                        isChecked
+                                                                            ? 'bg-[#10B981] text-white'
+                                                                            : isActive
+                                                                            ? 'text-[#2563EB]'
+                                                                            : 'text-[#94A3B8]'
                                                                     }`}
                                                                 >
-                                                                    {m.title}
-                                                                </p>
+                                                                    {isChecked ? '✓' : isActive ? '▼' : '▶'}
+                                                                </span>
+
+                                                                {/* Single-line Chapter Title */}
+                                                                <span
+                                                                    className={`text-xs truncate ${
+                                                                        isActive
+                                                                            ? 'font-extrabold text-[#1E40AF]'
+                                                                            : isPilot
+                                                                            ? 'font-bold text-[#0F172A]'
+                                                                            : 'font-semibold text-[#111827]'
+                                                                    }`}
+                                                                    title={m.title}
+                                                                >
+                                                                    {cleanTitle}
+                                                                </span>
+
+                                                                {isPilot && (
+                                                                    <span className="shrink-0 text-[9px] font-black text-amber-700 bg-amber-100 border border-amber-300 px-1 rounded">
+                                                                        ★ Rintis
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Right Status / Fraction */}
+                                                            <div className="shrink-0 flex items-center gap-1">
+                                                                {isChecked ? (
+                                                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                                        ✓
+                                                                    </span>
+                                                                ) : mLessons.length > 0 ? (
+                                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0]">
+                                                                        {doneSubCount}/{mLessons.length}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span
+                                                                        className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase border ${
+                                                                            isEmbed
+                                                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                                                : 'bg-gray-100 text-gray-700 border-gray-200'
+                                                                        }`}
+                                                                    >
+                                                                        {isEmbed ? 'EMBED' : 'LINK'}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
-                                                        {/* Subtopics Tree Stack Under Chapter Bar */}
-                                                        {mLessons.length > 0 && (
-                                                            <div className="ml-3.5 pl-2.5 border-l border-[#CBD5E1] space-y-1">
+                                                        {/* Subtopics Accordion: Expanded ONLY for the Active Chapter */}
+                                                        {isActive && mLessons.length > 0 && (
+                                                            <div className="ml-3 pl-2.5 border-l-2 border-[#BFDBFE] space-y-1 pt-0.5 pb-1">
                                                                 {mLessons.map((lesson, lIdx) => {
                                                                     const isSubDone = doneLessonSet.has(lesson.id);
-                                                                    const isCurrentLesson = isActive && selectedLesson?.id === lesson.id;
+                                                                    const isCurrentLesson = selectedLesson?.id === lesson.id;
                                                                     const lessonSafe = safeUrl(lesson.content_url);
                                                                     const isPdf = isPdfFile(lessonSafe, lesson.content_type);
                                                                     const isVideo = isVideoUrl(lessonSafe, lesson.content_type);
+                                                                    const icon = isPdf ? '📄' : isVideo ? '▶' : '📖';
                                                                     const pillLabel = isPdf ? 'PDF' : isVideo ? 'VIDEO' : 'GUIDE';
+
+                                                                    const cleanSubTitle = lesson.title.replace(/^Subtopik\s*[\d.]+\s*[:\-]\s*/i, '');
+                                                                    const displayTitle = `${idx + 1}.${lIdx + 1} ${cleanSubTitle}`;
 
                                                                     return (
                                                                         <div
                                                                             key={lesson.id}
                                                                             onClick={() => selectSubtopic(m.id, lesson)}
-                                                                            className={`p-2 rounded-lg transition-colors cursor-pointer flex items-center justify-between gap-2 ${
+                                                                            className={`py-1.5 px-2 rounded-lg transition-colors cursor-pointer flex items-center justify-between gap-2 ${
                                                                                 isCurrentLesson
-                                                                                    ? 'border-2 border-[#2563EB] bg-[#EFF6FF] text-[#0F172A]'
+                                                                                    ? 'border border-[#2563EB] bg-[#EFF6FF] text-[#1E40AF]'
                                                                                     : 'border border-[#E2E8F0] bg-white hover:border-[#CBD5E1] text-[#334155]'
                                                                             }`}
                                                                         >
-                                                                            <div className="flex items-center gap-2 min-w-0">
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={(e) => toggleLessonCheck(m.id, lesson.id, e)}
-                                                                                    title={isSubDone ? 'Untick subtopic' : 'Tick subtopic complete'}
-                                                                                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                                                                                        isSubDone
-                                                                                            ? 'bg-[#10B981] border-[#10B981] text-white'
-                                                                                            : 'bg-white border-[#CBD5E1] hover:border-[#2563EB]'
+                                                                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                                <span className="text-xs shrink-0">{icon}</span>
+                                                                                <span
+                                                                                    className={`text-[11px] truncate ${
+                                                                                        isCurrentLesson
+                                                                                            ? 'font-extrabold text-[#1E40AF]'
+                                                                                            : 'font-medium text-[#334155]'
                                                                                     }`}
+                                                                                    title={lesson.title}
                                                                                 >
-                                                                                    {isSubDone && <CheckIcon className="w-3 h-3 text-white" />}
-                                                                                </button>
-                                                                                <div className="min-w-0">
-                                                                                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#64748B] block">
-                                                                                        Subtopic {idx + 1}.{lIdx + 1}
-                                                                                    </span>
-                                                                                    <span
-                                                                                        className={`text-[11px] truncate block ${
-                                                                                            isCurrentLesson ? 'font-extrabold text-[#1E40AF]' : 'font-semibold text-[#334155]'
-                                                                                        }`}
-                                                                                    >
-                                                                                        {lesson.title}
-                                                                                    </span>
-                                                                                </div>
+                                                                                    {displayTitle}
+                                                                                </span>
                                                                             </div>
+
                                                                             <span
                                                                                 className={`shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${
                                                                                     isSubDone
@@ -1541,7 +1661,7 @@ export default function Learn({
                                             <button
                                                 type="button"
                                                 onClick={() => setActiveTab('assessment')}
-                                                className="w-full bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs py-2.5 px-3 rounded-lg flex items-center justify-between transition-colors"
+                                                className="w-full bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-xs py-2.5 px-3 rounded-lg flex items-center justify-between transition-colors cursor-pointer"
                                             >
                                                 <span>Final Assessment ({assessments.length} Questions)</span>
                                                 <ArrowRightIcon className="w-3.5 h-3.5" />
@@ -1635,17 +1755,11 @@ export default function Learn({
                                             <div className="space-y-2 pb-3 border-b border-[#E2E8F0]">
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="flex flex-wrap items-center gap-2 min-w-0">
-                                                        {chapterStep !== 'interact' && (
-                                                            <>
-                                                                <span className="text-[11px] font-extrabold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md uppercase tracking-wider">
-                                                                    Chapter {activeIndex + 1} of {modules.length}
-                                                                </span>
-                                                                <span className="text-[10px] font-extrabold text-[#065F46] bg-[#ECFDF5] border border-[#A7F3D0] px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                                                                    <span>⚡</span>
-                                                                    <span>Auto-tracks on finish</span>
-                                                                </span>
-                                                            </>
-                                                        )}
+                                                        <span className="text-[11px] font-extrabold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                                            {isKssrCourse
+                                                                ? `Bab ${activeIndex + 1} daripada ${modules.length}`
+                                                                : `Chapter ${activeIndex + 1} of ${modules.length}`}
+                                                        </span>
                                                         <h2 className="font-display font-extrabold text-base sm:text-xl text-[#0F172A] truncate">
                                                             {activeModule.title}
                                                         </h2>
@@ -1657,8 +1771,8 @@ export default function Learn({
                                                             onClick={toggleCurrentViewComplete}
                                                             title={
                                                                 isCurrentViewDone
-                                                                    ? 'Click to mark incomplete'
-                                                                    : 'Click to mark complete manually (or finishes automatically on video/quiz completion)'
+                                                                    ? isKssrCourse ? 'Klik untuk tandakan belum selesai' : 'Click to mark incomplete'
+                                                                    : isKssrCourse ? 'Klik untuk tandakan selesai' : 'Click to mark complete'
                                                             }
                                                             className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold border transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
                                                                 isCurrentViewDone
@@ -1669,10 +1783,10 @@ export default function Learn({
                                                             <span>{isCurrentViewDone ? '✓' : '☐'}</span>
                                                             <span>
                                                                 {isCurrentViewDone
-                                                                    ? selectedLesson
-                                                                        ? 'Subtopic Completed'
-                                                                        : 'Chapter Completed'
-                                                                    : 'Mark Complete'}
+                                                                    ? isKssrCourse
+                                                                        ? selectedLesson ? 'Subtopik Selesai' : 'Bab Selesai'
+                                                                        : selectedLesson ? 'Subtopic Completed' : 'Chapter Completed'
+                                                                    : isKssrCourse ? 'Tandakan Selesai' : 'Mark Complete'}
                                                             </span>
                                                         </button>
                                                         <button
@@ -1680,17 +1794,27 @@ export default function Learn({
                                                             onClick={() => setDesktopSidebarOpen((v) => !v)}
                                                             className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#E2E8F0] hover:border-[#2563EB] bg-[#F8FAFC] text-[11px] font-bold text-[#0F172A] transition-colors cursor-pointer"
                                                         >
-                                                            <span>{desktopSidebarOpen ? '◀ Expand Page' : '▶ Show Curriculum'}</span>
+                                                            <span>{desktopSidebarOpen ? '◀ Expand' : '▶ Show Curriculum'}</span>
                                                         </button>
                                                     </div>
                                                 </div>
 
-                                                {/* Quick Subtopic Switcher Pills (hidden in interactive step) */}
+                                                {/* Quick Subtopic Switcher Pills (Tab 1 Video & Guides) */}
                                                 {chapterStep !== 'interact' && activeLessons.length > 0 && (
                                                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                                                         {activeLessons.map((lesson, lIdx) => {
                                                             const isSelectedSub = selectedLesson?.id === lesson.id;
                                                             const isSubDone = doneLessonSet.has(lesson.id);
+                                                            const lessonSafe = safeUrl(lesson.content_url);
+                                                            const isPdf = isPdfFile(lessonSafe, lesson.content_type);
+                                                            const isVideo = isVideoUrl(lessonSafe, lesson.content_type);
+                                                            const pillIcon = isPdf ? '📄' : isVideo ? '▶' : '📖';
+                                                            const pillShortLabel = isPdf
+                                                                ? (isKssrCourse ? 'Buku Teks PDF' : 'Textbook PDF')
+                                                                : isVideo
+                                                                ? (isKssrCourse ? 'Video Topik' : 'Topic Video')
+                                                                : (isKssrCourse ? 'Nota Panduan' : 'Study Guide');
+
                                                             return (
                                                                 <button
                                                                     key={lesson.id}
@@ -1702,8 +1826,8 @@ export default function Learn({
                                                                             : 'border border-[#E2E8F0] bg-[#F8FAFC] text-[#475569] hover:border-[#CBD5E1]'
                                                                     }`}
                                                                 >
-                                                                    <span>{isSubDone ? '✓' : `${activeIndex + 1}.${lIdx + 1}`}</span>
-                                                                    <span className="truncate max-w-[200px] sm:max-w-xs">{lesson.title}</span>
+                                                                    <span>{isSubDone ? '✓' : pillIcon}</span>
+                                                                    <span>{activeIndex + 1}.{lIdx + 1} {pillShortLabel}</span>
                                                                 </button>
                                                             );
                                                         })}
@@ -1979,13 +2103,13 @@ export default function Learn({
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setQuizSubTab('paper')}
-                                                                    className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition-colors flex items-center justify-center gap-2 ${
+                                                                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-colors flex items-center justify-center gap-1.5 ${
                                                                         quizSubTab === 'paper'
                                                                             ? 'bg-[#D97706] text-white'
                                                                             : 'bg-white text-[#475569] border border-[#E2E8F0] hover:text-[#0F172A]'
                                                                     }`}
                                                                 >
-                                                                    <span>📷 Imbasan Kertas Bentuk Lazim (+50 XP)</span>
+                                                                    <span>📷 Imbasan Kertas (+50 XP)</span>
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -2052,7 +2176,7 @@ export default function Learn({
                                                                                 <div className="flex items-start justify-between gap-3 mb-2.5">
                                                                                     <p className="font-extrabold text-[#0F172A] leading-snug text-sm sm:text-base">
                                                                                         <span className="text-[#64748B] font-mono mr-1.5">Q{qIdx + 1}.</span>{' '}
-                                                                                        {mq.question}
+                                                                                        {renderMathText(mq.question, isSecondaryMath)}
                                                                                     </p>
                                                                                     {miniChecked && (
                                                                                         <span
@@ -2109,7 +2233,7 @@ export default function Learn({
                                                                                                     <strong className="uppercase font-mono mr-1">
                                                                                                         {optKey}.
                                                                                                     </strong>{' '}
-                                                                                                    {optVal}
+                                                                                                    {renderMathText(optVal, isSecondaryMath)}
                                                                                                 </span>
                                                                                             </label>
                                                                                         );
@@ -2456,7 +2580,7 @@ export default function Learn({
                                                                 Q{qIndex + 1} of {assessments.length}
                                                             </span>
                                                             <p className="font-extrabold text-base sm:text-lg text-[#0F172A] leading-snug">
-                                                                {q.question}
+                                                                {renderMathText(q.question, isSecondaryMath)}
                                                             </p>
                                                         </div>
                                                         {hasResult && (
@@ -2547,7 +2671,7 @@ export default function Learn({
                                                                                     : 'text-sm sm:text-base font-semibold'
                                                                             }
                                                                         >
-                                                                            {q[`option_${key}`]}
+                                                                            {renderMathText(q[`option_${key}`], isSecondaryMath)}
                                                                         </span>
                                                                     </div>
                                                                     {badge}

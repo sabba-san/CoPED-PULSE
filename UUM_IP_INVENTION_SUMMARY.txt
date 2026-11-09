@@ -1,0 +1,86 @@
+================================================================================
+UUM STAFF PORTAL - INVENTION SUMMARY (INTELLECTUAL PROPERTY APPLICATION)
+PROJECT: CoPED PULSE (Professional Upskilling & Learning System for External Engagement)
+DIVISION: Computing Professional Enrichment & Development Division (CoPED),
+          School of Computing, Universiti Utara Malaysia (UUM)
+INVENTOR: Ahmad Abbas Bin Abu Dzarr
+SUPERVISORS: Mr. Mohd. Rushdi Idrus & Dr. Muhammad Syafiq bin Mohd Pozi
+================================================================================
+
+--------------------------------------------------------------------------------
+1. What is the invention/work about? (max 200 words)
+--------------------------------------------------------------------------------
+CoPED PULSE (Professional Upskilling & Learning System for External Engagement) is a monolithic, server-driven Single-Page Application (SPA) Learning Management System (LMS) developed under the Computing Professional Enrichment & Development Division (CoPED), School of Computing, Universiti Utara Malaysia (UUM). Built with Laravel 13, Inertia.js 3.5, React 19, and Tailwind CSS v4, the platform bridges institutional academic governance with professional upskilling and KSSR/KSSM school enrichment. Drawing UX inspiration from leading platforms like Moodle, Coursera, and Open edX, CoPED PULSE combines a distraction-free 3-Zone Learning Theater with a unified 5-Tab Course Studio. It supports dual educational modes: corporate micro-credentials (such as Maritime Cyber Security and PMI-CAPM certification pathways) and school-level mathematics enrichment featuring a Hybrid Paper-Scan Worksheet Assessment workflow. The system integrates role-based governance for Subject Coordinators, Instructors, and Learners, an in-platform split-pane course chat (inspired by WhatsApp-Web UI), automated progress telemetry, 100% mastery assessments, and tamper-evident 1-page printable certificates. Designed under a strict Swiss Flat Design Poster System, CoPED PULSE encourages deep conceptual understanding and enables institutions to author, commercialize, deliver, and certify training programs within a single deployable container.
+
+
+--------------------------------------------------------------------------------
+2. Functions/objectives of invention/work? (max 200 words)
+--------------------------------------------------------------------------------
+The primary functions and objectives of CoPED PULSE are:
+1. Encourage Conceptual Mastery & Active Learning: Motivate learners to genuinely understand core concepts rather than memorize or guess answers through structured 3-Zone media lessons, inline study notes, formative practice checks, and a mandatory 100% mastery threshold.
+2. Instant Verifiable Credentialing: Reward learner achievement by automatically issuing tamper-evident, 1-page printable PDF certificates (COPED-{enrollment_id}-{course_id}) and industry credential pathway links upon course completion.
+3. Distraction-Free 3-Zone Learning Theater: Provide learners with a 16:9 media stage, collapsible curriculum navigator, daily study goal tracker, and a guided 3-action bottom bar with real-time progress telemetry.
+4. Hybrid Paper-Scan Worksheet Assessment: Reinforce step-by-step problem-solving in KSSR/KSSM mathematics by requiring learners to upload camera scans of handwritten workings alongside validated answers to earn XP rewards.
+5. Rapid Course Blueprinting & 5-Tab Studio: Enable educators to deploy themed courses in under 90 seconds via a 3-Step Creation Wizard and manage curriculum, settings, participants, grades, and discussion within one unified canvas.
+6. Agile Governance & Commercialization: Empower Subject Coordinators with platform-wide oversight, 1-click lecturer assignment, multi-organization scoping, and dual billing (Free Institutional vs. Paid RM courses).
+
+
+--------------------------------------------------------------------------------
+3. State the originality of the invention (Please make sure it is inventor's own work and not copied from a pre-existing work) (max 200 words)
+--------------------------------------------------------------------------------
+CoPED PULSE is an original software work conceived, architected, and developed from scratch at the School of Computing, Universiti Utara Malaysia (UUM) by Ahmad Abbas Bin Abu Dzarr under the supervision of Mr. Mohd. Rushdi Idrus and Dr. Muhammad Syafiq bin Mohd Pozi. While the platform's pedagogical workflow takes conceptual inspiration from established e-learning benchmarks such as Moodle (instructor studio governance), Coursera (structured micro-credential pathways), and Open edX (distraction-free media theater), 100% of the source code, database schemas, role-based access policies, and React 19 UI components were originally authored by the inventors without copying any pre-existing codebase. Key original innovations developed specifically for CoPED PULSE include: (1) the Swiss Flat Design Poster UI system (enforcing zero shadows, zero gradients, zero blurs, and 2px structural borders); (2) the 2-factor Hybrid Paper-Scan Worksheet Assessment engine that combines physical handwritten step-by-step mathematics workings with digital answer validation and gamified XP; (3) the built-in WhatsApp-Web inspired split-pane course chat with post-enrollment privacy gating; and (4) the custom cross-process execution recording harness (FunctionCallRecorder / php artisan test:record) for automated persona verification.
+
+
+--------------------------------------------------------------------------------
+4. What is the difference/uniqueness of this invention/work compared to the existing invention/work? (max 200 words)
+--------------------------------------------------------------------------------
+Compared to existing LMS platforms such as Moodle, Coursera, Open edX, and Google Classroom, CoPED PULSE offers six unique technical and pedagogical differentiators:
+1. Zero-API Monolithic SPA Architecture: Unlike Moodle's slow multi-page reloads or Open edX's complex microservice footprint, CoPED PULSE uses Laravel 13 and Inertia.js 3.5 to deliver sub-150ms React 19 view transitions inside a single container.
+2. Unified 5-Tab Studio vs. Fragmented Screens: Consolidates Course Curriculum, Settings, Participants, Grader Matrix, and Student Chat into one persistent workspace with an inline Edit Mode toggle, eliminating context-switching.
+3. Concept-First Mastery & Hybrid Paper-Scan Assessment: Prevents multiple-choice guessing by combining interactive formative quizzes and physical handwritten worksheet photo capture with automated answer validation and XP gamification.
+4. Dedicated Subject Coordinator Governance Tier: Provides a specialized coordinator role for intake blueprint creation, 1-click lecturer reassignment, and multi-tenant organization_id partner scoping.
+5. Familiar WhatsApp-Style In-Platform Chat with Privacy Gating: Embeds a split-pane course and 1-on-1 messaging interface inspired by WhatsApp-Web while enforcing a Post-Enrollment Privacy Gate (created_at >= enrolled_at) without exposing personal phone numbers.
+6. Built-In Commercialization & Instant 1-Page Certificates: Natively supports RM pricing, external certification pathways, and instant 1-page verifiable certificates.
+
+
+--------------------------------------------------------------------------------
+5. What are the components/elements/phases involved in the invention/work? (max 200 words)
+--------------------------------------------------------------------------------
+CoPED PULSE comprises five core software components implemented across four structured phases:
+
+Core Components:
+1. Governance & RBAC Engine: Multi-role authentication (coordinator, staff, learner) with CoursePolicy ownership gates and multi-organization partner isolation.
+2. Authoring & Management Studio: 3-Step Course Creation Wizard, 6-Color Flat Theme Engine (CourseLogoBadge), 5-Tab Unified Course Canvas, Collapsible Curriculum Tree, and Grader Report Matrix.
+3. 3-Zone Learning Theater & Hybrid Assessment Engine: 16:9 Media Stage, Curriculum Navigator, Interactive Notes Scratchpad, 2-Factor Paper-Scan Worksheet Uploader, and 100% Mastery Assessment Engine.
+4. In-Platform Messaging Subsystem: Familiar WhatsApp-Web inspired split-pane course group and 1-on-1 direct chat with post-enrollment privacy filtering and real-time ChatNotificationBell alerts.
+5. Credentialing & Telemetry Engine: Tamper-evident 1-page PDF Certificate generator (COPED-{enrollment_id}-{course_id}) and the php artisan test:record automated persona telemetry harness.
+
+Development Phases:
+- Phase 1 (Core SPA & Theater): Monolithic Laravel-Inertia-React foundation, Flat Design Poster System, 3-Zone Player, and Certificate Engine.
+- Phase 2 (Governance, Chat & Hybrid Scan): Coordinator RBAC, 5-Tab Studio, WhatsApp-style in-app chat, and Hybrid Paper-Scan Worksheet module.
+- Phase 3 (Mobile PWA): Sticky bottom navigation and responsive video-first mobile theater.
+- Phase 4 (Enterprise Tenancy): Multi-organization B2B partner onboarding and commercial billing.
+
+
+--------------------------------------------------------------------------------
+6. What are the benefits/contributions of this invention/work to the nation, institutions and community? (Please mention in details the potential stakeholders or beneficiaries of the invention) (max 200 words)
+--------------------------------------------------------------------------------
+CoPED PULSE advances Malaysia's digital workforce upskilling and national STEM education agenda by providing an accessible, high-efficiency platform for accredited continuing education and conceptual school learning.
+
+Key Stakeholders & Beneficiaries:
+1. Higher Education Institutions (Universiti Utara Malaysia, CoPED, and Public/Private Universities): Modernizes lifelong learning delivery, reduces LMS infrastructure and maintenance costs via a single-container architecture, and generates sustainable institutional revenue through commercial micro-credentials and short courses.
+2. Academic Administrators & Educators (Subject Coordinators & Lecturers): Reduces course setup time to under 90 seconds, streamlines multi-intake lecturer assignment, and unifies grading and learner telemetry without administrative bottlenecks.
+3. Government Agencies & Industry Partners (e.g., Jabatan Laut Malaysia [JLM], Maritime Operators, and Corporate Enterprises): Enables specialized compliance and certification training (such as Maritime Cyber Security and PMI-CAPM readiness) with tamper-evident certificate verification hashes and dedicated partner organization portals.
+4. Working Professionals & Adult Learners: Encourages deep conceptual mastery through distraction-free, mobile-responsive learning, direct in-platform instructor guidance, and instant 1-page printable credentials for career mobility.
+5. Primary & Secondary School Communities (KSSR/KSSM Teachers, Parents, and Students): Preserves foundational handwritten mathematics calculation skills while motivating students through gamified digital verification.
+
+
+--------------------------------------------------------------------------------
+7. What are your plans for commercialisation of the invention/work? (Please mention in detail the intended sale/licensing/spin-off/business sandbox involving the invention/work, and the particulars of the intended industry/organization) (max 200 words)
+--------------------------------------------------------------------------------
+CoPED PULSE will be commercialized through a four-stage institutional and B2B revenue strategy led by the Computing Professional Enrichment & Development Division (CoPED), School of Computing, UUM, in collaboration with the UUM Innovation & Commercialisation Centre (ICC):
+1. Institutional Sandbox & Direct Course Sales (CoPED UUM): Immediate deployment as CoPED's official portal to commercialize paid professional short courses, executive masterclasses, and micro-credentials (billing_type = 'one_time' and subscription models in RM), generating direct training revenue for the university.
+2. B2G & Corporate Multi-Tenant Licensing: White-label workspace provisioning (organization_id multi-tenancy) and annual licensing for government agencies and corporate training bodies—specifically targeting Jabatan Laut Malaysia (JLM) for Maritime Cyber Security training, alongside corporate partners delivering PMI-CAPM, AI, and Cybersecurity upskilling.
+3. EdTech SaaS Licensing for Educational Centres: Subscription licensing of the KSSR/KSSM School Mode and Hybrid Paper-Scan Worksheet Assessment engine to Malaysian tuition centres, private schools, and PIBG academic enrichment programs.
+4. University Spin-Off & ASEAN Expansion: Registering copyright/IP protection through UUM to establish an EdTech spin-off under UUM's business sandbox, offering turnkey SaaS hosting, custom partner onboarding, and enterprise support contracts.
+

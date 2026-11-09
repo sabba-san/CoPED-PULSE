@@ -8,6 +8,10 @@ use Illuminate\Database\Seeder;
 
 class CourseSeeder extends Seeder
 {
+    public const KSSM_F1_TITLE = 'Matematik Tingkatan 1 KSSM: Nombor Nisbah, Ungkapan Algebra & Persamaan Linear';
+    public const KSSM_F4_TITLE = 'Matematik Tingkatan 4 KSSM: Fungsi & Persamaan Kuadratik, Asas Nombor & Penaakulan Logik';
+    public const KSSM_ADD_TITLE = 'Matematik Tambahan Tingkatan 4 KSSM: Fungsi, Kuadratik, Indeks, Janjang & Vektor';
+
     public function run(): void
     {
         $staffA = User::where('email', 'instruct@gmail.com')->first()
@@ -1489,10 +1493,104 @@ class CourseSeeder extends Seeder
             ]);
         }
 
+        // -------------------------------------------------------------
+        // 14. KSSM Secondary Mathematics Pilot: Tingkatan 1 (13 bab), Tingkatan 4 (10 bab), Matematik Tambahan Tingkatan 4 (10 bab)
+        // Chapter content lives in kssm_curriculum.php
+        // -------------------------------------------------------------
+        foreach (require __DIR__ . '/kssm_curriculum.php' as $def) {
+            $course = Course::updateOrCreate(
+                ['title' => $def['title']],
+                [
+                    'description' => $def['description'],
+                    'instructor_id' => $staffId,
+                    'status' => 'published',
+                    'course_mode' => 'school',
+                    'academic_year' => $def['academic_year'],
+                    'category_logo' => $def['category_logo'],
+                    'billing_type' => 'free',
+                    'price' => 0.00,
+                    'cert_title' => $def['cert_title'],
+                    'cert_url' => $def['pdf'],
+                    'bundle_title' => $def['bundle_title'],
+                    'bundle_url' => $def['pdf'],
+                ]
+            );
+
+            foreach ($def['chapters'] as $i => $chapter) {
+                $this->seedKssmChapter($course, $i + 1, $chapter, $def['pdf']);
+            }
+            $this->seedKssmFinal($course, $def['final']);
+        }
+
         // Ensure all adult/professional courses default to 'certification' and KSSR courses to 'school'
         Course::whereNull('course_mode')->update(['course_mode' => 'certification']);
         Course::where('title', 'like', '%KSSR%')
             ->orWhere('academic_year', 'like', '%KSSR%')
             ->update(['course_mode' => 'school']);
+    }
+
+    private function seedKssmChapter(Course $course, int $order, array $chapter, string $pdf): void
+    {
+        $video = 'https://www.youtube.com/watch?v=' . $chapter['v'];
+        $notes = implode("\n", array_map(fn ($n) => "- {$n}", $chapter['notes']));
+
+        $module = $course->modules()->updateOrCreate(
+            ['course_id' => $course->id, 'order' => $order],
+            [
+                'title' => $chapter['title'],
+                'description' => $chapter['sub'],
+                'duration' => 1500,
+                'content_type' => 'link',
+                'media_url' => $video,
+                'transcript' => "### Nota {$chapter['title']}\n\n{$notes}",
+            ]
+        );
+
+        $lessons = [
+            ['title' => "Subtopik {$order}.1: {$chapter['sub']}", 'type' => 'video', 'url' => $video, 'content' => $notes],
+            ['title' => "Subtopik {$order}.2: Rujukan Buku Teks Bab {$order} (PDF)", 'type' => 'pdf', 'url' => $pdf, 'content' => "Rujuk Bab {$order} dalam buku teks rasmi KPM."],
+        ];
+        foreach ($lessons as $i => $lesson) {
+            $module->lessons()->updateOrCreate(
+                ['module_id' => $module->id, 'order' => $i + 1],
+                [
+                    'title' => $lesson['title'],
+                    'content_type' => $lesson['type'],
+                    'content_url' => $lesson['url'],
+                    'duration' => 750,
+                    'content' => "### {$lesson['title']}\n\n{$lesson['content']}",
+                    'transcript' => $lesson['title'],
+                ]
+            );
+        }
+
+        // Replace (not append) so reseeding never leaves stale questions from an older chapter layout.
+        $course->assessments()->where('module_id', $module->id)->delete();
+        foreach ($chapter['quiz'] as $q) {
+            $course->assessments()->create($this->kssmQuestion($q) + ['module_id' => $module->id]);
+        }
+    }
+
+    private function seedKssmFinal(Course $course, array $questions): void
+    {
+        if ($course->assessments()->whereNull('module_id')->count() === 0) {
+            foreach ($questions as $q) {
+                $course->assessments()->create($this->kssmQuestion($q));
+            }
+        }
+    }
+
+    private function kssmQuestion(array $q): array
+    {
+        [$question, $options, $correct] = $q;
+
+        return [
+            'question' => $question,
+            'option_a' => $options[0],
+            'option_b' => $options[1],
+            'option_c' => $options[2],
+            'option_d' => $options[3],
+            'correct_option' => $correct,
+        ];
     }
 }

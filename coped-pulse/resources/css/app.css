@@ -7,6 +7,7 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
     --font-display: 'Outfit', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-math: 'Cambria Math', 'STIX Two Math', 'MathJax_Math', 'Latin Modern Math', 'KaTeX_Math', 'DejaVu Serif', 'Times New Roman', serif;
 
     --color-primary: #3B82F6;
     --color-primary-dark: #2563EB;
@@ -17,6 +18,21 @@
     --color-muted: #F3F4F6;
     --color-ink: #111827;
     --color-line: #E5E7EB;
+}
+
+/* Math Mode Typography */
+.font-math {
+    font-family: var(--font-math, 'Cambria Math', 'STIX Two Math', 'DejaVu Serif', 'Times New Roman', serif);
+}
+
+.math-mode {
+    font-family: var(--font-math, 'Cambria Math', 'STIX Two Math', 'DejaVu Serif', 'Times New Roman', serif);
+    letter-spacing: 0.02em;
+}
+
+.math-var {
+    font-family: var(--font-math, 'Cambria Math', 'STIX Two Math', 'DejaVu Serif', 'Times New Roman', serif);
+    font-style: italic;
 }
 
 /* Flat Design Micro-Animation Keyframes (Zero Blur, Zero Shadow) */

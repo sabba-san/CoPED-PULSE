@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import KssmManipulative, { KSSM_PROBLEMS, KSSM_MODE_IDS, kssmInit, isKssmCorrect, kssmDemo } from './KssmManipulatives';
+import { renderMathText } from '@/Utils/mathTypography';
 
 const MANIPULATIVE_MODES = [
     {
@@ -37,9 +39,46 @@ const MANIPULATIVE_MODES = [
         title: 'Peneroka Bucu & Paksi Simetri Poligon Sekata',
         year: 3,
     },
+    {
+        id: 'linear-balance',
+        shortLabel: '⚖️ Timbangan Linear',
+        title: 'Timbangan Persamaan Linear & Susun Langkah',
+        year: 'F1',
+    },
+    {
+        id: 'algebra-match',
+        shortLabel: '🎯 Padanan Algebra',
+        title: 'Klasifikasi & Padanan Persamaan Linear',
+        year: 'F1',
+    },
+    {
+        id: 'quadratic-explorer',
+        shortLabel: '📈 Graf Kuadratik',
+        title: 'Peneroka Graf Fungsi Kuadratik',
+        year: 'F4',
+    },
+    {
+        id: 'number-base-factor',
+        shortLabel: '🔢 Pemfaktoran & Asas 2',
+        title: 'Pemfaktoran Kuadratik & Penukar Asas Nombor',
+        year: 'F4',
+    },
+    {
+        id: 'addmath-functions',
+        shortLabel: '🔀 Fungsi & Kuadratik',
+        title: 'Fungsi Gubahan, Songsang & Pembeza Layan',
+        year: 'F4_ADD',
+    },
+    {
+        id: 'addmath-prog-log',
+        shortLabel: '📐 Janjang & Indeks',
+        title: 'Janjang, Indeks & Logaritma',
+        year: 'F4_ADD',
+    },
 ];
 
 const PROBLEMS_BY_MODE = {
+    ...KSSM_PROBLEMS,
     'counting-box': [
         {
             id: 'cb-1',
@@ -285,6 +324,11 @@ const PROBLEMS_BY_MODE = {
 };
 
 function getDefaultModeForCourse(year, moduleIdx, moduleTitle = '') {
+    // KSSM secondary levels: handled first because primary title keywords (e.g. "nombor") would mis-match.
+    if (year === 'F1') return moduleIdx === 5 ? 'linear-balance' : 'algebra-match';
+    if (year === 'F4') return moduleIdx === 1 ? 'number-base-factor' : 'quadratic-explorer';
+    // Additional Mathematics: Bab 4 (Indeks) and Bab 5 (Janjang) use the progression/index set.
+    if (year === 'F4_ADD') return moduleIdx === 3 || moduleIdx === 4 ? 'addmath-prog-log' : 'addmath-functions';
     const title = (moduleTitle || '').toLowerCase();
     if (title) {
         if (/poligon|prisma|bentuk|simetri/i.test(title)) return 'polygon-explorer';
@@ -313,7 +357,8 @@ export default function MathPlayground({
     onEarnXp = null,
     onCompleteStep = null,
 }) {
-    const currentYear = Number(yearLevel) || 1;
+    // 'F1' / 'F4' / 'F4_ADD' are KSSM secondary levels; check them before any Number() coercion (would be NaN).
+    const currentYear = ['F1', 'F4', 'F4_ADD'].includes(yearLevel) ? yearLevel : Number(yearLevel) || 1;
     const availableModes = useMemo(() => {
         const list = MANIPULATIVE_MODES.filter((m) => m.year === currentYear);
         return list.length > 0 ? list : MANIPULATIVE_MODES.filter((m) => m.year === 1);
@@ -338,6 +383,7 @@ export default function MathPlayground({
     const [measureValue, setMeasureValue] = useState(0);
     const [litVertices, setLitVertices] = useState([]);
     const [showSymmetryAxis, setShowSymmetryAxis] = useState(true);
+    const [kssmValue, setKssmValue] = useState(null);
 
     useEffect(() => {
         const nextMode = getDefaultModeForCourse(currentYear, moduleIndex, moduleTitle);
@@ -365,6 +411,7 @@ export default function MathPlayground({
         setClockMinutes(0);
         setMeasureValue(0);
         setLitVertices([]);
+        setKssmValue(kssmInit(currentProblem));
         setCheckStatus(null);
         setShowHint(false);
     }, [activeMode, problemIdx]);
@@ -377,7 +424,12 @@ export default function MathPlayground({
         return moneyTray.reduce((acc, item) => acc + item.cents, 0);
     }, [moneyTray]);
 
+    const isKssmMode = KSSM_MODE_IDS.includes(activeMode);
+
     const isCurrentProblemCorrect = () => {
+        if (isKssmMode) {
+            return isKssmCorrect(currentProblem, kssmValue);
+        }
         if (activeMode === 'counting-box') {
             return boxCount === currentProblem.target;
         }
@@ -440,6 +492,10 @@ export default function MathPlayground({
 
     const fillCorrectAnswerDemo = () => {
         setCheckStatus(null);
+        if (isKssmMode) {
+            setKssmValue(kssmDemo(currentProblem));
+            return;
+        }
         if (activeMode === 'counting-box') {
             setBoxCount(currentProblem.target);
         } else if (activeMode === 'place-value') {
@@ -536,7 +592,7 @@ export default function MathPlayground({
                     {/* Question Prompt Banner */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E2E8F0]">
                         <h3 className="font-display font-extrabold text-base sm:text-xl text-[#0F172A] leading-snug">
-                            {currentProblem.prompt}
+                            {renderMathText(currentProblem.prompt, isKssmMode)}
                         </h3>
                         {modeCompletedSet.has(currentProblem.id) && (
                             <span className="px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0] text-[11px] font-extrabold shrink-0">
@@ -544,6 +600,18 @@ export default function MathPlayground({
                             </span>
                         )}
                     </div>
+
+                {/* KSSM MANIPULATIVES (TINGKATAN 1 & 4) */}
+                {isKssmMode && (
+                    <KssmManipulative
+                        problem={currentProblem}
+                        value={kssmValue}
+                        onChange={(next) => {
+                            setKssmValue(next);
+                            setCheckStatus(null);
+                        }}
+                    />
+                )}
 
                 {/* MANIPULATIVE 1: KHAN ACADEMY COUNTING BOX (TAHUN 1) */}
                 {activeMode === 'counting-box' && (

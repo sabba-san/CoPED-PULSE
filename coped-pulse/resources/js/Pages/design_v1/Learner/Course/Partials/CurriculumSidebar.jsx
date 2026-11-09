@@ -22,7 +22,7 @@ export default function CurriculumSidebar({
     const doneLessons = new Set(completedLessonIds || []);
 
     const pick = (id) => {
-        setExpanded((p) => ({ ...p, [id]: true }));
+        setExpanded({ [id]: true });
         onSelect(id);
     };
 
@@ -74,7 +74,7 @@ export default function CurriculumSidebar({
                 </div>
             </div>
 
-            <nav className="bg-white rounded-md border-2 border-[#E5E7EB] p-2 space-y-1" aria-label="Course curriculum">
+            <nav className="bg-white rounded-md border-2 border-[#E5E7EB] p-2 space-y-1 max-h-[480px] lg:max-h-[520px] overflow-y-auto pr-1" aria-label="Course curriculum">
                 {modules.map((m, i) => {
                     const lessons = m.lessons || [];
                     const allLessonsDone = lessons.length > 0 && lessons.every((l) => doneLessons.has(l.id));
@@ -112,7 +112,7 @@ export default function CurriculumSidebar({
                                                 </span>
                                             ) : (
                                                 <span className="text-[10px] font-bold text-gray-500">
-                                                    {lessons.length > 0 ? `${lessons.filter((l) => doneLessons.has(l.id)).length}/${lessons.length} lessons` : 'NOT STARTED'}
+                                                    {lessons.length > 0 ? `${lessons.filter((l) => doneLessons.has(l.id)).length}/${lessons.length}` : 'NOT STARTED'}
                                                 </span>
                                             )}
                                         </div>
@@ -136,6 +136,7 @@ export default function CurriculumSidebar({
                                 <ul className="ml-5 mr-2 mb-2 pl-4 border-l-2 border-[#E5E7EB] space-y-0.5">
                                     {lessons.map((l) => {
                                         const done = doneLessons.has(l.id);
+                                        const cleanTitle = l.title.replace(/^Subtopik\s*[\d.]+\s*[:\-]\s*/i, '');
                                         return (
                                             <li key={l.id} className="flex items-center gap-2 py-1.5">
                                                 <button
@@ -151,7 +152,7 @@ export default function CurriculumSidebar({
                                                 </button>
                                                 <button type="button" onClick={() => pick(m.id)} className="flex-1 min-w-0 text-left group">
                                                     <span className={`block text-[13px] font-semibold truncate ${done ? 'text-gray-400 line-through' : 'text-gray-700 group-hover:text-[#3B82F6]'}`}>
-                                                        {l.title}
+                                                        {cleanTitle}
                                                     </span>
                                                     <span className="block text-[11px] text-gray-500">
                                                         {[l.content_type, l.duration != null ? `${l.duration} min` : null].filter(Boolean).join(' · ') || 'Lesson'}
