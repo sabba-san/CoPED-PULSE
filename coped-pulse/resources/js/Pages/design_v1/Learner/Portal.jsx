@@ -3,11 +3,12 @@ import { useState, useMemo, useEffect } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
 import { ArrowRightIcon, TrophyIcon, TargetIcon, CircleCheckIcon } from '@/Components/flat/icons';
 import CourseLogoBadge, { LOGO_CONFIG } from '@/Components/flat/CourseLogoBadge';
+import SortMenu from '@/Components/flat/SortMenu';
 
 export default function Portal({ enrollments, stats }) {
     const { unreadChatSummary } = usePage().props;
-    const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'in-progress', 'not-started', 'completed'
-    const [sortBy, setSortBy] = useState('recent'); // 'recent', 'title'
+    const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'in-progress', 'not-started', 'completed', 'free', 'subscription'
+    const [sortBy, setSortBy] = useState('recent'); // 'recent', 'az', 'za'
 
     const [weeklyGoal, setWeeklyGoal] = useState('regular');
     const [goalReminder, setGoalReminder] = useState(false);
@@ -46,11 +47,16 @@ export default function Portal({ enrollments, stats }) {
             result = result.filter((e) => !e.completed_at && (e.progress ?? 0) === 0);
         } else if (activeFilter === 'completed') {
             result = result.filter((e) => Boolean(e.completed_at));
+        } else if (activeFilter === 'free') {
+            result = result.filter((e) => !(e.course?.billing_type !== 'free' && Number(e.course?.price || 0) > 0));
+        } else if (activeFilter === 'subscription') {
+            result = result.filter((e) => e.course?.billing_type === 'subscription');
         }
 
         // Sort
-        if (sortBy === 'title') {
+        if (sortBy === 'az' || sortBy === 'za') {
             result.sort((a, b) => (a.course?.title || '').localeCompare(b.course?.title || ''));
+            if (sortBy === 'za') result.reverse();
         } else {
             result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
         }
@@ -128,54 +134,37 @@ export default function Portal({ enrollments, stats }) {
                         </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        {/* Refine Filter Pills */}
-                        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Course status filters">
-                            {[
-                                { id: 'all', label: 'All' },
-                                { id: 'in-progress', label: 'In-Progress' },
-                                { id: 'not-started', label: 'Not Started' },
-                                { id: 'completed', label: 'Completed' },
-                            ].map((filter) => {
-                                const active = activeFilter === filter.id;
-                                return (
-                                    <button
-                                        key={filter.id}
-                                        role="tab"
-                                        aria-selected={active}
-                                        onClick={() => setActiveFilter(filter.id)}
-                                        className={`px-3 py-1.5 text-xs font-bold rounded-md border-2 transition-colors min-h-[38px] flex items-center ${
-                                            active
-                                                ? 'bg-[#111827] text-white border-[#111827]'
-                                                : 'bg-white text-[#111827] border-[#E5E7EB] hover:border-[#111827]'
-                                        }`}
-                                    >
-                                        {filter.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Sort Dropdown */}
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            aria-label="Sort courses"
-                            className="px-3 py-1.5 text-xs font-bold rounded-md border-2 border-[#E5E7EB] bg-white text-[#111827] focus:outline-none focus:border-[#111827] cursor-pointer min-h-[38px]"
-                        >
-                            <option value="recent">Last enrolled</option>
-                            <option value="title">Title (A-Z)</option>
-                        </select>
-
-                        {/* Browse Catalog CTA button */}
-                        <Link
-                            href={route('learner.catalog')}
-                            className="px-3.5 py-1.5 text-xs font-bold rounded-md bg-[#111827] text-white hover:bg-[#10B981] transition-colors min-h-[38px] inline-flex items-center gap-1.5 shrink-0"
-                        >
-                            <span>📚</span>
-                            <span>Browse Catalog</span>
-                        </Link>
-                    </div>
+                    <SortMenu
+                        groups={[
+                            {
+                                id: 'order',
+                                label: 'Order',
+                                value: sortBy,
+                                defaultValue: 'recent',
+                                onChange: setSortBy,
+                                options: [
+                                    { value: 'recent', label: 'Last enrolled' },
+                                    { value: 'az', label: 'Title A–Z' },
+                                    { value: 'za', label: 'Title Z–A' },
+                                ],
+                            },
+                            {
+                                id: 'show',
+                                label: 'Show',
+                                value: activeFilter,
+                                defaultValue: 'all',
+                                onChange: setActiveFilter,
+                                options: [
+                                    { value: 'all', label: 'All' },
+                                    { value: 'in-progress', label: 'In-Progress' },
+                                    { value: 'not-started', label: 'Not Started' },
+                                    { value: 'completed', label: 'Completed' },
+                                    { value: 'free', label: 'Free Courses' },
+                                    { value: 'subscription', label: 'Subscription Courses' },
+                                ],
+                            },
+                        ]}
+                    />
                 </div>
 
                 {/* 2-Column Asymmetric Layout */}
