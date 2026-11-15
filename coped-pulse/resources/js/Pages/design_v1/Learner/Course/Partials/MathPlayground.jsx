@@ -1651,53 +1651,55 @@ export default function MathPlayground({
                 </div>
             </div>
 
-            {/* Khan Academy Sticky Bottom Progress & Check Bar */}
-            <div className="px-4 py-3 bg-[#F8FAFC] border-t border-[#E2E8F0] flex flex-wrap items-center justify-between gap-3">
-                <button
-                    type="button"
-                    onClick={() => setShowHint((h) => !h)}
-                    className="px-3 py-2 rounded-lg bg-white hover:bg-[#F1F5F9] border border-[#CBD5E1] text-xs font-extrabold text-[#334155] transition-colors"
-                >
-                    💡 {showHint ? 'Sembunyi Cara Kira' : 'Tunjuk Cara Kira (Hint)'}
-                </button>
+            {/* Khan Academy Sticky Bottom Progress & Check Bar (Mobile Thumb-Zone Ergonomics) */}
+            <div className="px-4 py-3 bg-[#F8FAFC] border-t border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center justify-between gap-2 sm:contents">
+                    <button
+                        type="button"
+                        onClick={() => setShowHint((h) => !h)}
+                        className="px-3 py-2 min-h-[40px] rounded-lg bg-white hover:bg-[#F1F5F9] border border-[#CBD5E1] text-xs font-extrabold text-[#334155] transition-colors touch-manipulation active:scale-[0.99] shrink-0"
+                    >
+                        💡 {showHint ? 'Sembunyi' : 'Petunjuk'}
+                    </button>
 
-                {/* Center: Selesaikan 5 aktiviti: ✓ ● ○ ○ ○ */}
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#475569] hidden sm:inline">
-                        Selesaikan {problems.length} aktiviti:
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                        {problems.map((p, idx) => {
-                            const isDone = modeCompletedSet.has(p.id);
-                            const isCurr = idx === problemIdx;
-                            return (
-                                <button
-                                    key={p.id}
-                                    type="button"
-                                    onClick={() => setProblemIdx(idx)}
-                                    title={`Aktiviti ${idx + 1}`}
-                                    className={`w-6 h-6 rounded-full text-[11px] font-black flex items-center justify-center border transition-colors ${
-                                        isDone
-                                            ? 'bg-[#10B981] text-white border-[#10B981]'
-                                            : isCurr
-                                            ? 'bg-[#2563EB] text-white border-[#2563EB]'
-                                            : 'bg-white text-[#64748B] border-[#CBD5E1]'
-                                    }`}
-                                >
-                                    {isDone ? '✓' : idx + 1}
-                                </button>
-                            );
-                        })}
+                    {/* Center: Selesaikan 5 aktiviti: ✓ ● ○ ○ ○ */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#475569] hidden md:inline">
+                            Selesaikan {problems.length} aktiviti:
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                            {problems.map((p, idx) => {
+                                const isDone = modeCompletedSet.has(p.id);
+                                const isCurr = idx === problemIdx;
+                                return (
+                                    <button
+                                        key={p.id}
+                                        type="button"
+                                        onClick={() => setProblemIdx(idx)}
+                                        title={`Aktiviti ${idx + 1}`}
+                                        className={`w-8 h-8 rounded-full text-xs font-black flex items-center justify-center border transition-all touch-manipulation active:scale-95 ${
+                                            isDone
+                                                ? 'bg-[#10B981] text-white border-[#10B981]'
+                                                : isCurr
+                                                ? 'bg-[#2563EB] text-white border-[#2563EB]'
+                                                : 'bg-white text-[#64748B] border-[#CBD5E1]'
+                                        }`}
+                                    >
+                                        {isDone ? '✓' : idx + 1}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
-                {/* Right: Check Answer / Next Question */}
-                <div className="flex items-center gap-2">
+                {/* Right / Mobile Bottom Thumb Zone: Check Answer / Next Question */}
+                <div className="flex items-center w-full sm:w-auto">
                     {checkStatus === 'correct' ? (
                         <button
                             type="button"
                             onClick={handleNextProblem}
-                            className="px-5 py-2 rounded-lg bg-[#10B981] hover:bg-[#059669] text-white font-extrabold text-xs sm:text-sm transition-colors"
+                            className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-lg bg-[#10B981] hover:bg-[#059669] text-white font-extrabold text-sm transition-all touch-manipulation active:scale-[0.99] flex items-center justify-center"
                         >
                             {problemIdx < problems.length - 1
                                 ? 'Soalan Seterusnya →'
@@ -1707,7 +1709,7 @@ export default function MathPlayground({
                         <button
                             type="button"
                             onClick={handleCheckAnswer}
-                            className="px-5 py-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs sm:text-sm transition-colors"
+                            className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-sm transition-all touch-manipulation active:scale-[0.99] flex items-center justify-center"
                         >
                             Semak Jawapan
                         </button>
@@ -1717,7 +1719,7 @@ export default function MathPlayground({
 
             {/* Bottom-Right Khan Academy Celebration Popup */}
             {celebrationPopup && (
-                <div className="fixed bottom-6 right-6 z-40 bg-white border border-[#10B981] rounded-xl p-4 flex items-center gap-3 max-w-sm animate-fade-in">
+                <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-40 bg-white border border-[#10B981] rounded-xl p-4 flex items-center gap-3 sm:max-w-sm animate-fade-in">
                     <span className="w-9 h-9 rounded-full bg-[#10B981] text-white font-black text-base flex items-center justify-center shrink-0">
                         ✓
                     </span>

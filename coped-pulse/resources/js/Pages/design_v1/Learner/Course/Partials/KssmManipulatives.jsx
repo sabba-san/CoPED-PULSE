@@ -134,7 +134,7 @@ function quadraticText({ a, b, c }) {
     return `f(x) = ${aPart}${bPart}${cPart}`;
 }
 
-const cardBase = 'rounded-xl border px-3 py-2 text-sm font-extrabold transition-colors';
+const cardBase = 'rounded-xl border px-3 py-2.5 min-h-[44px] text-sm font-extrabold transition-all touch-manipulation active:scale-[0.99]';
 const cardOff = 'bg-white text-[#0F172A] border-[#CBD5E1] hover:bg-[#F1F5F9]';
 const cardOn = 'bg-[#2563EB] text-white border-[#2563EB]';
 const panel = 'bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4';
@@ -346,7 +346,7 @@ function webglSupported() {
     return webglSupportCache;
 }
 
-const iconBtn = 'w-8 h-8 rounded-lg border border-[#E2E8F0] bg-white text-sm font-black text-[#0F172A] hover:bg-[#F1F5F9]';
+const iconBtn = 'w-10 h-10 sm:w-8 sm:h-8 rounded-lg border border-[#E2E8F0] bg-white text-sm font-black text-[#0F172A] hover:bg-[#F1F5F9] touch-manipulation active:scale-95 flex items-center justify-center';
 
 function WebglLinearBalanceCanvas({ value, onUnsupported }) {
     const { a, b, r } = value;
@@ -555,7 +555,7 @@ function WebglLinearBalanceCanvas({ value, onUnsupported }) {
 // 2D Mario 8-Bit & Angry Birds Inspired Arcade Balance Scale Engine
 // ---------------------------------------------------------------------------
 
-function Arcade2DBalanceScale({ value }) {
+function Arcade2DBalanceScale({ value, onIsolateConstant, onDivideCoefficient }) {
     const { a, b, r } = value;
     const prevRef = useRef(value);
     const [animTime, setAnimTime] = useState(0);
@@ -775,6 +775,8 @@ function Arcade2DBalanceScale({ value }) {
     const xCount = Math.max(0, Math.min(xVal, 4));
     const bCount = Math.max(0, Math.min(Math.abs(bVal), 10));
     const rCount = Math.max(0, Math.min(Math.round(rVal), 25));
+    const canIsolate = bVal !== 0 && Boolean(onIsolateConstant);
+    const canDivide = bVal === 0 && xVal > 1 && Boolean(onDivideCoefficient);
 
     return (
         <div className="space-y-2">
@@ -869,45 +871,85 @@ function Arcade2DBalanceScale({ value }) {
                     <rect x={px2 + 66} y={py2 - 6} width="6" height="12" rx="1" fill="#78350F" />
 
                     {/* Left Pan Blocks: ?x Mystery Crates */}
-                    {Array.from({ length: xCount }).map((_, i) => {
-                        const startX = bCount === 0 ? px1 - ((xCount - 1) * 30) / 2 - 13 : px1 - 62 + i * 30;
-                        const bx = startX;
-                        const by = py1 + bounceY - 32;
-                        return (
-                            <g key={`x-${i}`} transform={`translate(${bx}, ${by})`}>
-                                <rect x="0" y="0" width="26" height="32" rx="3" fill="#F59E0B" stroke="#B45309" strokeWidth="2" />
-                                <rect x="2" y="2" width="22" height="28" rx="2" fill="none" stroke="#FDE68A" strokeWidth="1" />
-                                <circle cx="4" cy="4" r="1.2" fill="#78350F" />
-                                <circle cx="22" cy="4" r="1.2" fill="#78350F" />
-                                <circle cx="4" cy="28" r="1.2" fill="#78350F" />
-                                <circle cx="22" cy="28" r="1.2" fill="#78350F" />
-                                <text x="13" y="21" textAnchor="middle" fontSize="16" fontWeight="900" fill="#78350F" className="font-math">x</text>
-                                <text x="19" y="11" textAnchor="middle" fontSize="8" fontWeight="900" fill="#92400E">?</text>
-                            </g>
-                        );
-                    })}
+                    <g
+                        onClick={canDivide ? onDivideCoefficient : undefined}
+                        className={canDivide ? 'cursor-pointer' : undefined}
+                        role={canDivide ? 'button' : undefined}
+                        aria-label={canDivide ? `Bahagi ${xVal} pada kedua-dua belah` : undefined}
+                    >
+                        {canDivide && xCount > 0 && (
+                            <rect
+                                x={px1 - ((xCount - 1) * 30) / 2 - 19}
+                                y={py1 + bounceY - 38}
+                                width={(xCount - 1) * 30 + 38}
+                                height="42"
+                                rx="6"
+                                fill="none"
+                                stroke="#2563EB"
+                                strokeWidth="2"
+                                strokeDasharray="4 3"
+                            />
+                        )}
+                        {Array.from({ length: xCount }).map((_, i) => {
+                            const startX = bCount === 0 ? px1 - ((xCount - 1) * 30) / 2 - 13 : px1 - 62 + i * 30;
+                            const bx = startX;
+                            const by = py1 + bounceY - 32;
+                            return (
+                                <g key={`x-${i}`} transform={`translate(${bx}, ${by})`}>
+                                    <rect x="0" y="0" width="26" height="32" rx="3" fill="#F59E0B" stroke="#B45309" strokeWidth="2" />
+                                    <rect x="2" y="2" width="22" height="28" rx="2" fill="none" stroke="#FDE68A" strokeWidth="1" />
+                                    <circle cx="4" cy="4" r="1.2" fill="#78350F" />
+                                    <circle cx="22" cy="4" r="1.2" fill="#78350F" />
+                                    <circle cx="4" cy="28" r="1.2" fill="#78350F" />
+                                    <circle cx="22" cy="28" r="1.2" fill="#78350F" />
+                                    <text x="13" y="21" textAnchor="middle" fontSize="16" fontWeight="900" fill="#78350F" className="font-math">x</text>
+                                    <text x="19" y="11" textAnchor="middle" fontSize="8" fontWeight="900" fill="#92400E">?</text>
+                                </g>
+                            );
+                        })}
+                    </g>
 
                     {/* Left Pan Blocks: Constant b Units */}
-                    {Array.from({ length: bCount }).map((_, j) => {
-                        const col = j % 3;
-                        const row = Math.floor(j / 3);
-                        const bx = px1 + 8 + col * 20;
-                        const by = py1 + bounceY - 18 - row * 20;
-                        return b > 0 ? (
-                            <g key={`b-${j}`} transform={`translate(${bx}, ${by})`}>
-                                <rect x="0" y="0" width="18" height="18" rx="2" fill="#EA580C" stroke="#9A3412" strokeWidth="1.5" />
-                                <line x1="0" y1="9" x2="18" y2="9" stroke="#7C2D12" strokeWidth="1" />
-                                <line x1="9" y1="0" x2="9" y2="9" stroke="#7C2D12" strokeWidth="1" />
-                                <text x="9" y="13" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FEF08A" className="font-math">+1</text>
-                            </g>
-                        ) : (
-                            <g key={`b-neg-${j}`} transform={`translate(${bx}, ${by})`}>
-                                <rect x="0" y="0" width="18" height="18" rx="2" fill="#E11D48" stroke="#881337" strokeWidth="1.5" />
-                                <rect x="2" y="2" width="14" height="14" rx="1" fill="#BE123C" />
-                                <text x="9" y="13" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FFFFFF" className="font-math">-1</text>
-                            </g>
-                        );
-                    })}
+                    <g
+                        onClick={canIsolate ? onIsolateConstant : undefined}
+                        className={canIsolate ? 'cursor-pointer' : undefined}
+                        role={canIsolate ? 'button' : undefined}
+                        aria-label={canIsolate ? (bVal > 0 ? `Tolak ${bVal} pada kedua-dua belah` : `Tambah ${-bVal} pada kedua-dua belah`) : undefined}
+                    >
+                        {canIsolate && bCount > 0 && (
+                            <rect
+                                x={px1 + 4}
+                                y={py1 + bounceY - 22 - Math.floor((bCount - 1) / 3) * 20}
+                                width={Math.min(bCount, 3) * 20 + 6}
+                                height={(Math.floor((bCount - 1) / 3) + 1) * 20 + 4}
+                                rx="5"
+                                fill="none"
+                                stroke="#2563EB"
+                                strokeWidth="2"
+                                strokeDasharray="4 3"
+                            />
+                        )}
+                        {Array.from({ length: bCount }).map((_, j) => {
+                            const col = j % 3;
+                            const row = Math.floor(j / 3);
+                            const bx = px1 + 8 + col * 20;
+                            const by = py1 + bounceY - 18 - row * 20;
+                            return b > 0 ? (
+                                <g key={`b-${j}`} transform={`translate(${bx}, ${by})`}>
+                                    <rect x="0" y="0" width="18" height="18" rx="2" fill="#EA580C" stroke="#9A3412" strokeWidth="1.5" />
+                                    <line x1="0" y1="9" x2="18" y2="9" stroke="#7C2D12" strokeWidth="1" />
+                                    <line x1="9" y1="0" x2="9" y2="9" stroke="#7C2D12" strokeWidth="1" />
+                                    <text x="9" y="13" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FEF08A" className="font-math">+1</text>
+                                </g>
+                            ) : (
+                                <g key={`b-neg-${j}`} transform={`translate(${bx}, ${by})`}>
+                                    <rect x="0" y="0" width="18" height="18" rx="2" fill="#E11D48" stroke="#881337" strokeWidth="1.5" />
+                                    <rect x="2" y="2" width="14" height="14" rx="1" fill="#BE123C" />
+                                    <text x="9" y="13" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FFFFFF" className="font-math">-1</text>
+                                </g>
+                            );
+                        })}
+                    </g>
 
                     {/* Right Pan Blocks: Constant r Units */}
                     {Array.from({ length: rCount }).map((_, k) => {
@@ -1015,11 +1057,16 @@ function Arcade2DBalanceScale({ value }) {
                 <button
                     type="button"
                     onClick={replay}
-                    className="text-xs font-extrabold text-[#2563EB] hover:underline"
+                    className="px-2.5 py-1 rounded-lg border border-[#E2E8F0] bg-white text-xs font-extrabold text-[#2563EB] hover:bg-[#F8FAFC] touch-manipulation active:scale-95"
                 >
                     💥 Ulang Animasi
                 </button>
             </div>
+            {(canIsolate || canDivide) && (
+                <p className="text-[11px] font-bold text-[#2563EB]">
+                    👆 Tap blok bertanda biru pada timbangan atau tekan butang langkah di bawah.
+                </p>
+            )}
         </div>
     );
 }
@@ -1066,7 +1113,11 @@ function BalanceScale({ problem, value, onChange }) {
             {mode === '3d' ? (
                 <WebglLinearBalanceCanvas value={val} onUnsupported={handleUnsupported} />
             ) : (
-                <Arcade2DBalanceScale value={val} />
+                <Arcade2DBalanceScale
+                    value={val}
+                    onIsolateConstant={() => b !== 0 && onChange({ a, b: 0, r: r - b })}
+                    onDivideCoefficient={() => b === 0 && a !== 1 && onChange({ a: 1, b, r: r / a })}
+                />
             )}
             <p className="text-center text-xs font-extrabold text-[#047857]">⚖️ Timbangan sentiasa seimbang</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1098,15 +1149,53 @@ function BalanceScale({ problem, value, onChange }) {
 function StepSequencer({ problem, value, onChange }) {
     const list = Array.isArray(value) ? value : [];
     const toggle = (idx) => onChange(list.includes(idx) ? list.filter((v) => v !== idx) : [...list, idx]);
+    const undoLast = () => list.length > 0 && onChange(list.slice(0, -1));
     return (
         <div className="space-y-3">
+            {/* Live Ordered Solution Tray (reduces cognitive load on mobile) */}
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#475569]">
+                        Langkah Penyelesaian Anda ({list.length}/{problem.steps.length})
+                    </span>
+                    {list.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={undoLast}
+                            className="px-2 py-1 rounded-lg border border-[#CBD5E1] bg-white text-[11px] font-extrabold text-[#334155] hover:bg-[#F1F5F9] touch-manipulation active:scale-95"
+                        >
+                            ↶ Undur
+                        </button>
+                    )}
+                </div>
+                {list.length === 0 ? (
+                    <p className="text-xs font-bold text-[#64748B]">
+                        Tap langkah di bawah mengikut urutan betul (1 → {problem.steps.length}).
+                    </p>
+                ) : (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        {list.map((stepIdx, orderIdx) => (
+                            <span
+                                key={`seq-${stepIdx}`}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-[#BFDBFE] text-xs font-extrabold text-[#1E40AF] font-math"
+                            >
+                                <span className="w-4 h-4 rounded-full bg-[#2563EB] text-white text-[10px] font-black flex items-center justify-center">
+                                    {orderIdx + 1}
+                                </span>
+                                <span>{problem.steps[stepIdx]}</span>
+                            </span>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             <p className="text-xs font-extrabold uppercase tracking-wider text-[#475569]">Klik mengikut urutan betul</p>
             <div className="grid grid-cols-1 gap-2">
                 {problem.shuffle.map((idx) => {
                     const pos = list.indexOf(idx);
                     return (
                         <button key={idx} type="button" onClick={() => toggle(idx)} className={`${cardBase} text-left flex items-center gap-3 ${pos >= 0 ? cardOn : cardOff}`}>
-                            <span className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 border ${pos >= 0 ? 'bg-white text-[#2563EB] border-white' : 'bg-[#F1F5F9] text-[#94A3B8] border-[#CBD5E1]'}`}>
+                            <span className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shrink-0 border ${pos >= 0 ? 'bg-white text-[#2563EB] border-white' : 'bg-[#F1F5F9] text-[#94A3B8] border-[#CBD5E1]'}`}>
                                 {pos >= 0 ? pos + 1 : '?'}
                             </span>
                             <span className="font-math">{problem.steps[idx]}</span>
@@ -1114,7 +1203,7 @@ function StepSequencer({ problem, value, onChange }) {
                     );
                 })}
             </div>
-            <button type="button" onClick={() => onChange([])} className="text-xs font-extrabold text-[#2563EB] hover:underline">
+            <button type="button" onClick={() => onChange([])} className="text-xs font-extrabold text-[#2563EB] hover:underline py-1 touch-manipulation">
                 ↺ Mula semula
             </button>
         </div>
@@ -1296,32 +1385,28 @@ function QuadraticGraph({ value, onChange }) {
                     <circle key={i} cx={sx(rx)} cy={sy(0)} r="4.5" fill="#10B981" />
                 ))}
 
-                {/* Y-intercept Draggable Dot */}
+                {/* Y-intercept Draggable Dot (44px touch hit target) */}
                 {c >= Y_MIN && c <= Y_MAX && (
-                    <circle
-                        cx={sx(0)}
-                        cy={sy(c)}
-                        r="6"
-                        fill="#EF4444"
-                        stroke="#FFFFFF"
-                        strokeWidth="2"
+                    <g
                         className="cursor-ns-resize"
                         onPointerDown={(e) => handlePointerDown('y-intercept', e)}
-                    />
+                    >
+                        <circle cx={sx(0)} cy={sy(c)} r="11" fill="#EF4444" opacity="0.22" />
+                        <circle cx={sx(0)} cy={sy(c)} r="6.5" fill="#EF4444" stroke="#FFFFFF" strokeWidth="2" />
+                        <circle cx={sx(0)} cy={sy(c)} r="22" fill="transparent" />
+                    </g>
                 )}
 
-                {/* Vertex (Turning Point) Draggable Dot */}
+                {/* Vertex (Turning Point) Draggable Dot (44px touch hit target) */}
                 {h >= X_MIN && h <= X_MAX && k >= Y_MIN && k <= Y_MAX && (
-                    <circle
-                        cx={sx(h)}
-                        cy={sy(k)}
-                        r="6"
-                        fill="#7C3AED"
-                        stroke="#FFFFFF"
-                        strokeWidth="2"
+                    <g
                         className="cursor-grab active:cursor-grabbing"
                         onPointerDown={(e) => handlePointerDown('vertex', e)}
-                    />
+                    >
+                        <circle cx={sx(h)} cy={sy(k)} r="11" fill="#7C3AED" opacity="0.22" />
+                        <circle cx={sx(h)} cy={sy(k)} r="6.5" fill="#7C3AED" stroke="#FFFFFF" strokeWidth="2" />
+                        <circle cx={sx(h)} cy={sy(k)} r="22" fill="transparent" />
+                    </g>
                 )}
             </svg>
 
@@ -1334,10 +1419,10 @@ function QuadraticGraph({ value, onChange }) {
 
             <div className="grid grid-cols-3 gap-2">
                 {['a', 'b', 'c'].map((key) => (
-                    <div key={key} className={`${panel} flex items-center justify-between gap-1 !p-2`}>
-                        <button type="button" onClick={() => step(key, -1)} className={`${cardBase} ${cardOff} !px-2.5 !py-1`} aria-label={`Kurangkan ${key}`}>-</button>
-                        <span className="text-sm font-black text-[#0F172A] font-math">{key} = {value[key]}</span>
-                        <button type="button" onClick={() => step(key, 1)} className={`${cardBase} ${cardOff} !px-2.5 !py-1`} aria-label={`Tambah ${key}`}>+</button>
+                    <div key={key} className={`${panel} flex items-center justify-between gap-1 !p-1.5 sm:!p-2`}>
+                        <button type="button" onClick={() => step(key, -1)} className={`${cardBase} ${cardOff} !px-0 !py-0 min-w-[38px] min-h-[38px] flex items-center justify-center`} aria-label={`Kurangkan ${key}`}>-</button>
+                        <span className="text-xs sm:text-sm font-black text-[#0F172A] font-math">{key} = {value[key]}</span>
+                        <button type="button" onClick={() => step(key, 1)} className={`${cardBase} ${cardOff} !px-0 !py-0 min-w-[38px] min-h-[38px] flex items-center justify-center`} aria-label={`Tambah ${key}`}>+</button>
                     </div>
                 ))}
             </div>
