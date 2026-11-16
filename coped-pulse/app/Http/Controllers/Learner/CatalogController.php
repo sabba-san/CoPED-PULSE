@@ -13,14 +13,32 @@ class CatalogController extends Controller
     {
         $q = trim((string) $request->query('q', ''));
 
-        $query = Course::with('instructor')
+        $query = Course::with(['instructor', 'modules:id,course_id,title,description'])
             ->withCount('modules')
             ->where('status', 'published');
 
         if ($q !== '') {
-            $query->where(function ($sub) use ($q) {
-                $sub->where('title', 'like', "%{$q}%")
-                    ->orWhere('description', 'like', "%{$q}%");
+            $tokens = preg_split('/\s+/', strtolower($q), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+            $query->where(function ($sub) use ($tokens) {
+                foreach ($tokens as $token) {
+                    // Institutional branding ("UUM · CoPED") applies to all published platform courses.
+                    if (in_array($token, ['uum', 'coped'], true)) {
+                        continue;
+                    }
+
+                    $sub->where(function ($termQuery) use ($token) {
+                        $termQuery->where('title', 'like', "%{$token}%")
+                            ->orWhere('description', 'like', "%{$token}%")
+                            ->orWhere('cert_title', 'like', "%{$token}%")
+                            ->orWhere('academic_year', 'like', "%{$token}%")
+                            ->orWhere('category_logo', 'like', "%{$token}%")
+                            ->orWhereHas('instructor', fn ($i) => $i->where('name', 'like', "%{$token}%"))
+                            ->orWhereHas('modules', fn ($m) => $m
+                                ->where('title', 'like', "%{$token}%")
+                                ->orWhere('description', 'like', "%{$token}%"));
+                    });
+                }
             });
         }
 

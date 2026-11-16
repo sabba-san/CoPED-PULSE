@@ -120,4 +120,88 @@ class CatalogTest extends TestCase
             ->has('courses', 2)
         );
     }
+
+    public function test_catalog_search_filters_by_module_title_and_llm(): void
+    {
+        $staff = $this->staff();
+        $learner = $this->learner();
+
+        $aiCourse = Course::factory()->published()->forInstructor($staff)->create([
+            'title' => 'Generative AI Professional Track',
+            'description' => 'Prompt engineering and RAG applications.',
+        ]);
+        $aiCourse->modules()->create([
+            'title' => 'Modul 1: Asas Model Bahasa Besar (LLM)',
+            'order' => 1,
+        ]);
+
+        Course::factory()->published()->forInstructor($staff)->create([
+            'title' => 'Maritime Cyber Security',
+            'description' => 'Vessel traffic service security.',
+        ]);
+
+        $response = $this->actingAs($learner)->get(route('learner.catalog', ['q' => 'llm']));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('design_v1/Learner/Catalog', false)
+            ->has('courses', 1)
+            ->where('courses.0.id', $aiCourse->id)
+            ->has('courses.0.modules', 1)
+        );
+    }
+
+    public function test_catalog_search_filters_by_tokenized_multi_word_query(): void
+    {
+        $staff = $this->staff();
+        $learner = $this->learner();
+
+        $llmCourse = Course::factory()->published()->forInstructor($staff)->create([
+            'title' => 'Generative AI Professional Track',
+            'description' => 'Applied prompt engineering.',
+        ]);
+        $llmCourse->modules()->create([
+            'title' => 'Modul 1: Model Bahasa Besar (LLM)',
+            'order' => 1,
+        ]);
+
+        Course::factory()->published()->forInstructor($staff)->create([
+            'title' => 'Maritime Cyber Security',
+            'description' => 'Vessel operations.',
+        ]);
+
+        $response = $this->actingAs($learner)->get(route('learner.catalog', ['q' => 'llm uum']));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('design_v1/Learner/Catalog', false)
+            ->has('courses', 1)
+            ->where('courses.0.id', $llmCourse->id)
+        );
+    }
+
+    public function test_catalog_search_filters_by_cert_title(): void
+    {
+        $staff = $this->staff();
+        $learner = $this->learner();
+
+        $capmCourse = Course::factory()->published()->forInstructor($staff)->create([
+            'title' => 'Project Management Foundations',
+            'cert_title' => 'CAPM® · Certified Associate in Project Management',
+        ]);
+
+        Course::factory()->published()->forInstructor($staff)->create([
+            'title' => 'Basic Hygiene Promotion',
+            'cert_title' => 'Public Health Essentials',
+        ]);
+
+        $response = $this->actingAs($learner)->get(route('learner.catalog', ['q' => 'CAPM']));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('design_v1/Learner/Catalog', false)
+            ->has('courses', 1)
+            ->where('courses.0.id', $capmCourse->id)
+        );
+    }
 }

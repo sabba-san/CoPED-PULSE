@@ -27,8 +27,8 @@ export const KSSM_PROBLEMS = {
         { id: 'am-5', kind: 'choices', prompt: 'Padankan pernyataan dengan persamaan.', items: [{ label: 'Tiga kali nombor n ialah 18', options: ['n + 3 = 18', '3n = 18', 'n - 3 = 18'], answer: '3n = 18' }, { label: 'Umur Ali a tambah 4 ialah 15', options: ['a + 4 = 15', '4a = 15', 'a - 4 = 15'], answer: 'a + 4 = 15' }, { label: 'Hasil tambah x dan 9 ialah 20', options: ['x - 9 = 20', '9x = 20', 'x + 9 = 20'], answer: 'x + 9 = 20' }], hint: '"Hasil tambah" bermaksud +.' },
     ],
     'quadratic-explorer': [
-        { id: 'qe-1', kind: 'graph', target: { a: -1, c: 4 }, prompt: 'Bina graf maksimum (masam): a = -1 dan pintasan-y c = 4.', hint: 'a negatif memberi graf masam. Pintasan-y ialah nilai c.' },
-        { id: 'qe-2', kind: 'graph', target: { a: 1, c: -3 }, prompt: 'Bina graf minimum (senyum): a = 1 dan pintasan-y c = -3.', hint: 'a positif memberi graf senyum. Tetapkan c = -3.' },
+        { id: 'qe-1', kind: 'graph', target: { a: -1, c: 4 }, prompt: 'Bina graf kuadratik maksimum (masam, |a| = 1) dengan pintasan-y pada 4.', hint: 'Graf maksimum (masam) bermaksud a negatif (-1). Pintasan-y ialah nilai c = 4.' },
+        { id: 'qe-2', kind: 'graph', target: { a: 1, c: -3 }, prompt: 'Bina graf kuadratik minimum (senyum, a = 1) yang melalui titik (0, -3).', hint: 'Titik (0, -3) berada pada paksi-y, jadi pintasan-y ialah c = -3.' },
         { id: 'qe-3', kind: 'graph', target: { a: 1, b: -4 }, prompt: 'Dengan a = 1, laraskan b supaya paksi simetri ialah x = 2.', hint: 'Paksi simetri x = -b / 2a. Untuk x = 2 dan a = 1, b = -4.' },
         { id: 'qe-4', kind: 'graph', target: { a: 1, b: -5, c: 6 }, prompt: 'Laraskan (x - 2)(x - 3) = 0: graf memotong paksi-x pada x = 2 dan x = 3.', hint: '(x - 2)(x - 3) = x² - 5x + 6, jadi a = 1, b = -5, c = 6.' },
         { id: 'qe-5', kind: 'graph', target: { a: 1, b: 2, c: -15 }, prompt: 'Laraskan graf supaya punca ialah x = -5 dan x = 3.', hint: '(x + 5)(x - 3) = x² + 2x - 15, jadi a = 1, b = 2, c = -15.' },
@@ -134,428 +134,16 @@ function quadraticText({ a, b, c }) {
     return `f(x) = ${aPart}${bPart}${cPart}`;
 }
 
-const cardBase = 'rounded-xl border px-3 py-2.5 min-h-[44px] text-sm font-extrabold transition-all touch-manipulation active:scale-[0.99]';
+const cardBase = 'rounded-xl border px-3.5 py-2.5 min-h-[48px] text-sm sm:text-base font-extrabold transition-all touch-manipulation active:scale-[0.99]';
 const cardOff = 'bg-white text-[#0F172A] border-[#CBD5E1] hover:bg-[#F1F5F9]';
 const cardOn = 'bg-[#2563EB] text-white border-[#2563EB]';
 const panel = 'bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4';
 
 // ---------------------------------------------------------------------------
-// Native WebGL 3D balance scale (no external libraries). Every object in the
-// scene is the same unit cube, drawn with its own translate / rotateZ / scale.
-// ---------------------------------------------------------------------------
-
-const VERT_SRC = `
-attribute vec3 aPosition;
-attribute vec3 aNormal;
-uniform mat4 uMVPMatrix;
-uniform mat3 uNormalMatrix;
-varying vec3 vNormal;
-void main() {
-    vNormal = uNormalMatrix * aNormal;
-    gl_Position = uMVPMatrix * vec4(aPosition, 1.0);
-}`;
-
-const FRAG_SRC = `
-precision mediump float;
-uniform vec3 uColor;
-uniform vec3 uLightDir;
-varying vec3 vNormal;
-void main() {
-    float diffuse = max(dot(normalize(vNormal), uLightDir), 0.0);
-    gl_FragColor = vec4(uColor * (0.42 + 0.58 * diffuse), 1.0);
-}`;
-
-const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-const GL_COLORS = {
-    floor: hexRgb('#E2E8F0'),
-    pedestal: hexRgb('#1E293B'),
-    pillar: hexRgb('#334155'),
-    beam: hexRgb('#475569'),
-    string: hexRgb('#64748B'),
-    pan: hexRgb('#94A3B8'),
-    x: hexRgb('#4F46E5'),
-    plus: hexRgb('#F59E0B'),
-    minus: hexRgb('#F43F5E'),
-    right: hexRgb('#10B981'),
-};
-const LIGHT_DIR = (() => {
-    const v = [0.45, 0.85, 0.6];
-    const len = Math.hypot(...v);
-    return new Float32Array(v.map((c) => c / len));
-})();
-
-const PIVOT_Y = 1.3;
-const ARM = 2.2;
-const STRING_LEN = 1.25;
-const CAM_TARGET = [0, 0.3, 0];
-const DEG = Math.PI / 180;
-const CAM_DEFAULT = { yaw: 0.5, pitch: 22 * DEG, dist: 8.5 };
-const PITCH_MIN = 10 * DEG;
-const PITCH_MAX = 65 * DEG;
-const DIST_MIN = 5.5;
-const DIST_MAX = 13;
-const TILT_AMP = 0.22;
-const TILT_SECONDS = 1.6;
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-
-function cubeGeometry() {
-    const pos = [];
-    const nrm = [];
-    for (let axis = 0; axis < 3; axis++) {
-        for (const s of [-1, 1]) {
-            const u = (axis + 1) % 3;
-            const v = (axis + 2) % 3;
-            const corner = (cu, cv) => {
-                const p = [0, 0, 0];
-                p[axis] = s * 0.5;
-                p[u] = cu * 0.5;
-                p[v] = cv * 0.5;
-                return p;
-            };
-            const quad = [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)];
-            const n = [0, 0, 0];
-            n[axis] = s;
-            for (const k of [0, 1, 2, 0, 2, 3]) {
-                pos.push(...quad[k]);
-                nrm.push(...n);
-            }
-        }
-    }
-    return { pos: new Float32Array(pos), nrm: new Float32Array(nrm) };
-}
-
-// Column-major 4x4 helpers.
-function mat4Mul(a, b) {
-    const out = new Float32Array(16);
-    for (let c = 0; c < 4; c++) {
-        for (let r = 0; r < 4; r++) {
-            let sum = 0;
-            for (let k = 0; k < 4; k++) sum += a[k * 4 + r] * b[c * 4 + k];
-            out[c * 4 + r] = sum;
-        }
-    }
-    return out;
-}
-
-function perspective(fovy, aspect, near, far) {
-    const f = 1 / Math.tan(fovy / 2);
-    const nf = 1 / (near - far);
-    return new Float32Array([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0]);
-}
-
-function lookAt(eye, target) {
-    const z = eye.map((e, i) => e - target[i]);
-    const zl = Math.hypot(...z);
-    z.forEach((_, i) => (z[i] /= zl));
-    const xl = Math.hypot(z[2], z[0]);
-    const x = [z[2] / xl, 0, -z[0] / xl]; // cross(up = +Y, z)
-    const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
-    const dot = (v) => v[0] * eye[0] + v[1] * eye[1] + v[2] * eye[2];
-    return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x), -dot(y), -dot(z), 1]);
-}
-
-// Model = T * Rz * S, normal matrix = Rz * S^-1 (inverse-transpose of the 3x3 part).
-function modelMatrix({ p, rz, s }) {
-    const c = Math.cos(rz);
-    const n = Math.sin(rz);
-    return new Float32Array([c * s[0], n * s[0], 0, 0, -n * s[1], c * s[1], 0, 0, 0, 0, s[2], 0, p[0], p[1], p[2], 1]);
-}
-
-function normalMatrix({ rz, s }) {
-    const c = Math.cos(rz);
-    const n = Math.sin(rz);
-    return new Float32Array([c / s[0], n / s[0], 0, -n / s[1], c / s[1], 0, 0, 0, 1 / s[2]]);
-}
-
-function createProgram(gl) {
-    const compile = (type, src) => {
-        const sh = gl.createShader(type);
-        gl.shaderSource(sh, src);
-        gl.compileShader(sh);
-        return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null;
-    };
-    const vs = compile(gl.VERTEX_SHADER, VERT_SRC);
-    const fs = compile(gl.FRAGMENT_SHADER, FRAG_SRC);
-    if (!vs || !fs) return null;
-    const program = gl.createProgram();
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
-    gl.linkProgram(program);
-    return gl.getProgramParameter(program, gl.LINK_STATUS) ? program : null;
-}
-
-// Stack `count` cubes in a cols x rows grid, layer by layer, sitting on `origin`.
-function stackCubes(items, count, color, origin, cols, rows) {
-    const size = 0.24;
-    const step = 0.28;
-    for (let i = 0; i < count; i++) {
-        const layer = Math.floor(i / (cols * rows));
-        const slot = i % (cols * rows);
-        items.push({
-            p: [origin[0] + ((slot % cols) - (cols - 1) / 2) * step, origin[1] + size / 2 + layer * step, origin[2] + (Math.floor(slot / cols) - (rows - 1) / 2) * step],
-            rz: 0,
-            s: [size, size, size],
-            color,
-        });
-    }
-}
-
-function buildScene({ a, b, r }, theta) {
-    const items = [];
-    const add = (p, s, color, rz = 0) => items.push({ p, s, color, rz });
-    add([0, -1.36, 0], [7, 0.04, 3.6], GL_COLORS.floor);
-    add([0, -1.2, 0], [1.6, 0.28, 1.1], GL_COLORS.pedestal);
-    add([0, 0.05, 0], [0.26, 2.5, 0.26], GL_COLORS.pillar);
-    add([0, PIVOT_Y, 0], [0.34, 0.34, 0.34], GL_COLORS.pedestal);
-    add([0, PIVOT_Y, 0], [2 * ARM + 0.5, 0.12, 0.18], GL_COLORS.beam, theta);
-
-    const anchors = [];
-    const pans = [-1, 1].map((side) => {
-        const endX = side * ARM * Math.cos(theta);
-        const endY = PIVOT_Y + side * ARM * Math.sin(theta);
-        const panY = endY - STRING_LEN;
-        add([endX, endY, 0], [0.07, 0.07, 1.3], GL_COLORS.string);
-        add([endX, endY - STRING_LEN / 2, -0.62], [0.025, STRING_LEN, 0.025], GL_COLORS.string);
-        add([endX, endY - STRING_LEN / 2, 0.62], [0.025, STRING_LEN, 0.025], GL_COLORS.string);
-        add([endX, panY - 0.04, 0], [1.9, 0.08, 1.45], GL_COLORS.pan);
-        anchors.push([endX, endY + 0.45, 0]);
-        return [endX, panY];
-    });
-
-    const [lx, ly] = pans[0];
-    const xCount = Math.abs(a);
-    for (let i = 0; i < xCount; i++) add([lx + (i - (xCount - 1) / 2) * 0.4, ly + 0.36, -0.4], [0.3, 0.72, 0.3], GL_COLORS.x);
-    stackCubes(items, Math.abs(b), b > 0 ? GL_COLORS.plus : GL_COLORS.minus, [lx, ly, 0.32], 5, 2);
-    const [rx, ry] = pans[1];
-    stackCubes(items, Math.round(Math.abs(r)), GL_COLORS.right, [rx, ry, 0], 5, 4);
-    return { items, anchors };
-}
-
-let webglSupportCache = null;
-function webglSupported() {
-    if (webglSupportCache !== null) return webglSupportCache;
-    if (typeof document === 'undefined') return false;
-    try {
-        const probe = document.createElement('canvas');
-        const gl = probe.getContext('webgl') || probe.getContext('experimental-webgl');
-        gl?.getExtension('WEBGL_lose_context')?.loseContext();
-        webglSupportCache = Boolean(gl);
-    } catch {
-        webglSupportCache = false;
-    }
-    return webglSupportCache;
-}
-
-const iconBtn = 'w-10 h-10 sm:w-8 sm:h-8 rounded-lg border border-[#E2E8F0] bg-white text-sm font-black text-[#0F172A] hover:bg-[#F1F5F9] touch-manipulation active:scale-95 flex items-center justify-center';
-
-function WebglLinearBalanceCanvas({ value, onUnsupported }) {
-    const { a, b, r } = value;
-    const canvasRef = useRef(null);
-    const leftBadgeRef = useRef(null);
-    const rightBadgeRef = useRef(null);
-    const stateRef = useRef(value);
-    const camRef = useRef({ ...CAM_DEFAULT });
-    const tiltRef = useRef({ start: 0, amp: 0 });
-    const dirtyRef = useRef(true);
-    const dragRef = useRef(null);
-    const mountedRef = useRef(false);
-    const unsupportedRef = useRef(onUnsupported);
-    unsupportedRef.current = onUnsupported;
-
-    // Each inverse-operation step kicks the beam: theta(t) = A * e^(-4t) * sin(12t).
-    useEffect(() => {
-        stateRef.current = { a, b, r };
-        dirtyRef.current = true;
-        if (!mountedRef.current) {
-            mountedRef.current = true;
-            return;
-        }
-        tiltRef.current = { start: performance.now(), amp: TILT_AMP };
-    }, [a, b, r]);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        let gl = null;
-        try {
-            gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        } catch {
-            gl = null;
-        }
-        const program = gl && createProgram(gl);
-        if (!program) {
-            unsupportedRef.current();
-            return undefined;
-        }
-
-        const geo = cubeGeometry();
-        const posBuf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, geo.pos, gl.STATIC_DRAW);
-        const aPosition = gl.getAttribLocation(program, 'aPosition');
-        gl.enableVertexAttribArray(aPosition);
-        gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
-        const nrmBuf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, nrmBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, geo.nrm, gl.STATIC_DRAW);
-        const aNormal = gl.getAttribLocation(program, 'aNormal');
-        gl.enableVertexAttribArray(aNormal);
-        gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
-
-        gl.useProgram(program);
-        const uMVP = gl.getUniformLocation(program, 'uMVPMatrix');
-        const uNormal = gl.getUniformLocation(program, 'uNormalMatrix');
-        const uColor = gl.getUniformLocation(program, 'uColor');
-        gl.uniform3fv(gl.getUniformLocation(program, 'uLightDir'), LIGHT_DIR);
-        gl.enable(gl.DEPTH_TEST);
-        gl.clearColor(0.973, 0.98, 0.988, 1);
-
-        const placeBadge = (el, point, vp) => {
-            if (!el) return;
-            const [x, y, z] = point;
-            const cx = vp[0] * x + vp[4] * y + vp[8] * z + vp[12];
-            const cy = vp[1] * x + vp[5] * y + vp[9] * z + vp[13];
-            const cw = vp[3] * x + vp[7] * y + vp[11] * z + vp[15];
-            const sxp = (cx / cw * 0.5 + 0.5) * canvas.clientWidth;
-            const syp = (0.5 - cy / cw * 0.5) * canvas.clientHeight;
-            el.style.transform = `translate(${sxp}px, ${syp}px) translate(-50%, -100%)`;
-        };
-
-        const draw = (theta) => {
-            gl.viewport(0, 0, canvas.width, canvas.height);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            const { yaw, pitch, dist } = camRef.current;
-            const eye = [
-                CAM_TARGET[0] + dist * Math.cos(pitch) * Math.sin(yaw),
-                CAM_TARGET[1] + dist * Math.sin(pitch),
-                CAM_TARGET[2] + dist * Math.cos(pitch) * Math.cos(yaw),
-            ];
-            const vp = mat4Mul(perspective(0.8, canvas.width / canvas.height, 0.1, 100), lookAt(eye, CAM_TARGET));
-            const { items, anchors } = buildScene(stateRef.current, theta);
-            for (const item of items) {
-                gl.uniformMatrix4fv(uMVP, false, mat4Mul(vp, modelMatrix(item)));
-                gl.uniformMatrix3fv(uNormal, false, normalMatrix(item));
-                gl.uniform3fv(uColor, item.color);
-                gl.drawArrays(gl.TRIANGLES, 0, 36);
-            }
-            placeBadge(leftBadgeRef.current, anchors[0], vp);
-            placeBadge(rightBadgeRef.current, anchors[1], vp);
-        };
-
-        let raf = 0;
-        const frame = (now) => {
-            raf = requestAnimationFrame(frame);
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
-            const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
-            const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
-            if (canvas.width !== w || canvas.height !== h) {
-                canvas.width = w;
-                canvas.height = h;
-                dirtyRef.current = true;
-            }
-            const tilt = tiltRef.current;
-            const t = (now - tilt.start) / 1000;
-            if (tilt.amp !== 0 && t >= TILT_SECONDS) {
-                tilt.amp = 0;
-                dirtyRef.current = true;
-            }
-            const animating = tilt.amp !== 0;
-            if (!animating && !dirtyRef.current) return;
-            dirtyRef.current = false;
-            draw(animating ? tilt.amp * Math.exp(-4 * t) * Math.sin(12 * t) : 0);
-        };
-        raf = requestAnimationFrame(frame);
-
-        const onWheel = (e) => {
-            e.preventDefault();
-            camRef.current.dist = clamp(camRef.current.dist + e.deltaY * 0.01, DIST_MIN, DIST_MAX);
-            dirtyRef.current = true;
-        };
-        const onContextLost = (e) => {
-            e.preventDefault();
-            unsupportedRef.current();
-        };
-        canvas.addEventListener('wheel', onWheel, { passive: false });
-        canvas.addEventListener('webglcontextlost', onContextLost);
-
-        return () => {
-            cancelAnimationFrame(raf);
-            canvas.removeEventListener('wheel', onWheel);
-            canvas.removeEventListener('webglcontextlost', onContextLost);
-            gl.deleteBuffer(posBuf);
-            gl.deleteBuffer(nrmBuf);
-            gl.deleteProgram(program);
-        };
-    }, []);
-
-    const onPointerDown = (e) => {
-        e.currentTarget.setPointerCapture(e.pointerId);
-        dragRef.current = { x: e.clientX, y: e.clientY };
-    };
-    const onPointerMove = (e) => {
-        if (!dragRef.current) return;
-        const cam = camRef.current;
-        cam.yaw -= (e.clientX - dragRef.current.x) * 0.008;
-        cam.pitch = clamp(cam.pitch + (e.clientY - dragRef.current.y) * 0.006, PITCH_MIN, PITCH_MAX);
-        dragRef.current = { x: e.clientX, y: e.clientY };
-        dirtyRef.current = true;
-    };
-    const endDrag = () => {
-        dragRef.current = null;
-    };
-    const zoom = (delta) => {
-        camRef.current.dist = clamp(camRef.current.dist + delta, DIST_MIN, DIST_MAX);
-        dirtyRef.current = true;
-    };
-    const resetCamera = () => {
-        camRef.current = { ...CAM_DEFAULT };
-        dirtyRef.current = true;
-    };
-
-    return (
-        <div className="space-y-2">
-            <div className="relative w-full overflow-hidden border border-[#E2E8F0] rounded-xl bg-[#F8FAFC]">
-                <canvas
-                    ref={canvasRef}
-                    role="img"
-                    aria-label={`Timbangan persamaan linear 3D: ${linearSide(a, b)} = ${r}`}
-                    className="block w-full h-64 sm:h-80 touch-none select-none cursor-grab active:cursor-grabbing"
-                    onPointerDown={onPointerDown}
-                    onPointerMove={onPointerMove}
-                    onPointerUp={endDrag}
-                    onPointerCancel={endDrag}
-                />
-                <div ref={leftBadgeRef} className="pointer-events-none absolute left-0 top-0 px-2 py-0.5 rounded-lg border border-[#C7D2FE] bg-white text-sm font-extrabold text-[#3730A3] font-math whitespace-nowrap">
-                    {linearSide(a, b)}
-                </div>
-                <div ref={rightBadgeRef} className="pointer-events-none absolute left-0 top-0 px-2 py-0.5 rounded-lg border border-[#A7F3D0] bg-white text-sm font-extrabold text-[#065F46] font-math whitespace-nowrap">
-                    {r}
-                </div>
-                <div className="absolute right-2 top-2 flex gap-1">
-                    <button type="button" onClick={() => zoom(-1)} className={iconBtn} aria-label="Zum masuk">+</button>
-                    <button type="button" onClick={() => zoom(1)} className={iconBtn} aria-label="Zum keluar">−</button>
-                </div>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-bold text-[#64748B]">🖱️ Klik & seret kanvas 3D untuk memutar pandangan 360°</p>
-                <button type="button" onClick={resetCamera} className="text-xs font-extrabold text-[#2563EB] hover:underline">
-                    🔄 Reset Sudut 3D
-                </button>
-            </div>
-            <p className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-bold text-[#475569]">
-                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#4F46E5] align-middle" /> x</span>
-                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#F59E0B] align-middle" /> +1</span>
-                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#F43F5E] align-middle" /> -1</span>
-                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#10B981] align-middle" /> 1 (kanan)</span>
-            </p>
-        </div>
-    );
-}
-
-// ---------------------------------------------------------------------------
 // 2D Mario 8-Bit & Angry Birds Inspired Arcade Balance Scale Engine
 // ---------------------------------------------------------------------------
 
-function Arcade2DBalanceScale({ value, onIsolateConstant, onDivideCoefficient }) {
+function Arcade2DBalanceScale({ value, wobbleKey = 0 }) {
     const { a, b, r } = value;
     const prevRef = useRef(value);
     const [animTime, setAnimTime] = useState(0);
@@ -564,6 +152,14 @@ function Arcade2DBalanceScale({ value, onIsolateConstant, onDivideCoefficient })
     const projectilesRef = useRef([]);
     const particlesRef = useRef([]);
     const isFirstMount = useRef(true);
+
+    useEffect(() => {
+        if (!wobbleKey) return;
+        const now = performance.now();
+        tiltRef.current = { start: now, amp: 0.24, dir: 1 };
+        bounceRef.current = { start: now, amp: 4 };
+        setAnimTime(now);
+    }, [wobbleKey]);
 
     const burst = (cx, cy, count, colors) => {
         const pts = [];
@@ -772,66 +368,56 @@ function Arcade2DBalanceScale({ value, onIsolateConstant, onDivideCoefficient })
     const xVal = Number(a) || 0;
     const bVal = Number(b) || 0;
     const rVal = Number(r) || 0;
-    const xCount = Math.max(0, Math.min(xVal, 4));
-    const bCount = Math.max(0, Math.min(Math.abs(bVal), 10));
-    const rCount = Math.max(0, Math.min(Math.round(rVal), 25));
-    const canIsolate = bVal !== 0 && Boolean(onIsolateConstant);
-    const canDivide = bVal === 0 && xVal > 1 && Boolean(onDivideCoefficient);
+    const xCount = Math.max(0, Math.min(xVal, 6));
+    const bCount = Math.max(0, Math.min(Math.abs(bVal), 12));
+    const rCount = Math.max(0, Math.min(Math.round(Math.abs(rVal)), 25));
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
             <div className="relative w-full overflow-hidden border border-[#E2E8F0] rounded-xl bg-[#E0F2FE]">
                 <svg
-                    viewBox="0 0 640 330"
-                    className="w-full h-auto block select-none"
+                    viewBox="46 44 548 258"
+                    preserveAspectRatio="xMidYMid meet"
+                    className="w-full h-auto min-h-[235px] sm:min-h-[300px] block select-none"
                     role="img"
                     aria-label={`Timbangan persamaan linear 2D: ${linearSide(a, b)} = ${r}`}
                 >
                     {/* Sky & Horizon */}
-                    <rect x="0" y="0" width="640" height="330" fill="#E0F2FE" />
-                    <line x1="0" y1="270" x2="640" y2="270" stroke="#BAE6FD" strokeWidth="2" />
+                    <rect x="40" y="40" width="560" height="270" fill="#E0F2FE" />
+                    <line x1="40" y1="270" x2="600" y2="270" stroke="#BAE6FD" strokeWidth="2" />
 
                     {/* Mario Rolling Hills */}
-                    <path d="M-20,270 Q90,195 210,270 Z" fill="#BBF7D0" stroke="#86EFAC" strokeWidth="2" />
-                    <path d="M360,270 Q490,190 620,270 Z" fill="#A7F3D0" stroke="#6EE7B7" strokeWidth="2" />
+                    <path d="M20,270 Q110,202 220,270 Z" fill="#BBF7D0" stroke="#86EFAC" strokeWidth="2" />
+                    <path d="M360,270 Q485,198 600,270 Z" fill="#A7F3D0" stroke="#6EE7B7" strokeWidth="2" />
 
                     {/* 8-Bit Pixel Clouds */}
                     <g opacity="0.95">
-                        <rect x="60" y="52" width="68" height="18" rx="4" fill="#FFFFFF" />
-                        <rect x="74" y="40" width="40" height="24" rx="4" fill="#FFFFFF" />
-                        <rect x="86" y="32" width="20" height="20" rx="3" fill="#FFFFFF" />
+                        <rect x="70" y="64" width="68" height="18" rx="4" fill="#FFFFFF" />
+                        <rect x="84" y="54" width="40" height="22" rx="4" fill="#FFFFFF" />
                     </g>
                     <g opacity="0.9">
-                        <rect x="440" y="70" width="60" height="16" rx="4" fill="#FFFFFF" />
-                        <rect x="452" y="58" width="36" height="20" rx="4" fill="#FFFFFF" />
-                    </g>
-                    <g opacity="0.85">
-                        <rect x="250" y="36" width="50" height="14" rx="4" fill="#FFFFFF" />
-                        <rect x="260" y="28" width="28" height="16" rx="4" fill="#FFFFFF" />
+                        <rect x="442" y="72" width="60" height="16" rx="4" fill="#FFFFFF" />
+                        <rect x="454" y="62" width="36" height="18" rx="4" fill="#FFFFFF" />
                     </g>
 
                     {/* Ground Turf & Soil */}
-                    <rect x="0" y="270" width="640" height="10" fill="#22C55E" stroke="#16A34A" strokeWidth="1" />
-                    <rect x="0" y="280" width="640" height="50" fill="#B45309" />
+                    <rect x="40" y="270" width="560" height="10" fill="#22C55E" stroke="#16A34A" strokeWidth="1" />
+                    <rect x="40" y="280" width="560" height="32" fill="#B45309" />
                     {/* Brick lines */}
-                    <line x1="0" y1="295" x2="640" y2="295" stroke="#78350F" strokeWidth="1" />
-                    <line x1="0" y1="310" x2="640" y2="310" stroke="#78350F" strokeWidth="1" />
-                    <line x1="0" y1="325" x2="640" y2="325" stroke="#78350F" strokeWidth="1" />
-                    <line x1="40" y1="280" x2="40" y2="295" stroke="#78350F" strokeWidth="1" />
-                    <line x1="120" y1="280" x2="120" y2="295" stroke="#78350F" strokeWidth="1" />
-                    <line x1="200" y1="280" x2="200" y2="295" stroke="#78350F" strokeWidth="1" />
-                    <line x1="280" y1="280" x2="280" y2="295" stroke="#78350F" strokeWidth="1" />
-                    <line x1="360" y1="280" x2="360" y2="295" stroke="#78350F" strokeWidth="1" />
-                    <line x1="440" y1="280" x2="440" y2="295" stroke="#78350F" strokeWidth="1" />
-                    <line x1="520" y1="280" x2="520" y2="295" stroke="#78350F" strokeWidth="1" />
-                    <line x1="600" y1="280" x2="600" y2="295" stroke="#78350F" strokeWidth="1" />
-                    <line x1="80" y1="295" x2="80" y2="310" stroke="#78350F" strokeWidth="1" />
-                    <line x1="160" y1="295" x2="160" y2="310" stroke="#78350F" strokeWidth="1" />
-                    <line x1="240" y1="295" x2="240" y2="310" stroke="#78350F" strokeWidth="1" />
-                    <line x1="320" y1="295" x2="320" y2="310" stroke="#78350F" strokeWidth="1" />
-                    <line x1="400" y1="295" x2="400" y2="310" stroke="#78350F" strokeWidth="1" />
-                    <line x1="480" y1="295" x2="480" y2="310" stroke="#78350F" strokeWidth="1" />
-                    <line x1="560" y1="295" x2="560" y2="310" stroke="#78350F" strokeWidth="1" />
+                    <line x1="40" y1="295" x2="600" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="80" y1="280" x2="80" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="160" y1="280" x2="160" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="240" y1="280" x2="240" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="320" y1="280" x2="320" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="400" y1="280" x2="400" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="480" y1="280" x2="480" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="560" y1="280" x2="560" y2="295" stroke="#78350F" strokeWidth="1" />
+                    <line x1="120" y1="295" x2="120" y2="312" stroke="#78350F" strokeWidth="1" />
+                    <line x1="200" y1="295" x2="200" y2="312" stroke="#78350F" strokeWidth="1" />
+                    <line x1="280" y1="295" x2="280" y2="312" stroke="#78350F" strokeWidth="1" />
+                    <line x1="360" y1="295" x2="360" y2="312" stroke="#78350F" strokeWidth="1" />
+                    <line x1="440" y1="295" x2="440" y2="312" stroke="#78350F" strokeWidth="1" />
+                    <line x1="520" y1="295" x2="520" y2="312" stroke="#78350F" strokeWidth="1" />
 
                     {/* Green Warp Pipe Fulcrum */}
                     <rect x="301" y="214" width="38" height="56" fill="#16A34A" stroke="#14532D" strokeWidth="2" />
@@ -861,90 +447,50 @@ function Arcade2DBalanceScale({ value, onIsolateConstant, onDivideCoefficient })
 
                     {/* Wooden Trays (Remain Horizontal) */}
                     {/* Left Pan Tray */}
-                    <rect x={px1 - 72} y={py1} width="144" height="10" rx="3" fill="#92400E" stroke="#78350F" strokeWidth="2" />
-                    <rect x={px1 - 72} y={py1 - 6} width="6" height="12" rx="1" fill="#78350F" />
-                    <rect x={px1 + 66} y={py1 - 6} width="6" height="12" rx="1" fill="#78350F" />
+                    <rect x={px1 - 74} y={py1} width="148" height="11" rx="3" fill="#92400E" stroke="#78350F" strokeWidth="2" />
+                    <rect x={px1 - 74} y={py1 - 6} width="6" height="12" rx="1" fill="#78350F" />
+                    <rect x={px1 + 68} y={py1 - 6} width="6" height="12" rx="1" fill="#78350F" />
 
                     {/* Right Pan Tray */}
-                    <rect x={px2 - 72} y={py2} width="144" height="10" rx="3" fill="#92400E" stroke="#78350F" strokeWidth="2" />
-                    <rect x={px2 - 72} y={py2 - 6} width="6" height="12" rx="1" fill="#78350F" />
-                    <rect x={px2 + 66} y={py2 - 6} width="6" height="12" rx="1" fill="#78350F" />
+                    <rect x={px2 - 74} y={py2} width="148" height="11" rx="3" fill="#92400E" stroke="#78350F" strokeWidth="2" />
+                    <rect x={px2 - 74} y={py2 - 6} width="6" height="12" rx="1" fill="#78350F" />
+                    <rect x={px2 + 68} y={py2 - 6} width="6" height="12" rx="1" fill="#78350F" />
 
                     {/* Left Pan Blocks: ?x Mystery Crates */}
-                    <g
-                        onClick={canDivide ? onDivideCoefficient : undefined}
-                        className={canDivide ? 'cursor-pointer' : undefined}
-                        role={canDivide ? 'button' : undefined}
-                        aria-label={canDivide ? `Bahagi ${xVal} pada kedua-dua belah` : undefined}
-                    >
-                        {canDivide && xCount > 0 && (
-                            <rect
-                                x={px1 - ((xCount - 1) * 30) / 2 - 19}
-                                y={py1 + bounceY - 38}
-                                width={(xCount - 1) * 30 + 38}
-                                height="42"
-                                rx="6"
-                                fill="none"
-                                stroke="#2563EB"
-                                strokeWidth="2"
-                                strokeDasharray="4 3"
-                            />
-                        )}
+                    <g>
                         {Array.from({ length: xCount }).map((_, i) => {
-                            const startX = bCount === 0 ? px1 - ((xCount - 1) * 30) / 2 - 13 : px1 - 62 + i * 30;
-                            const bx = startX;
-                            const by = py1 + bounceY - 32;
+                            const crateW = bCount === 0 ? 28 : xCount <= 2 ? 26 : xCount <= 4 ? 19 : 14;
+                            const stepX = bCount === 0 ? (xCount <= 4 ? 32 : 24) : xCount <= 2 ? 30 : xCount <= 4 ? 20 : 14;
+                            const startX = bCount === 0
+                                ? px1 - ((xCount - 1) * stepX + crateW) / 2
+                                : px1 - 68;
+                            const bx = startX + i * stepX;
+                            const by = py1 + bounceY - 34;
                             return (
                                 <g key={`x-${i}`} transform={`translate(${bx}, ${by})`}>
-                                    <rect x="0" y="0" width="26" height="32" rx="3" fill="#F59E0B" stroke="#B45309" strokeWidth="2" />
-                                    <rect x="2" y="2" width="22" height="28" rx="2" fill="none" stroke="#FDE68A" strokeWidth="1" />
-                                    <circle cx="4" cy="4" r="1.2" fill="#78350F" />
-                                    <circle cx="22" cy="4" r="1.2" fill="#78350F" />
-                                    <circle cx="4" cy="28" r="1.2" fill="#78350F" />
-                                    <circle cx="22" cy="28" r="1.2" fill="#78350F" />
-                                    <text x="13" y="21" textAnchor="middle" fontSize="16" fontWeight="900" fill="#78350F" className="font-math">x</text>
-                                    <text x="19" y="11" textAnchor="middle" fontSize="8" fontWeight="900" fill="#92400E">?</text>
+                                    <rect x="0" y="0" width={crateW} height="34" rx="3" fill="#F59E0B" stroke="#B45309" strokeWidth="2" />
+                                    <rect x="2" y="2" width={Math.max(4, crateW - 4)} height="30" rx="2" fill="none" stroke="#FDE68A" strokeWidth="1" />
+                                    <text x={crateW / 2} y="23" textAnchor="middle" fontSize={crateW >= 22 ? 17 : 13} fontWeight="900" fill="#78350F" className="font-math">x</text>
                                 </g>
                             );
                         })}
                     </g>
 
                     {/* Left Pan Blocks: Constant b Units */}
-                    <g
-                        onClick={canIsolate ? onIsolateConstant : undefined}
-                        className={canIsolate ? 'cursor-pointer' : undefined}
-                        role={canIsolate ? 'button' : undefined}
-                        aria-label={canIsolate ? (bVal > 0 ? `Tolak ${bVal} pada kedua-dua belah` : `Tambah ${-bVal} pada kedua-dua belah`) : undefined}
-                    >
-                        {canIsolate && bCount > 0 && (
-                            <rect
-                                x={px1 + 4}
-                                y={py1 + bounceY - 22 - Math.floor((bCount - 1) / 3) * 20}
-                                width={Math.min(bCount, 3) * 20 + 6}
-                                height={(Math.floor((bCount - 1) / 3) + 1) * 20 + 4}
-                                rx="5"
-                                fill="none"
-                                stroke="#2563EB"
-                                strokeWidth="2"
-                                strokeDasharray="4 3"
-                            />
-                        )}
+                    <g>
                         {Array.from({ length: bCount }).map((_, j) => {
                             const col = j % 3;
                             const row = Math.floor(j / 3);
-                            const bx = px1 + 8 + col * 20;
-                            const by = py1 + bounceY - 18 - row * 20;
+                            const bx = px1 + 12 + col * 19;
+                            const by = py1 + bounceY - 19 - row * 19;
                             return b > 0 ? (
                                 <g key={`b-${j}`} transform={`translate(${bx}, ${by})`}>
                                     <rect x="0" y="0" width="18" height="18" rx="2" fill="#EA580C" stroke="#9A3412" strokeWidth="1.5" />
-                                    <line x1="0" y1="9" x2="18" y2="9" stroke="#7C2D12" strokeWidth="1" />
-                                    <line x1="9" y1="0" x2="9" y2="9" stroke="#7C2D12" strokeWidth="1" />
                                     <text x="9" y="13" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FEF08A" className="font-math">+1</text>
                                 </g>
                             ) : (
                                 <g key={`b-neg-${j}`} transform={`translate(${bx}, ${by})`}>
                                     <rect x="0" y="0" width="18" height="18" rx="2" fill="#E11D48" stroke="#881337" strokeWidth="1.5" />
-                                    <rect x="2" y="2" width="14" height="14" rx="1" fill="#BE123C" />
                                     <text x="9" y="13" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FFFFFF" className="font-math">-1</text>
                                 </g>
                             );
@@ -955,13 +501,18 @@ function Arcade2DBalanceScale({ value, onIsolateConstant, onDivideCoefficient })
                     {Array.from({ length: rCount }).map((_, k) => {
                         const col = k % 5;
                         const row = Math.floor(k / 5);
-                        const bx = px2 - 44 + col * 18;
-                        const by = py2 + bounceY - 16 - row * 18;
-                        return (
+                        const bx = px2 - 46 + col * 18;
+                        const by = py2 + bounceY - 17 - row * 18;
+                        return rVal >= 0 ? (
                             <g key={`r-${k}`} transform={`translate(${bx}, ${by})`}>
-                                <rect x="0" y="0" width="16" height="16" rx="2" fill="#10B981" stroke="#047857" strokeWidth="1.5" />
-                                <circle cx="8" cy="8" r="5" fill="#34D399" stroke="#065F46" strokeWidth="1" />
-                                <text x="8" y="11" textAnchor="middle" fontSize="9" fontWeight="900" fill="#FFFFFF" className="font-math">1</text>
+                                <rect x="0" y="0" width="17" height="17" rx="2" fill="#10B981" stroke="#047857" strokeWidth="1.5" />
+                                <circle cx="8.5" cy="8.5" r="5" fill="#34D399" stroke="#065F46" strokeWidth="1" />
+                                <text x="8.5" y="11.5" textAnchor="middle" fontSize="9.5" fontWeight="900" fill="#FFFFFF" className="font-math">1</text>
+                            </g>
+                        ) : (
+                            <g key={`r-neg-${k}`} transform={`translate(${bx}, ${by})`}>
+                                <rect x="0" y="0" width="17" height="17" rx="2" fill="#E11D48" stroke="#881337" strokeWidth="1.5" />
+                                <text x="8.5" y="12" textAnchor="middle" fontSize="9.5" fontWeight="900" fill="#FFFFFF" className="font-math">-1</text>
                             </g>
                         );
                     })}
@@ -1013,24 +564,24 @@ function Arcade2DBalanceScale({ value, onIsolateConstant, onDivideCoefficient })
                     ))}
 
                     {/* Live Algebraic Expression Badges */}
-                    <g transform={`translate(${px1}, ${py1 - 65})`}>
-                        <rect x="-44" y="-13" width="88" height="24" rx="8" fill="#FFFFFF" stroke="#C7D2FE" strokeWidth="1.5" />
-                        <text x="0" y="3" textAnchor="middle" fontSize="13" fontWeight="900" fill="#3730A3" className="font-math">
+                    <g transform={`translate(${px1}, ${py1 - 72})`}>
+                        <rect x="-54" y="-15" width="108" height="28" rx="9" fill="#FFFFFF" stroke="#C7D2FE" strokeWidth="1.8" />
+                        <text x="0" y="4" textAnchor="middle" fontSize="15" fontWeight="900" fill="#3730A3" className="font-math">
                             {linearSide(a, b)}
                         </text>
                     </g>
-                    <g transform={`translate(${px2}, ${py2 - 65})`}>
-                        <rect x="-34" y="-13" width="68" height="24" rx="8" fill="#FFFFFF" stroke="#A7F3D0" strokeWidth="1.5" />
-                        <text x="0" y="3" textAnchor="middle" fontSize="13" fontWeight="900" fill="#065F46" className="font-math">
+                    <g transform={`translate(${px2}, ${py2 - 72})`}>
+                        <rect x="-40" y="-15" width="80" height="28" rx="9" fill="#FFFFFF" stroke="#A7F3D0" strokeWidth="1.8" />
+                        <text x="0" y="4" textAnchor="middle" fontSize="15" fontWeight="900" fill="#065F46" className="font-math">
                             {r}
                         </text>
                     </g>
 
                     {/* Solved Celebration Ribbon */}
                     {a === 1 && b === 0 && (
-                        <g transform="translate(320, 36)">
-                            <rect x="-105" y="-14" width="210" height="28" rx="8" fill="#ECFDF5" stroke="#10B981" strokeWidth="1.5" />
-                            <text x="0" y="4" textAnchor="middle" fontSize="13" fontWeight="900" fill="#047857" className="font-math">
+                        <g transform="translate(320, 68)">
+                            <rect x="-112" y="-15" width="224" height="30" rx="9" fill="#ECFDF5" stroke="#10B981" strokeWidth="2" />
+                            <text x="0" y="5" textAnchor="middle" fontSize="14" fontWeight="900" fill="#047857" className="font-math">
                                 ★ SELESAI: x = {r} ★
                             </text>
                         </g>
@@ -1062,86 +613,258 @@ function Arcade2DBalanceScale({ value, onIsolateConstant, onDivideCoefficient })
                     💥 Ulang Animasi
                 </button>
             </div>
-            {(canIsolate || canDivide) && (
-                <p className="text-[11px] font-bold text-[#2563EB]">
-                    👆 Tap blok bertanda biru pada timbangan atau tekan butang langkah di bawah.
-                </p>
-            )}
         </div>
     );
 }
 
-const pillBase = 'px-3 py-1.5 rounded-lg text-xs font-extrabold transition-colors border';
-const pillOn = 'bg-white text-[#0F172A] border-[#E2E8F0]';
-const pillOff = 'text-[#64748B] border-transparent hover:text-[#0F172A] disabled:opacity-40 disabled:cursor-not-allowed';
+const BALANCE_OPS = [
+    { id: '+', sym: '+', label: 'Tambah' },
+    { id: '-', sym: '−', label: 'Tolak' },
+    { id: '×', sym: '×', label: 'Darab' },
+    { id: '÷', sym: '÷', label: 'Bahagi' },
+];
+
+function buildBalanceCandidates(a, b, r, problem) {
+    const raw = [
+        Math.abs(b),
+        a,
+        Math.abs(r),
+        Math.abs(problem.b),
+        problem.a,
+        Math.abs(r - b),
+        2,
+        3,
+        4,
+    ].filter((n) => Number.isInteger(n) && n >= 1 && n <= 30);
+    return Array.from(new Set(raw)).sort((m, n) => m - n).slice(0, 6);
+}
 
 function BalanceScale({ problem, value, onChange }) {
     const val = (value && typeof value === 'object' && typeof value.a === 'number') ? value : kssmInit(problem);
     const { a, b, r } = val;
-    const stepLabel = b > 0 ? `Tolak ${b} pada kedua-dua belah` : `Tambah ${-b} pada kedua-dua belah`;
-    const [canWebgl, setCanWebgl] = useState(webglSupported);
-    const [mode, setMode] = useState('2d');
-    const handleUnsupported = () => {
-        webglSupportCache = false;
-        setCanWebgl(false);
-        setMode('2d');
+    const [op, setOp] = useState(null);
+    const [chosenNum, setChosenNum] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [feedback, setFeedback] = useState(null);
+    const [wobbleKey, setWobbleKey] = useState(0);
+
+    const candidates = useMemo(() => buildBalanceCandidates(a, b, r, problem), [a, b, r, problem]);
+    const isSolved = a === 1 && b === 0;
+
+    const applyOperation = () => {
+        if (!op || !chosenNum || isSolved) return;
+        const n = chosenNum;
+
+        if (op === '+' || op === '-') {
+            const delta = op === '+' ? n : -n;
+            const nextB = b + delta;
+            const nextR = r + delta;
+            if (Math.abs(nextB) > 20 || Math.abs(nextR) > 40) {
+                setWobbleKey((k) => k + 1);
+                setFeedback({ type: 'bad', text: 'Nilai terlalu besar untuk timbangan. Cuba operasi songsang untuk kecilkan nilai!' });
+                return;
+            }
+            setHistory((h) => [...h, { a, b, r }]);
+            onChange({ a, b: nextB, r: nextR });
+            if (nextB === 0 && b !== 0) {
+                setFeedback({ type: 'good', text: `Tepat! Pemalar dihapuskan. Kini tinggal ${linearSide(a, 0)} = ${nextR}. Apakah langkah seterusnya?` });
+                setOp(null);
+                setChosenNum(null);
+            } else if (Math.abs(nextB) < Math.abs(b)) {
+                setFeedback({ type: 'good', text: `Bagus! Pemalar semakin berkurang (${linearSide(a, nextB)} = ${nextR}).` });
+            } else {
+                setFeedback({ type: 'warn', text: `Seimbang (${linearSide(a, nextB)} = ${nextR}), tetapi pemalar makin besar. Guna operasi songsang untuk jadikan pemalar 0!` });
+            }
+            return;
+        }
+
+        if (op === '÷') {
+            if (n <= 1) {
+                setWobbleKey((k) => k + 1);
+                setFeedback({ type: 'warn', text: 'Bahagi dengan 1 tidak mengubah nilai persamaan.' });
+                return;
+            }
+            if (a % n === 0 && b % n === 0 && r % n === 0) {
+                const nextA = a / n;
+                const nextB = b / n;
+                const nextR = r / n;
+                setHistory((h) => [...h, { a, b, r }]);
+                onChange({ a: nextA, b: nextB, r: nextR });
+                setOp(null);
+                setChosenNum(null);
+                if (nextA === 1 && nextB === 0) {
+                    setFeedback({ type: 'good', text: `Syabas! x = ${nextR} berjaya diasingkan. Tekan "Semak Jawapan" di bawah!` });
+                } else {
+                    setFeedback({ type: 'good', text: `Seimbang! Kedua-dua belah dibahagi ${n}: ${linearSide(nextA, nextB)} = ${nextR}.` });
+                }
+            } else if (b !== 0 && a % n === 0 && b % n !== 0) {
+                setWobbleKey((k) => k + 1);
+                setFeedback({ type: 'bad', text: `Tidak boleh bahagi ${n} lagi! Pemalar ${b > 0 ? `+${b}` : b} tidak boleh dibahagi tepat dengan ${n}. Asingkan pemalar dahulu!` });
+            } else {
+                setWobbleKey((k) => k + 1);
+                setFeedback({ type: 'bad', text: `Tidak boleh bahagi tepat dengan ${n} kerana menghasilkan pecahan. Semak semula pekali ${a} dan nilai ${r}.` });
+            }
+            return;
+        }
+
+        if (op === '×') {
+            const nextA = a * n;
+            const nextB = b * n;
+            const nextR = r * n;
+            if (nextA > 12 || Math.abs(nextB) > 20 || Math.abs(nextR) > 40) {
+                setWobbleKey((k) => k + 1);
+                setFeedback({ type: 'bad', text: `Darab ${n} menjadikan blok terlalu besar. Cuba operasi songsang untuk mengasingkan x.` });
+                return;
+            }
+            setHistory((h) => [...h, { a, b, r }]);
+            onChange({ a: nextA, b: nextB, r: nextR });
+            setFeedback({ type: 'warn', text: `Seimbang (${linearSide(nextA, nextB)} = ${nextR}), tetapi semua sebutan digandakan ×${n}.` });
+        }
     };
+
+    const undoStep = () => {
+        if (history.length === 0) return;
+        const prev = history[history.length - 1];
+        setHistory((h) => h.slice(0, -1));
+        setFeedback(null);
+        onChange(prev);
+    };
+
+    const resetAll = () => {
+        setHistory([]);
+        setOp(null);
+        setChosenNum(null);
+        setFeedback(null);
+        onChange(kssmInit(problem));
+    };
+
+    const opSym = BALANCE_OPS.find((item) => item.id === op)?.sym || '';
+
     return (
         <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-[#475569]">Timbangan Persamaan Linear</span>
-                <div role="group" aria-label="Mod paparan timbangan" className="inline-flex gap-1 p-1 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]">
+            <Arcade2DBalanceScale value={val} wobbleKey={wobbleKey} />
+
+            {feedback && (
+                <div
+                    role="status"
+                    className={`p-3 rounded-xl border text-xs sm:text-sm font-bold ${
+                        feedback.type === 'good'
+                            ? 'bg-[#ECFDF5] border-[#A7F3D0] text-[#065F46]'
+                            : feedback.type === 'warn'
+                            ? 'bg-[#FFFBEB] border-[#FCD34D] text-[#92400E]'
+                            : 'bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]'
+                    }`}
+                >
+                    {feedback.text}
+                </div>
+            )}
+
+            {!isSolved && (
+                <div className={`${panel} !p-3 sm:!p-4 space-y-3`}>
+                    <div>
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#475569] block mb-1.5">
+                            1. Pilih Operasi pada Kedua-dua Belah:
+                        </span>
+                        <div className="grid grid-cols-4 gap-2">
+                            {BALANCE_OPS.map((item) => {
+                                const active = op === item.id;
+                                return (
+                                    <button
+                                        key={item.id}
+                                        type="button"
+                                        onClick={() => setOp(item.id)}
+                                        className={`rounded-xl border min-h-[48px] px-1 py-1.5 flex flex-col items-center justify-center transition-all touch-manipulation active:scale-95 ${
+                                            active ? cardOn : cardOff
+                                        }`}
+                                    >
+                                        <span className="text-lg font-black leading-none font-math">{item.sym}</span>
+                                        <span className="text-[11px] font-extrabold mt-0.5">{item.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#475569]">
+                                2. Pilih Nilai:
+                            </span>
+                            <div className="inline-flex items-center gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setChosenNum((n) => Math.max(1, (n ?? 1) - 1))}
+                                    aria-label="Kurangkan nilai pilihan"
+                                    className="w-8 h-8 rounded-lg border border-[#CBD5E1] bg-white text-sm font-black text-[#0F172A] hover:bg-[#F1F5F9] touch-manipulation active:scale-95"
+                                >
+                                    −
+                                </button>
+                                <span className="min-w-[36px] text-center text-sm font-black text-[#0F172A] font-math">
+                                    {chosenNum ?? '?'}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setChosenNum((n) => Math.min(30, (n ?? 0) + 1))}
+                                    aria-label="Tambah nilai pilihan"
+                                    className="w-8 h-8 rounded-lg border border-[#CBD5E1] bg-white text-sm font-black text-[#0F172A] hover:bg-[#F1F5F9] touch-manipulation active:scale-95"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                            {candidates.map((c) => {
+                                const active = chosenNum === c;
+                                return (
+                                    <button
+                                        key={c}
+                                        type="button"
+                                        onClick={() => setChosenNum(c)}
+                                        className={`min-h-[44px] rounded-xl border text-base font-black font-math transition-all touch-manipulation active:scale-95 ${
+                                            active ? cardOn : cardOff
+                                        }`}
+                                    >
+                                        {c}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     <button
                         type="button"
-                        aria-pressed={mode === '2d'}
-                        onClick={() => setMode('2d')}
-                        className={`${pillBase} ${mode === '2d' ? pillOn : pillOff}`}
+                        disabled={!op || !chosenNum}
+                        onClick={applyOperation}
+                        className="w-full min-h-[48px] px-4 py-2.5 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-sm font-extrabold transition-all touch-manipulation active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed font-math"
                     >
-                        🎮 Mod 2D Arked
-                    </button>
-                    <button
-                        type="button"
-                        disabled={!canWebgl}
-                        aria-pressed={mode === '3d'}
-                        onClick={() => setMode('3d')}
-                        className={`${pillBase} ${mode === '3d' ? pillOn : pillOff}`}
-                    >
-                        🧊 Mod 3D WebGL
+                        {op && chosenNum
+                            ? `Laksana: ${opSym} ${chosenNum} pada Kedua-dua Belah`
+                            : 'Pilih operasi & nilai di atas'}
                     </button>
                 </div>
-            </div>
-            {mode === '3d' ? (
-                <WebglLinearBalanceCanvas value={val} onUnsupported={handleUnsupported} />
-            ) : (
-                <Arcade2DBalanceScale
-                    value={val}
-                    onIsolateConstant={() => b !== 0 && onChange({ a, b: 0, r: r - b })}
-                    onDivideCoefficient={() => b === 0 && a !== 1 && onChange({ a: 1, b, r: r / a })}
-                />
             )}
-            <p className="text-center text-xs font-extrabold text-[#047857]">⚖️ Timbangan sentiasa seimbang</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                    type="button"
-                    disabled={b === 0}
-                    onClick={() => onChange({ a, b: 0, r: r - b })}
-                    className={`${cardBase} ${cardOff} disabled:opacity-40 disabled:cursor-not-allowed`}
-                >
-                    {b === 0 ? 'Pemalar sudah diasingkan' : stepLabel}
-                </button>
-                <button
-                    type="button"
-                    disabled={b !== 0 || a === 1}
-                    onClick={() => onChange({ a: 1, b, r: r / a })}
-                    className={`${cardBase} ${cardOff} disabled:opacity-40 disabled:cursor-not-allowed`}
-                >
-                    {a === 1 ? 'x sudah diasingkan' : `Bahagi ${a} pada kedua-dua belah`}
-                </button>
+
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+                <div className="flex items-center gap-3">
+                    {history.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={undoStep}
+                            className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] bg-white text-xs font-extrabold text-[#334155] hover:bg-[#F1F5F9] touch-manipulation active:scale-95"
+                        >
+                            ↶ Undur ({history.length})
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={resetAll}
+                        className="text-xs font-extrabold text-[#2563EB] hover:underline py-1 touch-manipulation"
+                    >
+                        ↺ Mula semula
+                    </button>
+                </div>
+                <span className="text-xs font-extrabold text-[#047857]">⚖️ Persamaan: {linearSide(a, b)} = {r}</span>
             </div>
-            {b !== 0 && a !== 1 && <p className="text-xs font-bold text-[#64748B]">Asingkan sebutan pemalar dahulu, kemudian bahagi.</p>}
-            <button type="button" onClick={() => onChange(kssmInit(problem))} className="text-xs font-extrabold text-[#2563EB] hover:underline">
-                ↺ Mula semula
-            </button>
         </div>
     );
 }
@@ -1338,7 +1061,7 @@ function QuadraticGraph({ value, onChange }) {
             <svg
                 ref={svgRef}
                 viewBox="0 0 320 320"
-                className="w-full max-w-md mx-auto bg-white border border-[#E2E8F0] rounded-xl overflow-hidden touch-none select-none cursor-default"
+                className="w-full max-w-lg min-h-[290px] mx-auto bg-white border border-[#E2E8F0] rounded-xl overflow-hidden touch-none select-none cursor-default"
                 role="img"
                 aria-label="Graf fungsi kuadratik"
                 onPointerMove={handlePointerMove}
@@ -1357,9 +1080,17 @@ function QuadraticGraph({ value, onChange }) {
                 <line x1={sx(0)} y1="0" x2={sx(0)} y2="320" stroke="#64748B" strokeWidth="1.5" />
                 <line x1="0" y1={sy(0)} x2="320" y2={sy(0)} stroke="#64748B" strokeWidth="1.5" />
 
+                {/* Numeric tick labels for mobile readability */}
+                {[-4, -2, 2, 4].map((gx) => (
+                    <text key={`tx-${gx}`} x={sx(gx)} y="172" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#94A3B8">{gx}</text>
+                ))}
+                {[-10, -5, 5, 10].map((gy) => (
+                    <text key={`ty-${gy}`} x="155" y={sy(gy) + 3} textAnchor="end" fontSize="9.5" fontWeight="bold" fill="#94A3B8">{gy}</text>
+                ))}
+
                 {/* Axis labels & origin */}
-                <text x="308" y="174" fontSize="11" fontWeight="bold" fill="#64748B">x</text>
-                <text x="166" y="14" fontSize="11" fontWeight="bold" fill="#64748B">y</text>
+                <text x="308" y="174" fontSize="12" fontWeight="bold" fill="#475569">x</text>
+                <text x="166" y="14" fontSize="12" fontWeight="bold" fill="#475569">y</text>
                 <text x="148" y="174" fontSize="10" fontWeight="bold" fill="#94A3B8">0</text>
 
                 {/* Axis of symmetry */}
@@ -1420,9 +1151,9 @@ function QuadraticGraph({ value, onChange }) {
             <div className="grid grid-cols-3 gap-2">
                 {['a', 'b', 'c'].map((key) => (
                     <div key={key} className={`${panel} flex items-center justify-between gap-1 !p-1.5 sm:!p-2`}>
-                        <button type="button" onClick={() => step(key, -1)} className={`${cardBase} ${cardOff} !px-0 !py-0 min-w-[38px] min-h-[38px] flex items-center justify-center`} aria-label={`Kurangkan ${key}`}>-</button>
+                        <button type="button" onClick={() => step(key, -1)} className={`${cardBase} ${cardOff} !px-0 !py-0 min-w-[42px] min-h-[42px] flex items-center justify-center`} aria-label={`Kurangkan ${key}`}>-</button>
                         <span className="text-xs sm:text-sm font-black text-[#0F172A] font-math">{key} = {value[key]}</span>
-                        <button type="button" onClick={() => step(key, 1)} className={`${cardBase} ${cardOff} !px-0 !py-0 min-w-[38px] min-h-[38px] flex items-center justify-center`} aria-label={`Tambah ${key}`}>+</button>
+                        <button type="button" onClick={() => step(key, 1)} className={`${cardBase} ${cardOff} !px-0 !py-0 min-w-[42px] min-h-[42px] flex items-center justify-center`} aria-label={`Tambah ${key}`}>+</button>
                     </div>
                 ))}
             </div>
@@ -1438,22 +1169,21 @@ function QuadraticGraph({ value, onChange }) {
 
 function BitSwitcher({ value, onChange, problem }) {
     const list = Array.isArray(value) ? value : [0, 0, 0, 0, 0];
-    const total = bitsValue(list);
     const toggle = (i) => onChange(list.map((bit, j) => (j === i ? 1 - bit : bit)));
     return (
         <div className="space-y-3">
             <div className="grid grid-cols-5 gap-2">
                 {BIT_LABELS.map((label, i) => (
-                    <button key={label} type="button" onClick={() => toggle(i)} className={`${cardBase} ${list[i] ? cardOn : cardOff} flex flex-col items-center gap-1 !px-1`} aria-pressed={Boolean(list[i])}>
+                    <button key={label} type="button" onClick={() => toggle(i)} className={`${cardBase} ${list[i] ? cardOn : cardOff} min-h-[64px] flex flex-col items-center justify-center gap-1 !px-1`} aria-pressed={Boolean(list[i])}>
                         <span className="text-[11px]">{label}</span>
-                        <span className="text-xl font-black">{list[i]}</span>
+                        <span className="text-2xl font-black">{list[i]}</span>
                     </button>
                 ))}
             </div>
-            <div className={`${panel} text-sm font-bold text-[#0F172A] space-y-0.5`}>
+            <div className={`${panel} text-sm sm:text-base font-bold text-[#0F172A] space-y-1`}>
                 <p>Asas dua: <span className="font-black">{list.join('')}</span>{toSub(2)}</p>
-                <p>Kira: {BIT_VALUES.map((v, i) => `${list[i]}×${v}`).join(' + ')} = <span className="font-black">{total}</span>{toSub(10)}</p>
-                <p className="text-[#64748B]">Sasaran: {problem.target}{toSub(10)}</p>
+                <p>Kira nilai: {BIT_VALUES.map((v, i) => `${list[i]}×${v}`).join(' + ')} = <span className="font-black text-[#2563EB]">?</span></p>
+                <p className="text-[#64748B]">Sasaran: <span className="font-black text-[#0F172A]">{problem.target}{toSub(10)}</span> (kira jumlah sendiri sebelum semak)</p>
             </div>
         </div>
     );

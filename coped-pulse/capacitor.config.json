@@ -1,0 +1,12 @@
+{
+  "appId": "my.edu.uum.coped.pulse",
+  "appName": "CoPED PULSE",
+  "webDir": "public/android-shell",
+  "server": {
+    "cleartext": true,
+    "androidScheme": "http"
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

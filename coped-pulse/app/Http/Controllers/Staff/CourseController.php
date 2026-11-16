@@ -19,7 +19,7 @@ class CourseController extends Controller
         $user = $request->user();
         $isCoordinator = $user->isCoordinator();
 
-        $query = Course::with('instructor:id,name,email,role')
+        $query = Course::with(['instructor:id,name,email,role', 'modules:id,course_id,title,description'])
             ->withCount(['modules', 'enrollments'])
             ->withAvg('enrollments as avg_progress', 'progress');
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import StaffLayout from '@/Layouts/design_v1/StaffLayout';
 import CourseRow from './Partials/CourseRow';
+import { matchesCourseSearch } from '@/Utils/courseSearch';
 
 export default function Index({
     courses,
@@ -52,11 +53,8 @@ export default function Index({
     const filteredCourses = allCourses.filter((course) => {
         if (filterTab === 'live' && course.status !== 'published') return false;
         if (filterTab === 'draft' && course.status === 'published') return false;
-        if (searchQuery.trim() !== '') {
-            const q = searchQuery.toLowerCase().trim();
-            const matchesTitle = (course.title || '').toLowerCase().includes(q);
-            const matchesCategory = (course.category_logo || '').toLowerCase().includes(q);
-            if (!matchesTitle && !matchesCategory) return false;
+        if (searchQuery.trim() !== '' && !matchesCourseSearch(course, searchQuery)) {
+            return false;
         }
         return true;
     });

@@ -12,6 +12,7 @@ import {
     LinkIcon,
     ClipboardCheckIcon,
     XMarkIcon,
+    ChevronLeftIcon,
 } from '@/Components/flat/icons';
 
 import VideoPlayer from './Partials/VideoPlayer';
@@ -129,9 +130,9 @@ const buildDemoWorksheetSvg = (yearLevel) => {
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
-const BTN_SECONDARY = 'w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center gap-2 bg-white border border-[#CBD5E1] hover:border-[#2563EB] text-[#0F172A] font-bold text-xs px-4 py-2 rounded-lg transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed';
-const BTN_PRIMARY = 'w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs px-5 py-2 rounded-lg transition-transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
-const BTN_SUCCESS = 'w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2 rounded-lg transition-transform active:scale-[0.98] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed';
+const BTN_SECONDARY = 'w-full sm:w-auto min-h-12 sm:min-h-[40px] inline-flex items-center justify-center gap-2 bg-white border border-[#CBD5E1] hover:border-[#2563EB] text-[#0F172A] font-bold text-xs px-4 py-2 rounded-2xl sm:rounded-lg tactile-btn disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed';
+const BTN_PRIMARY = 'w-full sm:w-auto min-h-12 sm:min-h-[40px] inline-flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] border border-[#1D4ED8] text-white font-bold text-xs px-5 py-2 rounded-2xl sm:rounded-lg tactile-btn disabled:opacity-50 disabled:cursor-not-allowed';
+const BTN_SUCCESS = 'w-full sm:w-auto min-h-12 sm:min-h-[40px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 border border-[#047857] text-white font-bold text-xs px-5 py-2 rounded-2xl sm:rounded-lg tactile-btn disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed';
 
 // Keeps the stage anchored near the viewport top after step / tab transitions.
 const scrollToAnchor = (id) => requestAnimationFrame(() => {
@@ -1229,7 +1230,7 @@ export default function Learn({
                 <div
                     role="status"
                     aria-live="polite"
-                    className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl bg-[#ECFDF5] border-2 border-[#10B981] text-[#065F46] flex items-center gap-3 animate-bounce"
+                    className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 px-4 py-3 rounded-2xl bg-[#ECFDF5] border-2 border-[#10B981] text-[#065F46] flex items-center gap-3 animate-sheet-up"
                 >
                     <span className="w-8 h-8 rounded-lg bg-[#10B981] text-white font-black text-xs flex items-center justify-center shrink-0">
                         +{xpToast.amount}
@@ -1246,8 +1247,8 @@ export default function Learn({
             )}
 
             <div className="space-y-4">
-                {/* Compact Khan-Academy Style Top Header Bar */}
-                <div className="py-3.5 px-4 sm:px-5 bg-white border border-[#E2E8F0] rounded-xl space-y-3 w-full min-w-0 overflow-hidden">
+                {/* Compact Mobile App Header & Desktop Course Header Bar */}
+                <div className="py-3.5 px-4 sm:px-5 bg-white border border-[#E2E8F0] rounded-2xl sm:rounded-xl space-y-3 w-full min-w-0 overflow-hidden">
                     <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3.5 w-full min-w-0">
                         {/* Left Column: Back Link, Course Title & KPM PDF Pill */}
                         <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -1262,9 +1263,10 @@ export default function Learn({
                                         <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#64748B]">
                                             <Link
                                                 href={route('portal')}
-                                                className="inline-flex items-center gap-1 text-[#0F172A] hover:text-[#2563EB] hover:underline font-extrabold"
+                                                className="min-h-11 md:min-h-0 px-3 md:px-0 rounded-full md:rounded-none bg-[#F3F4F6] md:bg-transparent inline-flex items-center gap-1 text-[#0F172A] hover:text-[#2563EB] md:hover:underline font-extrabold"
                                             >
-                                                <span>&larr;</span>
+                                                <ChevronLeftIcon className="w-4 h-4 md:hidden" />
+                                                <span className="hidden md:inline">&larr;</span>
                                                 <span>My Portal</span>
                                             </Link>
                                             <span className="px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-[10px] font-extrabold uppercase tracking-wider">
@@ -1301,7 +1303,14 @@ export default function Learn({
                                 ) : (
                                     <div className="space-y-1">
                                         <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#64748B]">
-                                            <nav aria-label="Course breadcrumb" className="inline-flex items-center gap-1.5 shrink-0">
+                                            <Link
+                                                href={route('portal')}
+                                                className="md:hidden min-h-11 px-3 rounded-full bg-[#F3F4F6] inline-flex items-center gap-1 text-[#0F172A] font-extrabold shrink-0"
+                                            >
+                                                <ChevronLeftIcon className="w-4 h-4" />
+                                                <span>My Portal</span>
+                                            </Link>
+                                            <nav aria-label="Course breadcrumb" className="hidden md:inline-flex items-center gap-1.5 shrink-0">
                                                 <Link href={route('learner.catalog')} className="text-[#0F172A] hover:text-[#2563EB] hover:underline">
                                                     Browse Catalog
                                                 </Link>
@@ -1310,7 +1319,7 @@ export default function Learn({
                                                     My Portal
                                                 </Link>
                                             </nav>
-                                            <span>·</span>
+                                            <span className="hidden md:inline">·</span>
                                             <span className="truncate">Instructed by {course.instructor?.name || 'Faculty Instructor'}</span>
                                             {course.academic_year && (
                                                 <span className="text-[10px] font-bold text-[#1E40AF] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md">
@@ -1522,29 +1531,29 @@ export default function Learn({
                                                         ref={isActive ? activeModuleRef : null}
                                                         className="space-y-1"
                                                     >
-                                                        {/* Parent Chapter Bar (1-Line Sleek Row) */}
+                                                        {/* Parent Chapter Bar: Duolingo-inspired Path Node */}
                                                         <div
                                                             onClick={() => goToModule(m.id)}
-                                                            className={`py-2 px-2.5 rounded-xl transition-colors cursor-pointer flex items-center justify-between gap-2 ${
+                                                            className={`py-2.5 px-3 rounded-2xl sm:rounded-xl transition-colors cursor-pointer flex items-center justify-between gap-2 ${
                                                                 isActive
-                                                                    ? 'border-2 border-[#2563EB] bg-[#EFF6FF]/70 text-[#1E40AF]'
+                                                                    ? 'border-2 border-[#2563EB] bg-[#EFF6FF]/80 text-[#1E40AF]'
                                                                     : isPilot
                                                                     ? 'border border-amber-200 bg-amber-50/40 hover:border-amber-300'
                                                                     : 'border border-[#E2E8F0] bg-white hover:border-[#CBD5E1]'
                                                             }`}
                                                         >
-                                                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                                {/* Status Icon / Chevron */}
+                                                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                                {/* Circular Path Node */}
                                                                 <span
-                                                                    className={`w-4 h-4 rounded flex items-center justify-center shrink-0 text-[10px] font-black ${
+                                                                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-black transition-all ${
                                                                         isChecked
                                                                             ? 'bg-[#10B981] text-white'
                                                                             : isActive
-                                                                            ? 'text-[#2563EB]'
-                                                                            : 'text-[#94A3B8]'
+                                                                            ? 'bg-[#2563EB] text-white ring-4 ring-blue-100'
+                                                                            : 'bg-[#F1F5F9] text-[#475569] border border-[#CBD5E1]'
                                                                     }`}
                                                                 >
-                                                                    {isChecked ? '✓' : isActive ? '▼' : '▶'}
+                                                                    {isChecked ? '✓' : idx + 1}
                                                                 </span>
 
                                                                 {/* Single-line Chapter Title */}
@@ -1750,7 +1759,7 @@ export default function Learn({
                                             })}
                                         </div>
 
-                                        <div className="p-4 sm:p-6 space-y-4">
+                                        <div className={`${chapterStep === 'interact' ? 'p-2.5 sm:p-6' : 'p-4 sm:p-6'} space-y-4`}>
                                             {/* Compact 1-Line Module & Subtopic Header */}
                                             <div className="space-y-2 pb-3 border-b border-[#E2E8F0]">
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2219,7 +2228,7 @@ export default function Learn({
                                                                                         return (
                                                                                             <label
                                                                                                 key={optKey}
-                                                                                                className={`flex items-start gap-2.5 p-3 rounded-xl cursor-pointer transition-colors text-xs sm:text-sm ${optStyle}`}
+                                                                                                className={`flex items-center gap-3 p-3.5 min-h-14 rounded-2xl tactile-card cursor-pointer text-xs sm:text-sm ${optStyle}`}
                                                                                             >
                                                                                                 <input
                                                                                                     type="radio"
@@ -2227,12 +2236,22 @@ export default function Learn({
                                                                                                     value={optKey}
                                                                                                     checked={isSelected}
                                                                                                     onChange={() => setMiniAnswer(mq.id, optKey)}
-                                                                                                    className="mt-0.5 text-[#2563EB] focus:ring-0"
+                                                                                                    className="sr-only"
                                                                                                 />
+                                                                                                <span
+                                                                                                    className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center text-xs font-black uppercase shrink-0 ${
+                                                                                                        miniChecked && isThisCorrect
+                                                                                                            ? 'border-[#10B981] bg-[#10B981] text-white'
+                                                                                                            : miniChecked && isSelected && !isCorrect
+                                                                                                            ? 'border-rose-500 bg-rose-500 text-white'
+                                                                                                            : isSelected
+                                                                                                            ? 'border-[#2563EB] bg-[#2563EB] text-white'
+                                                                                                            : 'border-[#CBD5E1] bg-[#F8FAFC] text-[#475569]'
+                                                                                                    }`}
+                                                                                                >
+                                                                                                    {optKey}
+                                                                                                </span>
                                                                                                 <span className="flex-1 break-words leading-relaxed">
-                                                                                                    <strong className="uppercase font-mono mr-1">
-                                                                                                        {optKey}.
-                                                                                                    </strong>{' '}
                                                                                                     {renderMathText(optVal, isSecondaryMath)}
                                                                                                 </span>
                                                                                             </label>
@@ -2548,6 +2567,38 @@ export default function Learn({
                             </div>
 
                             <div className="p-5 sm:p-6">
+                                {assessments.length > 0 && (
+                                    <div
+                                        className="grid gap-1.5 mb-5"
+                                        style={{ gridTemplateColumns: `repeat(${assessments.length}, minmax(0, 1fr))` }}
+                                        aria-label="Question progress bar"
+                                    >
+                                        {assessments.map((item, idx) => {
+                                            const isActiveSeg = idx === qIndex;
+                                            const isAnsweredSeg = Boolean(activeAnswers[item.id] || quizResult?.submitted?.[item.id]);
+                                            const segCorrect = hasSubmittedQuiz ? quizResult?.correct_ids?.includes(item.id) : null;
+                                            return (
+                                                <button
+                                                    key={`seg-${item.id}`}
+                                                    type="button"
+                                                    onClick={() => goToQuestion(idx)}
+                                                    aria-label={`Jump to question ${idx + 1}`}
+                                                    className={`h-2.5 rounded-full transition-colors ${
+                                                        hasSubmittedQuiz
+                                                            ? segCorrect
+                                                                ? 'bg-[#10B981]'
+                                                                : 'bg-[#EF4444]'
+                                                            : isActiveSeg
+                                                            ? 'bg-[#2563EB]'
+                                                            : isAnsweredSeg
+                                                            ? 'bg-[#93C5FD]'
+                                                            : 'bg-[#E2E8F0]'
+                                                    }`}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                )}
                                 {!q ? (
                                     <div className="py-12 text-center border border-dashed border-[#CBD5E1] rounded-xl">
                                         <ClipboardCheckIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
@@ -2603,20 +2654,20 @@ export default function Learn({
                                                             const is100PctPassed = isQuizPassed || (results?.passed === true);
                                                             const isActualCorrectAnswer = is100PctPassed && results?.correct_options && results.correct_options[q.id] === key;
 
-                                                            let optionClass = 'border border-[#E2E8F0] bg-white text-[#0F172A] hover:border-[#CBD5E1]';
+                                                            let optionClass = 'border-2 border-[#E2E8F0] bg-white text-[#0F172A] hover:border-[#CBD5E1]';
                                                             let badge = null;
 
                                                             if (hasResult) {
                                                                 if (isSubmittedChoice) {
                                                                     if (isCorrect) {
-                                                                        optionClass = 'border border-[#10B981] bg-[#ECFDF5] text-[#047857] font-bold';
+                                                                        optionClass = 'border-2 border-[#10B981] bg-[#ECFDF5] text-[#047857] font-bold';
                                                                         badge = (
                                                                             <span className="text-xs font-extrabold text-[#047857] shrink-0">
                                                                                 ✓ Correct Answer
                                                                             </span>
                                                                         );
                                                                     } else {
-                                                                        optionClass = 'border border-[#EF4444] bg-[#FEF2F2] text-[#B91C1C] font-bold';
+                                                                        optionClass = 'border-2 border-[#EF4444] bg-[#FEF2F2] text-[#B91C1C] font-bold';
                                                                         badge = (
                                                                             <span className="text-xs font-extrabold text-[#B91C1C] shrink-0">
                                                                                 ✗ Your Answer - Incorrect
@@ -2624,7 +2675,7 @@ export default function Learn({
                                                                         );
                                                                     }
                                                                 } else if (isActualCorrectAnswer) {
-                                                                    optionClass = 'border border-[#10B981] bg-[#ECFDF5] text-[#047857] font-bold';
+                                                                    optionClass = 'border-2 border-[#10B981] bg-[#ECFDF5] text-[#047857] font-bold';
                                                                     badge = (
                                                                         <span className="text-xs font-extrabold text-[#047857] shrink-0">
                                                                             ✓ Correct Answer
@@ -2632,13 +2683,13 @@ export default function Learn({
                                                                     );
                                                                 }
                                                             } else if (isChecked && !hasResult) {
-                                                                optionClass = 'border border-[#2563EB] bg-[#EFF6FF] text-[#1E40AF] font-bold';
+                                                                optionClass = 'border-2 border-[#2563EB] bg-[#EFF6FF] text-[#1E40AF] font-bold';
                                                             }
 
                                                             return (
                                                                 <label
                                                                     key={key}
-                                                                    className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors ${optionClass}`}
+                                                                    className={`flex items-center justify-between gap-3 px-4 py-3.5 min-h-14 rounded-2xl tactile-card cursor-pointer ${optionClass}`}
                                                                 >
                                                                     <div className="flex items-center gap-3 min-w-0 flex-1">
                                                                         <input
@@ -2650,7 +2701,7 @@ export default function Learn({
                                                                             className="sr-only"
                                                                         />
                                                                         <span
-                                                                            className={`w-7 h-7 rounded-full border flex items-center justify-center text-xs font-black uppercase shrink-0 ${
+                                                                            className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center text-xs font-black uppercase shrink-0 ${
                                                                                 isChecked && !hasResult
                                                                                     ? 'border-[#2563EB] bg-[#2563EB] text-white'
                                                                                     : hasResult && isSubmittedChoice

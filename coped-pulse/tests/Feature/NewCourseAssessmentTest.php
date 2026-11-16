@@ -24,7 +24,7 @@ class NewCourseAssessmentTest extends TestCase
     {
         $this->seed(CourseSeeder::class);
 
-        $course = Course::where('title', 'Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional')
+        $course = Course::where('title', 'Kecerdasan Buatan Generatif, LLM & Kejuruteraan Prompt untuk Profesional')
             ->with(['modules.lessons', 'modules.assessments'])
             ->first();
 
@@ -49,7 +49,7 @@ class NewCourseAssessmentTest extends TestCase
     {
         $this->seed(CourseSeeder::class);
 
-        $course = Course::where('title', 'Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional')
+        $course = Course::where('title', 'Kecerdasan Buatan Generatif, LLM & Kejuruteraan Prompt untuk Profesional')
             ->with('modules')
             ->firstOrFail();
 
@@ -72,7 +72,7 @@ class NewCourseAssessmentTest extends TestCase
     {
         $this->seed(CourseSeeder::class);
 
-        $course = Course::where('title', 'Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional')->firstOrFail();
+        $course = Course::where('title', 'Kecerdasan Buatan Generatif, LLM & Kejuruteraan Prompt untuk Profesional')->firstOrFail();
 
         $finalAssessments = $course->assessments()->whereNull('module_id')->get();
         $this->assertSame(5, $finalAssessments->count(), 'Course must have 5 summative final assessment questions.');
@@ -88,7 +88,7 @@ class NewCourseAssessmentTest extends TestCase
     {
         $this->seed(CourseSeeder::class);
 
-        $course = Course::where('title', 'Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional')->firstOrFail();
+        $course = Course::where('title', 'Kecerdasan Buatan Generatif, LLM & Kejuruteraan Prompt untuk Profesional')->firstOrFail();
         $learner = $this->learner();
         $learner->enrollments()->create(['course_id' => $course->id]);
 
@@ -107,7 +107,7 @@ class NewCourseAssessmentTest extends TestCase
     {
         $this->seed(CourseSeeder::class);
 
-        $course = Course::where('title', 'Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional')->firstOrFail();
+        $course = Course::where('title', 'Kecerdasan Buatan Generatif, LLM & Kejuruteraan Prompt untuk Profesional')->firstOrFail();
         $learner = $this->learner();
         $enrollment = $learner->enrollments()->create(['course_id' => $course->id]);
 
@@ -137,7 +137,7 @@ class NewCourseAssessmentTest extends TestCase
     {
         $this->seed(CourseSeeder::class);
 
-        $course = Course::where('title', 'Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional')->firstOrFail();
+        $course = Course::where('title', 'Kecerdasan Buatan Generatif, LLM & Kejuruteraan Prompt untuk Profesional')->firstOrFail();
         $learner = $this->learner();
         $enrollment = $learner->enrollments()->create(['course_id' => $course->id]);
 

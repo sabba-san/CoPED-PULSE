@@ -20,7 +20,7 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         hmr: {
-            host: 'localhost',
+            host: process.env.VITE_HMR_HOST || 'localhost',
         },
         watch: {
             ignored: ['**/storage/framework/views/**'],

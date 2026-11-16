@@ -96,3 +96,70 @@
 .animate-pulse-dot {
     animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Native Android WebView & Mobile App Ergonomics */
+html,
+body {
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+@keyframes sheetUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-sheet-up {
+    animation: sheetUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Duolingo & Brilliant.org Flat Tactile Press States */
+.tactile-btn {
+    border-bottom-width: 4px;
+    transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), border-bottom-width 150ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms ease;
+}
+
+.tactile-btn:active:not(:disabled) {
+    border-bottom-width: 2px;
+    transform: translateY(2px);
+}
+
+.tactile-card {
+    border-bottom-width: 3px;
+    transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms ease, background-color 150ms ease;
+}
+
+.tactile-card:active {
+    transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-fade-in,
+    .animate-scale-in,
+    .animate-pop,
+    .animate-pulse-dot,
+    .animate-sheet-up {
+        animation: none !important;
+    }
+
+    .tactile-btn,
+    .tactile-card {
+        transition: none !important;
+        transform: none !important;
+    }
+}

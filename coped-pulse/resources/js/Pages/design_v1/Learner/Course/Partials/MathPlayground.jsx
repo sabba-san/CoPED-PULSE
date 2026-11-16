@@ -551,9 +551,9 @@ export default function MathPlayground({
 
     return (
         <div className="relative bg-white border border-[#E2E8F0] rounded-xl overflow-hidden flex flex-col justify-between">
-            {/* Top Manipulative Selector & Header - ONLY shows activities for current standard */}
-            <div className="px-4 py-3 bg-[#F8FAFC] border-b border-[#E2E8F0] flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-1.5">
+            {/* Top Manipulative Selector - only shown when multiple sub-modes apply */}
+            {availableModes.length > 1 && (
+                <div className="px-3 sm:px-4 py-2.5 bg-[#F8FAFC] border-b border-[#E2E8F0] flex flex-wrap items-center gap-1.5">
                     {availableModes.map((m) => {
                         const isSelected = activeMode === m.id;
                         return (
@@ -575,20 +575,47 @@ export default function MathPlayground({
                         );
                     })}
                 </div>
+            )}
 
+            {/* Brilliant.org & Duolingo Segmented Mastery Progress Bar */}
+            <div className="px-3 sm:px-4 py-2.5 bg-white border-b border-[#E2E8F0] flex items-center gap-2.5">
+                <div className="flex-1 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.max(1, problems.length)}, minmax(0, 1fr))` }} aria-label="Aktiviti progress">
+                    {problems.map((p, idx) => {
+                        const isDone = modeCompletedSet.has(p.id);
+                        const isCurr = idx === problemIdx;
+                        return (
+                            <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => setProblemIdx(idx)}
+                                aria-label={`Aktiviti ${idx + 1}`}
+                                className={`h-2.5 rounded-full transition-colors ${
+                                    isDone
+                                        ? 'bg-[#10B981]'
+                                        : isCurr
+                                        ? 'bg-[#2563EB]'
+                                        : 'bg-[#E2E8F0] hover:bg-[#CBD5E1]'
+                                }`}
+                            />
+                        );
+                    })}
+                </div>
+                <span className="text-[11px] font-black text-[#475569] shrink-0">
+                    {problemIdx + 1}/{problems.length}
+                </span>
                 <button
                     type="button"
                     onClick={fillCorrectAnswerDemo}
-                    className="px-2.5 py-1 rounded-lg bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] border border-[#FCD34D] text-[11px] font-extrabold transition-colors shrink-0"
+                    className="px-2 py-0.5 rounded-md bg-white hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0F172A] border border-[#E2E8F0] text-[10px] font-bold transition-colors shrink-0"
                     title="Isi jawapan contoh secara automatik untuk demonstrasi"
                 >
-                    ⚡ Auto-Isi Jawapan (Demo)
+                    Demo
                 </button>
             </div>
 
-            {/* Main Interactive Stage (Centered to Eye-Friendly max-w-2xl) */}
-            <div className="p-4 sm:p-6">
-                <div className="max-w-2xl mx-auto space-y-4 py-2">
+            {/* Main Interactive Stage (Expanded width on mobile, max-w-3xl on desktop) */}
+            <div className="p-2.5 sm:p-6">
+                <div className="max-w-3xl mx-auto space-y-4 py-1 sm:py-2">
                     {/* Question Prompt Banner */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E2E8F0]">
                         <h3 className="font-display font-extrabold text-base sm:text-xl text-[#0F172A] leading-snug">
@@ -720,7 +747,7 @@ export default function MathPlayground({
                                                 <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-white border border-[#CBD5E1] text-[#334155] inline-block">
                                                     {isFullTen ? `1 Puluh (Kumpulan ${tenIdx + 1})` : `${countInTen} Sa`}
                                                 </span>
-                                                <div className="grid grid-cols-5 gap-1.5 max-w-[210px]">
+                                                <div className="grid grid-cols-5 gap-1.5 max-w-[240px]">
                                                     {Array.from({ length: countInTen }, (__, itemIdx) => (
                                                         <button
                                                             key={itemIdx}
@@ -730,7 +757,7 @@ export default function MathPlayground({
                                                                 setCheckStatus(null);
                                                             }}
                                                             title="Klik untuk keluarkan 1"
-                                                            className="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] hover:border-rose-400 flex items-center justify-center text-base transition-transform hover:scale-105"
+                                                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white border border-[#E2E8F0] hover:border-rose-400 flex items-center justify-center text-lg transition-transform hover:scale-105"
                                                         >
                                                             {currentProblem.icon}
                                                         </button>
@@ -787,7 +814,7 @@ export default function MathPlayground({
                                 </div>
 
                                 {/* Upright Vertical 10-Block Towers */}
-                                <div className="min-h-[130px] p-2.5 rounded-lg bg-white border border-[#FFEDD5] flex items-end justify-center gap-1.5 overflow-x-auto">
+                                <div className="min-h-[156px] p-2.5 rounded-lg bg-white border border-[#FFEDD5] flex items-end justify-center gap-1.5 overflow-x-auto">
                                     {tensCount === 0 ? (
                                         <span className="text-xs font-semibold text-gray-400 m-auto text-center">
                                             Tiada blok Puluh (0).<br />Klik [+1 Puluh].
@@ -852,7 +879,7 @@ export default function MathPlayground({
                                     </div>
                                 </div>
 
-                                <div className="min-h-[130px] p-2.5 rounded-lg bg-white border border-[#DCFCE7] flex flex-wrap items-end justify-center content-end gap-1.5">
+                                <div className="min-h-[156px] p-2.5 rounded-lg bg-white border border-[#DCFCE7] flex flex-wrap items-end justify-center content-end gap-1.5">
                                     {onesCount === 0 ? (
                                         <span className="text-xs font-semibold text-gray-400 m-auto text-center">
                                             Tiada blok Sa (0).<br />Klik [+1 Sa].
@@ -867,7 +894,7 @@ export default function MathPlayground({
                                                     setCheckStatus(null);
                                                 }}
                                                 title="Klik untuk keluarkan 1 blok Sa"
-                                                className="w-6 h-6 rounded bg-[#22C55E] border border-[#15803D] text-white text-xs font-black flex items-center justify-center hover:opacity-80 shrink-0"
+                                                className="w-7 h-7 rounded bg-[#22C55E] border border-[#15803D] text-white text-xs font-black flex items-center justify-center hover:opacity-80 shrink-0"
                                             >
                                                 1
                                             </button>
@@ -936,7 +963,7 @@ export default function MathPlayground({
                                             style={{
                                                 backgroundColor: isShaded ? currentProblem.color : '#FFFFFF',
                                             }}
-                                            className={`h-16 sm:h-20 rounded-xl border transition-transform active:scale-95 flex flex-col items-center justify-center gap-0.5 ${
+                                            className={`h-20 sm:h-24 rounded-xl border transition-transform active:scale-95 flex flex-col items-center justify-center gap-0.5 ${
                                                 isShaded
                                                     ? 'text-white border-[#0F172A]'
                                                     : 'text-[#64748B] border-[#CBD5E1] hover:border-[#2563EB]'
@@ -1015,7 +1042,7 @@ export default function MathPlayground({
                                                     setCheckStatus(null);
                                                     setMoneyTray((prev) => [...prev, note]);
                                                 }}
-                                                className={`py-2 px-1 rounded-lg border border-[#0F172A]/20 font-black text-xs transition-transform active:scale-95 text-center ${note.bg}`}
+                                                className={`min-h-[44px] py-2 px-1 rounded-lg border border-[#0F172A]/20 font-black text-xs transition-transform active:scale-95 text-center ${note.bg}`}
                                             >
                                                 +{note.label}
                                             </button>
@@ -1076,7 +1103,7 @@ export default function MathPlayground({
                             /* Interactive Analog Clock Mode */
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
                                 <div className="md:col-span-5 flex flex-col items-center">
-                                    <svg width="190" height="190" viewBox="0 0 220 220" className="bg-white rounded-full border border-[#CBD5E1]">
+                                    <svg viewBox="0 0 220 220" className="w-56 h-56 sm:w-64 sm:h-64 bg-white rounded-full border border-[#CBD5E1]">
                                         <circle cx="110" cy="110" r="100" fill="#FFFFFF" stroke="#0F172A" strokeWidth="4" />
                                         {Array.from({ length: 12 }, (_, i) => {
                                             const num = i + 1;
@@ -1215,7 +1242,7 @@ export default function MathPlayground({
                     <div className="max-w-xl mx-auto bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
                         <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
                             <div className="sm:col-span-6 flex flex-col items-center">
-                                <svg width="220" height="200" viewBox="0 0 260 230" className="bg-white rounded-xl border border-[#CBD5E1]">
+                                <svg viewBox="0 0 260 230" className="w-full max-w-[270px] h-auto bg-white rounded-xl border border-[#CBD5E1]">
                                     <polygon
                                         points={polygonPoints.map((p) => `${p.x},${p.y}`).join(' ')}
                                         fill="#EFF6FF"
@@ -1410,10 +1437,10 @@ export default function MathPlayground({
                                     </div>
 
                                     {/* Beaker Top Rim / Lip */}
-                                    <div className="w-44 h-2.5 border-2 border-[#334155] rounded-full mx-auto -mb-1 bg-white relative z-20" />
+                                    <div className="w-48 h-3 border-2 border-[#334155] rounded-full mx-auto -mb-1 bg-white relative z-20" />
 
                                     {/* Beaker Body */}
-                                    <div className="w-40 h-60 mx-auto relative border-x-2 border-b-2 border-[#334155] rounded-b-2xl bg-[#F8FAFC] overflow-hidden">
+                                    <div className="w-44 h-64 sm:h-72 mx-auto relative border-x-2 border-b-2 border-[#334155] rounded-b-2xl bg-[#F8FAFC] overflow-hidden">
                                         {/* Graduation Tick Marks */}
                                         {[500, 1000, 1500, 2000, 2500, 3000, 3500].map((tick) => {
                                             const maxV = currentProblem.maxVal || 4000;
@@ -1559,7 +1586,7 @@ export default function MathPlayground({
                                     </div>
 
                                     {/* Ruler / Tape Frame */}
-                                    <div className="w-40 h-60 mx-auto relative border-2 border-[#334155] rounded-xl bg-[#FEF3C7] overflow-hidden">
+                                    <div className="w-44 h-64 sm:h-72 mx-auto relative border-2 border-[#334155] rounded-xl bg-[#FEF3C7] overflow-hidden">
                                         {/* Ticks every 200cm */}
                                         {[200, 400, 600, 800, 1000].map((tick) => {
                                             const maxV = currentProblem.maxVal || 1200;
@@ -1699,7 +1726,7 @@ export default function MathPlayground({
                         <button
                             type="button"
                             onClick={handleNextProblem}
-                            className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-lg bg-[#10B981] hover:bg-[#059669] text-white font-extrabold text-sm transition-all touch-manipulation active:scale-[0.99] flex items-center justify-center"
+                            className="w-full sm:w-auto min-h-12 sm:min-h-[44px] px-5 py-2.5 rounded-2xl sm:rounded-lg bg-[#10B981] hover:bg-[#059669] border border-[#047857] tactile-btn text-white font-extrabold text-sm touch-manipulation flex items-center justify-center"
                         >
                             {problemIdx < problems.length - 1
                                 ? 'Soalan Seterusnya →'
@@ -1709,7 +1736,7 @@ export default function MathPlayground({
                         <button
                             type="button"
                             onClick={handleCheckAnswer}
-                            className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-sm transition-all touch-manipulation active:scale-[0.99] flex items-center justify-center"
+                            className="w-full sm:w-auto min-h-12 sm:min-h-[44px] px-5 py-2.5 rounded-2xl sm:rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] border border-[#1D4ED8] tactile-btn text-white font-extrabold text-sm touch-manipulation flex items-center justify-center"
                         >
                             Semak Jawapan
                         </button>
@@ -1717,9 +1744,9 @@ export default function MathPlayground({
                 </div>
             </div>
 
-            {/* Bottom-Right Khan Academy Celebration Popup */}
+            {/* Bottom-Right Khan Academy Celebration Popup (safely above mobile bottom bar) */}
             {celebrationPopup && (
-                <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-40 bg-white border border-[#10B981] rounded-xl p-4 flex items-center gap-3 sm:max-w-sm animate-fade-in">
+                <div className="fixed bottom-20 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-50 bg-white border-2 border-[#10B981] rounded-2xl p-4 flex items-center gap-3 sm:max-w-sm animate-sheet-up">
                     <span className="w-9 h-9 rounded-full bg-[#10B981] text-white font-black text-base flex items-center justify-center shrink-0">
                         ✓
                     </span>

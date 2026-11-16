@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#111827">
+    <title>Offline · CoPED PULSE</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #F9FAFB;
+            color: #111827;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            background: #FFFFFF;
+            border: 2px solid #111827;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 100%;
+            padding: 28px 24px;
+            text-align: center;
+        }
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            background: #FEF3C7;
+            border: 1.5px solid #F59E0B;
+            color: #92400E;
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+        h1 { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
+        p { font-size: 14px; color: #4B5563; line-height: 1.5; margin-bottom: 20px; }
+        button {
+            width: 100%;
+            min-height: 44px;
+            background: #111827;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="badge">No Connection</div>
+        <h1>You're Offline</h1>
+        <p>CoPED PULSE couldn't reach the server. Check your Wi-Fi or mobile data and try again.</p>
+        <button type="button" onclick="window.location.reload()">Try Again</button>
+    </div>
+</body>
+</html>

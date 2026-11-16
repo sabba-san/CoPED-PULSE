@@ -1,7 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import logo from '@/images/logo.png';
 import FlatInput from '@/Components/flat/FlatInput';
-import { BookOpenIcon, CheckIcon, GraduationCapIcon } from '@/Components/flat/icons';
+import { BookOpenIcon, CheckIcon, ChevronLeftIcon, GraduationCapIcon } from '@/Components/flat/icons';
 
 const DEMO_ACCOUNTS = [
     {
@@ -46,21 +46,23 @@ export default function Login() {
         <>
             <Head title="Login" />
 
-            <div className="min-h-[100dvh] bg-white font-sans text-[#111827] antialiased">
-                {/* Clean Institutional Mobile Top Navbar (< lg) */}
-                <div className="lg:hidden bg-white border-b border-[#E5E7EB] px-4 sm:px-6 h-16 flex items-center justify-between">
-                    <Link href={route('home')} className="flex shrink-0 items-center gap-2" aria-label="CoPED PULSE home">
-                        <img src={logo} alt="CoPED PULSE logo" className="h-7 w-auto" />
+            <div className="min-h-[100dvh] bg-[#F9FAFB] lg:bg-white font-sans text-[#111827] antialiased">
+                {/* Mobile App Header (< lg) */}
+                <div className="lg:hidden bg-white border-b border-[#E5E7EB] px-4 h-14 pt-[env(safe-area-inset-top)] flex items-center justify-between">
+                    <Link
+                        href={route('home')}
+                        className="min-h-11 min-w-11 -ml-2 inline-flex items-center justify-center rounded-full text-[#111827] hover:bg-[#F3F4F6] transition-colors"
+                        aria-label="Back to welcome screen"
+                    >
+                        <ChevronLeftIcon className="h-5 w-5" />
+                    </Link>
+                    <div className="flex items-center gap-2">
+                        <img src={logo} alt="CoPED PULSE logo" className="h-7 w-7 rounded-md" />
                         <span className="font-display text-base font-extrabold tracking-tight text-[#111827]">
                             CoPED PULSE
                         </span>
-                    </Link>
-                    <Link
-                        href={route('home')}
-                        className="text-xs font-semibold text-[#4B5563] hover:text-[#111827] border border-[#E5E7EB] rounded-md px-3 py-1.5 transition-colors"
-                    >
-                        ← Back to home
-                    </Link>
+                    </div>
+                    <div className="w-9" aria-hidden="true" />
                 </div>
 
                 <div className="grid min-h-0 lg:min-h-[100dvh] grid-cols-1 lg:grid-cols-2">
@@ -131,9 +133,9 @@ export default function Login() {
                         </div>
                     </div>
 
-                    {/* Form block: crisp white, clean institutional layout */}
-                    <div className="flex flex-col justify-center items-center px-4 py-8 sm:px-8 lg:py-12 lg:px-12">
-                        <div className="w-full max-w-md">
+                    {/* Form block: native card on mobile, crisp split layout on desktop */}
+                    <div className="flex flex-col justify-center items-center px-4 py-6 sm:px-8 lg:py-12 lg:px-12">
+                        <div className="w-full max-w-md bg-white border border-[#E5E7EB] lg:border-0 rounded-2xl lg:rounded-none p-5 sm:p-6 lg:p-0">
                             {/* Clean Section Heading Above the Form (Zero Emojis) */}
                             <div className="mb-6 sm:mb-8">
                                 <span className="text-[11px] font-bold uppercase tracking-widest text-[#2563EB]">
@@ -159,7 +161,7 @@ export default function Login() {
                                     value={form.data.email}
                                     onChange={(e) => form.setData('email', e.target.value)}
                                     placeholder="you@example.com"
-                                    inputClassName="bg-white border border-[#CBD5E1] focus:border-[#2563EB] focus:bg-[#F8FAFC] text-[#111827] rounded-lg px-3.5 py-2.5 text-sm font-medium"
+                                    inputClassName="bg-white border border-[#CBD5E1] focus:border-[#2563EB] focus:bg-[#F8FAFC] text-[#111827] rounded-xl px-4 py-3 text-sm font-medium min-h-12"
                                     error={form.errors.email}
                                 />
 
@@ -173,20 +175,20 @@ export default function Login() {
                                     value={form.data.password}
                                     onChange={(e) => form.setData('password', e.target.value)}
                                     placeholder="Your password"
-                                    inputClassName="bg-white border border-[#CBD5E1] focus:border-[#2563EB] focus:bg-[#F8FAFC] text-[#111827] rounded-lg px-3.5 py-2.5 text-sm font-medium"
+                                    inputClassName="bg-white border border-[#CBD5E1] focus:border-[#2563EB] focus:bg-[#F8FAFC] text-[#111827] rounded-xl px-4 py-3 text-sm font-medium min-h-12"
                                     error={form.errors.password}
                                 />
 
-                                <div className="flex items-center">
+                                <div className="flex items-center min-h-11">
                                     <input
                                         id="remember"
                                         name="remember"
                                         type="checkbox"
                                         checked={form.data.remember}
                                         onChange={(e) => form.setData('remember', e.target.checked)}
-                                        className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[#2563EB] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                        className="h-5 w-5 cursor-pointer rounded border-gray-300 text-[#2563EB] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                                     />
-                                    <label htmlFor="remember" className="ml-2 cursor-pointer select-none text-sm font-medium text-gray-600">
+                                    <label htmlFor="remember" className="ml-2.5 cursor-pointer select-none text-sm font-medium text-gray-600">
                                         Remember me for 30 days
                                     </label>
                                 </div>
@@ -195,7 +197,7 @@ export default function Login() {
                                 <button
                                     type="submit"
                                     disabled={form.processing}
-                                    className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-sm py-3 px-4 rounded-lg transition-colors cursor-pointer disabled:opacity-50 min-h-[44px]"
+                                    className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-sm py-3 px-4 rounded-xl transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 min-h-12"
                                 >
                                     {form.processing ? 'Signing in...' : 'Log in'}
                                 </button>
@@ -215,7 +217,7 @@ export default function Login() {
                             </div>
 
                             {/* Move the Demo Quick-Fill Box Below the Form with Neutral Institutional Styling */}
-                            <div className="mt-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-3.5">
+                            <div className="mt-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3.5">
                                 <div className="flex items-center justify-between">
                                     <span className="text-[11px] font-bold uppercase tracking-wider text-[#475569]">
                                         Demo Quick Access
@@ -234,8 +236,8 @@ export default function Login() {
                                                 onClick={() => fillDemo(acc.email)}
                                                 className={
                                                     isSelected
-                                                        ? 'bg-[#EFF6FF] text-[#1D4ED8] border-2 border-[#2563EB] rounded-md px-3 py-2 text-xs font-bold text-left flex items-center justify-between transition-colors'
-                                                        : 'bg-white hover:bg-[#F1F5F9] text-[#1E293B] border border-[#CBD5E1] rounded-md px-3 py-2 text-xs font-semibold text-left flex items-center justify-between transition-colors'
+                                                        ? 'min-h-11 bg-[#EFF6FF] text-[#1D4ED8] border-2 border-[#2563EB] rounded-xl px-3 py-2 text-xs font-bold text-left flex items-center justify-between transition-colors'
+                                                        : 'min-h-11 bg-white hover:bg-[#F1F5F9] text-[#1E293B] border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs font-semibold text-left flex items-center justify-between transition-colors'
                                                 }
                                             >
                                                 <span className="truncate">{acc.label}</span>

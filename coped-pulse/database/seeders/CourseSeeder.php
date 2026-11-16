@@ -645,20 +645,24 @@ class CourseSeeder extends Seeder
         }
 
         // -------------------------------------------------------------
-        // 10. Flagship Course: Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional
+        // 10. Flagship Course: Kecerdasan Buatan Generatif, LLM & Kejuruteraan Prompt untuk Profesional
         // Complete with embedded video links, reading articles, per-module mini-quizzes, and final certification exam.
         // -------------------------------------------------------------
+        $genAiTitle = 'Kecerdasan Buatan Generatif, LLM & Kejuruteraan Prompt untuk Profesional';
+        Course::where('title', 'Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional')
+            ->update(['title' => $genAiTitle]);
+
         $genAiCourse = Course::updateOrCreate(
-            ['title' => 'Kecerdasan Buatan Generatif & Kejuruteraan Prompt untuk Profesional'],
+            ['title' => $genAiTitle],
             [
-                'description' => 'Program pensijilan komprehensif mengenai teknologi AI generatif, seni reka bentuk prompt berstruktur, integrasi Retrieval-Augmented Generation (RAG), dan etika kecerdasan buatan untuk meningkatkan produktiviti sektor awam dan swasta.',
+                'description' => 'Program pensijilan komprehensif UUM CoPED mengenai teknologi Model Bahasa Besar (LLM), AI generatif, seni reka bentuk prompt berstruktur, integrasi Retrieval-Augmented Generation (RAG), dan etika kecerdasan buatan untuk meningkatkan produktiviti sektor awam dan swasta.',
                 'instructor_id' => $staffId,
                 'status' => 'published',
                 'academic_year' => '2026 / 2027 · Professional Track',
                 'category_logo' => 'ai',
                 'billing_type' => 'free',
                 'price' => 0.00,
-                'cert_title' => 'CoPED Certified Generative AI & Prompt Engineering Specialist',
+                'cert_title' => 'UUM CoPED Certified Generative AI & Prompt Engineering Specialist',
                 'cert_url' => 'https://coped.org/cert/genai-prompt-engineering',
                 'bundle_title' => 'Complete GenAI & Prompt Engineering Study Guide + Cheatsheets',
                 'bundle_url' => 'https://drive.google.com/drive/folders/coped-genai-bundle-demo',

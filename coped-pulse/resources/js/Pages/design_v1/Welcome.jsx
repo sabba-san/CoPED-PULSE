@@ -19,7 +19,84 @@ export default function Welcome() {
         <>
             <Head title="Welcome" />
 
-            <div className="min-h-[100dvh] bg-white font-sans text-[#111827] antialiased">
+            {/* Mobile App Onboarding (< md): Single-screen native launch experience */}
+            <div className="md:hidden min-h-[100dvh] bg-[#F9FAFB] font-sans text-[#111827] antialiased flex flex-col justify-between px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(1.75rem,env(safe-area-inset-bottom))] gap-6">
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <img src={logo} alt="CoPED PULSE Logo" className="h-9 w-9 rounded-xl border border-[#E5E7EB] bg-white p-1" />
+                            <div>
+                                <span className="block font-display text-lg font-black tracking-tight text-[#111827] leading-none">
+                                    CoPED PULSE
+                                </span>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-[#2563EB]">
+                                    UUM · Applied Learning
+                                </span>
+                            </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] text-[10px] font-extrabold uppercase tracking-wider">
+                            Mobile App
+                        </span>
+                    </div>
+
+                    <div className="bg-[#2563EB] text-white rounded-2xl p-5 space-y-2.5">
+                        <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight">
+                            Upskill faster. Prove mastery at 100%.
+                        </h1>
+                        <p className="text-sm text-blue-100 leading-relaxed">
+                            Access UUM CoPED courses, KSSR/KSSM modules, quizzes, and verified certificates right on your phone.
+                        </p>
+                    </div>
+
+                    <div className="space-y-2.5">
+                        <div className="flex items-center gap-3.5 bg-white border border-[#E5E7EB] rounded-2xl p-3.5">
+                            <div className="h-10 w-10 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0">
+                                <BookOpenIcon className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-display text-sm font-bold text-[#111827]">Structured Modules &amp; Videos</p>
+                                <p className="text-xs text-[#4B5563]">Learn chapter by chapter with inline notes.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3.5 bg-white border border-[#E5E7EB] rounded-2xl p-3.5">
+                            <div className="h-10 w-10 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center shrink-0">
+                                <ClipboardCheckIcon className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-display text-sm font-bold text-[#111827]">Interactive &amp; Scan Assessments</p>
+                                <p className="text-xs text-[#4B5563]">Upload workings directly with your camera.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3.5 bg-white border border-[#E5E7EB] rounded-2xl p-3.5">
+                            <div className="h-10 w-10 rounded-xl bg-[#FFFBEB] text-[#D97706] flex items-center justify-center shrink-0">
+                                <GraduationCapIcon className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-display text-sm font-bold text-[#111827]">Official Course Certificates</p>
+                                <p className="text-xs text-[#4B5563]">Unlock verifiable credentials at 100% completion.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                    <Link
+                        href={route('login')}
+                        className="w-full min-h-12 inline-flex items-center justify-center gap-2 bg-[#111827] hover:bg-black text-white font-bold text-sm rounded-xl transition-transform active:scale-[0.98]"
+                    >
+                        <span>Log in to My Account</span>
+                        <ArrowRightIcon className="h-4 w-4" />
+                    </Link>
+                    <Link
+                        href={route('register')}
+                        className="w-full min-h-12 inline-flex items-center justify-center bg-white border-2 border-[#111827] text-[#111827] hover:bg-[#F3F4F6] font-bold text-sm rounded-xl transition-transform active:scale-[0.98]"
+                    >
+                        Create Free Account
+                    </Link>
+                </div>
+            </div>
+
+            <div className="hidden md:block min-h-[100dvh] bg-white font-sans text-[#111827] antialiased">
                 {/* Navigation: solid white, single line, max 80px */}
                 <header className="sticky top-0 z-40 border-b-2 border-[#E5E7EB] bg-white">
                     <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6 lg:px-8">
