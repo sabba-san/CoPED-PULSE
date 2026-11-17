@@ -12,6 +12,7 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -22,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.webkit.WebViewAssetLoader;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +36,8 @@ import java.util.List;
  */
 public class MainActivity extends AppCompatActivity {
 
-    private static final String SHELL_ASSET_URL = "file:///android_asset/index.html";
+    private static final String ASSET_HOST = "appassets.androidplatform.net";
+    private static final String SHELL_ASSET_URL = "https://" + ASSET_HOST + "/assets/index.html";
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
@@ -92,12 +95,25 @@ public class MainActivity extends AppCompatActivity {
         cookieManager.setAcceptCookie(true);
         cookieManager.setAcceptThirdPartyCookies(webView, true);
 
+        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+            .setDomain(ASSET_HOST)
+            .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+            .build();
+
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String scheme = uri.getScheme() != null ? uri.getScheme().toLowerCase() : "";
                 if ("file".equals(scheme)) {
+                    return false;
+                }
+                if (ASSET_HOST.equalsIgnoreCase(uri.getHost())) {
                     return false;
                 }
                 if (!"http".equals(scheme) && !"https".equals(scheme)) {
@@ -121,7 +137,9 @@ public class MainActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 Uri uri = Uri.parse(url);
-                if (("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) && uri.getHost() != null) {
+                if (("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))
+                    && uri.getHost() != null
+                    && !ASSET_HOST.equalsIgnoreCase(uri.getHost())) {
                     activeHost = uri.getHost();
                 }
                 CookieManager.getInstance().flush();
@@ -130,8 +148,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 super.onReceivedError(view, request, error);
-                if (request.isForMainFrame()) {
-                    view.loadUrl(SHELL_ASSET_URL + "?setup=1");
+                if (request.isForMainFrame() && !ASSET_HOST.equalsIgnoreCase(request.getUrl().getHost())) {
+                    view.loadUrl(SHELL_ASSET_URL);
                 }
             }
         });
