@@ -53,18 +53,34 @@ Route::middleware('auth')->group(function () {
                 : 0,
         ];
 
+        $lastSession = (clone $base)
+            ->whereNull('completed_at')
+            ->where('progress', '>', 0)
+            ->with('course.instructor')
+            ->latest('updated_at')
+            ->first();
+
+        $completedEnrollments = (clone $base)
+            ->whereNotNull('completed_at')
+            ->with('course')
+            ->latest('completed_at')
+            ->get();
+
         $enrollments = (clone $base)->with('course.instructor')
             ->latest()
-            ->paginate(10);
+            ->paginate(5);
 
         return inertia('design_v1/Learner/Portal', [
             'enrollments' => $enrollments,
             'stats' => $stats,
+            'lastSession' => $lastSession,
+            'completedEnrollments' => $completedEnrollments,
         ]);
     })->middleware('role:learner')->name('portal');
 
     Route::middleware('role:learner')->prefix('learner')->name('learner.')->group(function () {
         Route::get('catalog', [\App\Http\Controllers\Learner\CatalogController::class, 'index'])->name('catalog');
+        Route::get('catalog/{course}', [\App\Http\Controllers\Learner\CatalogController::class, 'show'])->name('catalog.show');
         Route::post('catalog/{course}/enroll', [\App\Http\Controllers\Learner\CatalogController::class, 'enroll'])->name('catalog.enroll');
 
         Route::get('courses/{course}/learn', function (Course $course) {

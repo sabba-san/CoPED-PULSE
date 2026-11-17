@@ -37,6 +37,23 @@ class CatalogController extends Controller
         ]);
     }
 
+    public function show(Course $course, Request $request)
+    {
+        abort_if($course->status !== 'published', 404);
+
+        $course->load([
+            'instructor',
+            'modules' => fn ($query) => $query->select('id', 'course_id', 'title', 'description', 'order'),
+        ])->loadCount('modules');
+
+        return Inertia::render('design_v1/Learner/Course/Introduction', [
+            'course' => $course,
+            'isEnrolled' => $request->user()->enrollments()
+                ->where('course_id', $course->id)
+                ->exists(),
+        ]);
+    }
+
     public function enroll(Course $course, Request $request)
     {
         abort_if($course->status !== 'published', 404);

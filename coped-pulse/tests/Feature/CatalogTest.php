@@ -120,4 +120,55 @@ class CatalogTest extends TestCase
             ->has('courses', 2)
         );
     }
+
+    public function test_published_course_introduction_page_shows_course_details_and_enrollment_status(): void
+    {
+        $staff = $this->staff();
+        $learner = $this->learner();
+        $course = Course::factory()->published()->forInstructor($staff)->create([
+            'title' => 'Course Introduction Test',
+            'description' => 'A brief course overview.',
+        ]);
+        $course->modules()->create([
+            'title' => 'Module One',
+            'description' => 'Understand the course foundations.',
+            'order' => 1,
+        ]);
+
+        $response = $this->actingAs($learner)->get(route('learner.catalog.show', $course));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('design_v1/Learner/Course/Introduction', false)
+            ->where('course.id', $course->id)
+            ->where('course.title', 'Course Introduction Test')
+            ->where('course.description', 'A brief course overview.')
+            ->where('course.modules_count', 1)
+            ->where('course.modules.0.title', 'Module One')
+            ->where('course.modules.0.description', 'Understand the course foundations.')
+            ->where('course.instructor.name', $staff->name)
+            ->where('isEnrolled', false)
+        );
+        $this->assertDatabaseMissing('enrollments', [
+            'user_id' => $learner->id,
+            'course_id' => $course->id,
+        ]);
+
+        $learner->enrollments()->create(['course_id' => $course->id]);
+
+        $this->actingAs($learner)
+            ->get(route('learner.catalog.show', $course))
+            ->assertInertia(fn (Assert $page) => $page->where('isEnrolled', true));
+    }
+
+    public function test_course_introduction_page_is_not_available_for_unpublished_courses(): void
+    {
+        $staff = $this->staff();
+        $learner = $this->learner();
+        $course = Course::factory()->draft()->forInstructor($staff)->create();
+
+        $this->actingAs($learner)
+            ->get(route('learner.catalog.show', $course))
+            ->assertNotFound();
+    }
 }

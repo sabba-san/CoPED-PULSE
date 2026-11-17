@@ -16,7 +16,7 @@ export default function LearnerLayout({ children, wide = false }) {
 
     const navLinks = [
         { name: 'Browse Catalog', href: route('learner.catalog'), active: url.startsWith('/learner/catalog') },
-        { name: 'My Portal', href: route('portal'), active: url.startsWith('/portal') },
+        { name: 'My Courses', href: route('portal'), active: url.startsWith('/portal') },
     ];
 
     return (
@@ -108,7 +108,7 @@ export default function LearnerLayout({ children, wide = false }) {
                         }`}
                     >
                         <span className="text-base leading-none mb-1 shrink-0">🏠</span>
-                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Portal</span>
+                        <span className="text-[10px] uppercase tracking-wide leading-none truncate w-full text-center">Courses</span>
                     </Link>
 
                     <button
