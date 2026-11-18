@@ -1,6 +1,7 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
+import CourseBackLink from '@/Components/flat/CourseBackLink';
 import {
     BookOpenIcon,
     CircleCheckIcon,
@@ -132,6 +133,7 @@ const buildDemoWorksheetSvg = (yearLevel) => {
 const BTN_SECONDARY = 'w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center gap-2 bg-white border border-[#CBD5E1] hover:border-[#2563EB] text-[#0F172A] font-bold text-xs px-4 py-2 rounded-lg transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed';
 const BTN_PRIMARY = 'w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs px-5 py-2 rounded-lg transition-transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
 const BTN_SUCCESS = 'w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center gap-2 bg-[#10B981] hover:bg-emerald-600 text-white font-bold text-xs px-5 py-2 rounded-lg transition-transform active:scale-[0.98] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed';
+const CURRICULUM_TOGGLE_CLASS = 'inline-flex items-center justify-center gap-2 min-h-8 px-2.5 py-1.5 rounded-lg border border-[#CBD5E1] bg-white text-[#334155] text-[11px] font-bold shadow-sm transition-colors hover:border-[#2563EB] hover:bg-[#EFF6FF] hover:text-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6] focus-visible:ring-offset-2';
 
 // Keeps the stage anchored near the viewport top after step / tab transitions.
 const scrollToAnchor = (id) => requestAnimationFrame(() => {
@@ -1246,6 +1248,8 @@ export default function Learn({
             )}
 
             <div className="space-y-4">
+                <CourseBackLink />
+
                 {/* Compact Khan-Academy Style Top Header Bar */}
                 <div className="py-3.5 px-4 sm:px-5 bg-white border border-[#E2E8F0] rounded-xl space-y-3 w-full min-w-0 overflow-hidden">
                     <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3.5 w-full min-w-0">
@@ -1260,13 +1264,6 @@ export default function Learn({
                                 {isKssrCourse ? (
                                     <div className="space-y-1.5">
                                         <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#64748B]">
-                                            <Link
-                                                href={route('portal')}
-                                                className="inline-flex items-center gap-1 text-[#0F172A] hover:text-[#2563EB] hover:underline font-extrabold"
-                                            >
-                                                <span>&larr;</span>
-                                                <span>My Portal</span>
-                                            </Link>
                                             <span className="px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] text-[10px] font-extrabold uppercase tracking-wider">
                                                 🏫 {kssrYearLevel === 'F1'
                                                     ? 'KSSM Menengah · Tingkatan 1'
@@ -1301,16 +1298,6 @@ export default function Learn({
                                 ) : (
                                     <div className="space-y-1">
                                         <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#64748B]">
-                                            <nav aria-label="Course breadcrumb" className="inline-flex items-center gap-1.5 shrink-0">
-                                                <Link href={route('learner.catalog')} className="text-[#0F172A] hover:text-[#2563EB] hover:underline">
-                                                    Browse Catalog
-                                                </Link>
-                                                <span className="text-gray-400">/</span>
-                                                <Link href={route('portal')} className="text-[#0F172A] hover:text-[#2563EB] hover:underline">
-                                                    My Portal
-                                                </Link>
-                                            </nav>
-                                            <span>·</span>
                                             <span className="truncate">Instructed by {course.instructor?.name || 'Faculty Instructor'}</span>
                                             {course.academic_year && (
                                                 <span className="text-[10px] font-bold text-[#1E40AF] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md">
@@ -1461,6 +1448,7 @@ export default function Learn({
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                             {/* Left Curriculum Outline (order-2 lg:order-1 lg:col-span-3) */}
                             <div
+                                id="course-curriculum-sidebar"
                                 className={`order-2 lg:order-1 lg:col-span-3 space-y-3 ${
                                     desktopSidebarOpen ? '' : 'lg:hidden'
                                 }`}
@@ -1481,21 +1469,35 @@ export default function Learn({
                                 </div>
 
                                 <div className={`${mobileCurriculumOpen ? 'block' : 'hidden'} lg:block bg-white border border-[#E2E8F0] rounded-xl p-4 flex flex-col`}>
-                                    <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-[#E2E8F0]">
-                                        <h3 className="font-display font-extrabold text-xs text-[#0F172A] uppercase tracking-wider">
+                                    <div className="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-[#E2E8F0]">
+                                        <h3 className="min-w-0 flex-1 truncate font-display font-extrabold text-xs text-[#0F172A] uppercase tracking-wider">
                                             Curriculum ({modules.length} {isKssrCourse ? 'Bab' : 'Modules'})
                                         </h3>
-                                        {pilotModule && (
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {pilotModule && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => goToModule(pilotModule.id)}
+                                                    className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                                    title="Lompat terus ke Bab Fokus Ujian Rintis"
+                                                >
+                                                    <span>🎯</span>
+                                                    <span>Fokus Rintis</span>
+                                                </button>
+                                            )}
                                             <button
                                                 type="button"
-                                                onClick={() => goToModule(pilotModule.id)}
-                                                className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
-                                                title="Lompat terus ke Bab Fokus Ujian Rintis"
+                                                onClick={() => setDesktopSidebarOpen(false)}
+                                                aria-label="Hide curriculum"
+                                                aria-controls="course-curriculum-sidebar"
+                                                aria-expanded={desktopSidebarOpen}
+                                                title="Hide curriculum"
+                                                className={`hidden lg:inline-flex ${CURRICULUM_TOGGLE_CLASS}`}
                                             >
-                                                <span>🎯</span>
-                                                <span>Fokus Rintis</span>
+                                                <ArrowRightIcon className="w-3.5 h-3.5 rotate-180" />
+                                                <span className="hidden 2xl:inline">Hide Curriculum</span>
                                             </button>
-                                        )}
+                                        </div>
                                     </div>
 
                                     {modules.length === 0 ? (
@@ -1698,6 +1700,22 @@ export default function Learn({
                                     desktopSidebarOpen ? 'lg:col-span-9' : 'lg:col-span-12'
                                 } space-y-4`}
                             >
+                                {!desktopSidebarOpen && (
+                                    <div className="hidden lg:flex">
+                                        <button
+                                            type="button"
+                                            onClick={() => setDesktopSidebarOpen(true)}
+                                            aria-label="Show curriculum"
+                                            aria-controls="course-curriculum-sidebar"
+                                            aria-expanded={desktopSidebarOpen}
+                                            title="Show curriculum"
+                                            className={CURRICULUM_TOGGLE_CLASS}
+                                        >
+                                            <ArrowRightIcon className="w-3.5 h-3.5" />
+                                            <span>Show Curriculum</span>
+                                        </button>
+                                    </div>
+                                )}
                                 {activeModule ? (
                                     <div
                                         id="course-stage-top"
@@ -1755,11 +1773,6 @@ export default function Learn({
                                             <div className="space-y-2 pb-3 border-b border-[#E2E8F0]">
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="flex flex-wrap items-center gap-2 min-w-0">
-                                                        <span className="text-[11px] font-extrabold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] px-2 py-0.5 rounded-md uppercase tracking-wider">
-                                                            {isKssrCourse
-                                                                ? `Bab ${activeIndex + 1} daripada ${modules.length}`
-                                                                : `Chapter ${activeIndex + 1} of ${modules.length}`}
-                                                        </span>
                                                         <h2 className="font-display font-extrabold text-base sm:text-xl text-[#0F172A] truncate">
                                                             {activeModule.title}
                                                         </h2>
@@ -1788,13 +1801,6 @@ export default function Learn({
                                                                         : selectedLesson ? 'Subtopic Completed' : 'Chapter Completed'
                                                                     : isKssrCourse ? 'Tandakan Selesai' : 'Mark Complete'}
                                                             </span>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setDesktopSidebarOpen((v) => !v)}
-                                                            className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#E2E8F0] hover:border-[#2563EB] bg-[#F8FAFC] text-[11px] font-bold text-[#0F172A] transition-colors cursor-pointer"
-                                                        >
-                                                            <span>{desktopSidebarOpen ? '◀ Expand' : '▶ Show Curriculum'}</span>
                                                         </button>
                                                     </div>
                                                 </div>

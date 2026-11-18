@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
+import CourseBackLink from '@/Components/flat/CourseBackLink';
 import CurriculumSidebar from './Partials/CurriculumSidebar';
 import RightSidebar from './Partials/RightSidebar';
 import VideoPlayer from './Partials/VideoPlayer';
@@ -125,13 +126,7 @@ export default function Module({
 
             <div className="w-full space-y-6">
                 <div>
-                    <Link
-                        href={route('learner.course.learn', course.id)}
-                        className="inline-flex items-center text-sm font-semibold text-[#3B82F6] hover:text-blue-700 transition-colors"
-                    >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                        Back to {course.title}
-                    </Link>
+                    <CourseBackLink />
                     <p className="mt-2 text-xs font-bold text-[#3B82F6] uppercase tracking-wider">
                         Module {activeIndex + 1} of {modules.length}
                     </p>

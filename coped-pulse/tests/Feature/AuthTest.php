@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Course;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -160,6 +162,62 @@ class AuthTest extends TestCase
         $response = $this->get(route('portal'));
 
         $response->assertRedirect(route('login'));
+    }
+
+    public function test_learner_portal_shows_five_enrollments_per_page(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $learner = User::factory()->create(['role' => 'learner']);
+        $courses = Course::factory()->count(7)->forInstructor($staff)->create();
+
+        foreach ($courses as $course) {
+            $learner->enrollments()->create(['course_id' => $course->id]);
+        }
+
+        $response = $this->actingAs($learner)->get(route('portal'));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('design_v1/Learner/Portal')
+            ->where('enrollments.per_page', 5)
+            ->where('enrollments.last_page', 2)
+            ->has('enrollments.data', 5)
+        );
+    }
+
+    public function test_portal_sidebar_data_is_consistent_across_pages(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $learner = User::factory()->create(['role' => 'learner']);
+
+        $this->travelTo(now()->subDays(10));
+        $lastSessionCourse = Course::factory()->forInstructor($staff)->create();
+        $lastSession = $learner->enrollments()->create([
+            'course_id' => $lastSessionCourse->id,
+            'progress' => 33,
+        ]);
+        $completedCourse = Course::factory()->forInstructor($staff)->create();
+        $completedEnrollment = $learner->enrollments()->create([
+            'course_id' => $completedCourse->id,
+            'progress' => 100,
+            'completed_at' => now(),
+        ]);
+        $this->travelBack();
+
+        Course::factory()->count(6)->forInstructor($staff)->create()->each(
+            fn (Course $course) => $learner->enrollments()->create(['course_id' => $course->id])
+        );
+
+        foreach ([1, 2] as $pageNumber) {
+            $response = $this->actingAs($learner)->get(route('portal', ['page' => $pageNumber]));
+
+            $response->assertInertia(fn (Assert $page) => $page
+                ->where('enrollments.current_page', $pageNumber)
+                ->where('lastSession.id', $lastSession->id)
+                ->has('completedEnrollments', 1)
+                ->where('completedEnrollments.0.id', $completedEnrollment->id)
+            );
+        }
     }
 
     public function test_learner_cannot_access_staff_dashboard(): void

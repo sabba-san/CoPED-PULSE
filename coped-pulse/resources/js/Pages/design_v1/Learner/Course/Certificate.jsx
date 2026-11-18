@@ -1,5 +1,6 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import LearnerLayout from '@/Layouts/design_v1/LearnerLayout';
+import CourseBackLink from '@/Components/flat/CourseBackLink';
 import CourseLogoBadge, { LOGO_CONFIG } from '@/Components/flat/CourseLogoBadge';
 
 const PRINT_CSS = `
@@ -279,13 +280,7 @@ export default function Certificate({ course, enrollment }) {
             <div className="max-w-5xl mx-auto space-y-5 print:space-y-0 print:max-w-none print:p-8">
                 {/* Top Action Bar (hidden in print) */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
-                    <Link
-                        href={route('learner.course.learn', course.id)}
-                        className="inline-flex items-center gap-1.5 text-sm font-bold text-[#111827] hover:underline"
-                    >
-                        <span>&larr;</span>
-                        <span>Back to Course</span>
-                    </Link>
+                    <CourseBackLink />
                     <div className="flex flex-wrap items-center gap-2">
                         <button
                             type="button"
